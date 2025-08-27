@@ -1,0 +1,17 @@
+[package]
+name = "rabex-env"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+elsa = "1.11"
+indexmap = { version = "2.11", features = ["serde"] }
+memmap2 = "0.9"
+rabex = { git = "https://github.com/jakobhellermann/RustyAssetBundleEXtractor", branch = "all", default-features = false, features = [
+    "embed-tpk",
+] }
+rustc-hash = "2.1"
+serde = { version = "1.0", default-features = false }
+serde_derive = "1.0"
+typetree-generator-api = { path = "../unity-scene-repacker/typetree-generator-api" }
