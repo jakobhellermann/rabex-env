@@ -123,12 +123,8 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     }
 
     pub fn build_settings(&self) -> Result<BuildSettings> {
-        let (ggm, ggm_data) = self.load_leaf("globalgamemanagers")?;
-        let build_settings = ggm
-            .find_object_of::<BuildSettings>(&self.tpk)?
-            .unwrap()
-            .read(&mut Cursor::new(ggm_data))?;
-        Ok(build_settings)
+        let ggm = self.load_cached("globalgamemanagers")?;
+        ggm.find_object_of::<BuildSettings>().transpose().unwrap()
     }
 
     pub fn load_leaf(&self, relative_path: impl AsRef<Path>) -> Result<(SerializedFile, Data)> {
