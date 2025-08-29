@@ -105,7 +105,7 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
             && self.object.tt.m_Type == "MonoBehaviour"
         {
             let with_tt = self.load_typetree()?;
-            return with_tt.read();
+            return Ok(with_tt.object.read(&mut self.file.reader())?);
         }
 
         let data = self.object.read(&mut self.file.reader())?;
