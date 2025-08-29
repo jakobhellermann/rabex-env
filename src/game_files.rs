@@ -1,8 +1,9 @@
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Cursor, ErrorKind};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Result, ensure};
+use anyhow::{Result, bail, ensure};
 use memmap2::Mmap;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 
@@ -20,13 +21,46 @@ pub enum LevelFiles {
     Packed(Box<BundleFileReader<Cursor<Mmap>>>),
 }
 
+fn find_unity_data_dir(install_dir: &Path) -> Result<Option<PathBuf>> {
+    Ok(std::fs::read_dir(install_dir)?
+        .filter_map(Result::ok)
+        .find_map(|entry| is_unity_data_dir(&entry.path()).then(|| entry.path())))
+}
+
+fn is_unity_data_dir(dir: &Path) -> bool {
+    dir.file_name()
+        .and_then(OsStr::to_str)
+        .is_some_and(|name| name.ends_with("_Data"))
+        && dir.is_dir()
+}
+
 impl GameFiles {
-    pub fn probe(game_dir: &Path) -> Result<GameFiles> {
+    pub fn probe(game_dir: impl AsRef<Path>) -> Result<GameFiles> {
+        GameFiles::probe_inner(game_dir.as_ref())
+    }
+
+    pub fn probe_dir(game_dir: &Path) -> Result<PathBuf> {
         ensure!(
             game_dir.exists(),
             "Game Directory '{}' does not exist",
             game_dir.display()
         );
+
+        Ok(match is_unity_data_dir(game_dir) {
+            true => game_dir.to_owned(),
+            false => match find_unity_data_dir(game_dir)? {
+                Some(dir) => dir,
+                None => {
+                    bail!(
+                        "Game Directory '{}' is not a unity game. It should have a gamename_Data folder.",
+                        game_dir.display()
+                    )
+                }
+            },
+        })
+    }
+    fn probe_inner(game_dir: &Path) -> Result<GameFiles> {
+        let game_dir = GameFiles::probe_dir(game_dir)?;
 
         let bundle_path = game_dir.join("data.unity3d");
         let level_files = if bundle_path.exists() {
