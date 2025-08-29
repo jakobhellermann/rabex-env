@@ -314,7 +314,7 @@ dependencies = [
 [[package]]
 name = "rabex"
 version = "0.0.3"
-source = "git+https://github.com/jakobhellermann/RustyAssetBundleEXtractor?branch=all#2889c4e6b14c3a51a7da80622fc8ec196c3f15d6"
+source = "git+https://github.com/jakobhellermann/RustyAssetBundleEXtractor?branch=all#606e0c9dbbcd9ea862da6cc84e14f82fc7c73cb9"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -487,6 +487,7 @@ checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
 [[package]]
 name = "typetree-generator-api"
 version = "1.0.0"
+source = "git+https://github.com/jakobhellermann/unity-scene-repacker?rev=4e9e56#4e9e56f2d538fc6432a9823ad5670f80c64718fd"
 dependencies = [
  "libloading",
  "rabex",
