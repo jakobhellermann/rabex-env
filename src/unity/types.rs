@@ -129,6 +129,10 @@ pub struct MonoScript {
     pub m_AssemblyName: String,
 }
 impl MonoScript {
+    pub fn assembly_name_base(&self) -> &str {
+        self.m_AssemblyName.trim_end_matches(".dll")
+    }
+
     pub fn assembly_name(&self) -> Cow<'_, str> {
         match self.m_AssemblyName.ends_with(".dll") {
             true => Cow::Borrowed(&self.m_AssemblyName),
