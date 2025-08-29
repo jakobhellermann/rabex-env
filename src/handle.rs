@@ -115,6 +115,10 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     pub fn path_id(&self) -> PathId {
         self.object.info.m_PathID
     }
+
+    pub fn class_id(&self) -> ClassId {
+        self.object.info.m_ClassID
+    }
 }
 
 impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
