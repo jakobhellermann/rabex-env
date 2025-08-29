@@ -13,6 +13,8 @@ use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::TypeTreeProvider;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 
+pub use rabex;
+
 pub mod game_files;
 pub mod handle;
 pub mod resolver;
@@ -74,6 +76,11 @@ impl<P: TypeTreeProvider> Environment<GameFiles, P> {
     }
 }
 
+#[derive(Debug)]
+pub struct AppInfo {
+    pub developer: String,
+    pub name: String,
+}
 impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     /// Initializes [`Environment::typetree_generator`] from the `Managed` DLLs.
     /// Requires `libTypeTreeGenerator.so`/`TypeTreeGenerator.dll` next to the executing binary.
@@ -88,6 +95,17 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         self.typetree_generator = TypeTreeGeneratorCache::new(generator, base_node.into_owned());
 
         Ok(())
+    }
+
+    pub fn app_info(&self) -> Result<AppInfo> {
+        let path = self.resolver.base_dir().join("app.info");
+        let contents = std::fs::read_to_string(path).context("could not find app.info")?;
+        let (developer, name) = contents.split_once('\n').context("app.info is malformed")?;
+
+        Ok(AppInfo {
+            developer: developer.to_owned(),
+            name: name.to_owned(),
+        })
     }
 }
 

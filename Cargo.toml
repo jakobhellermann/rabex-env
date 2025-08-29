@@ -15,3 +15,6 @@ rustc-hash = "2.1"
 serde = { version = "1.0", default-features = false }
 serde_derive = "1.0"
 typetree-generator-api = { path = "../unity-scene-repacker/typetree-generator-api" }
+
+[dev-dependencies]
+steamlocate = "2.0.1"
