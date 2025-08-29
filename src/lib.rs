@@ -1,3 +1,5 @@
+pub mod utils;
+
 use std::io::{Cursor, Read, Seek};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
