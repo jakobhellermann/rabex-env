@@ -1,0 +1,32 @@
+[
+  {
+    "label": "Run silksong",
+    "command": "cargo",
+    "args": ["run", "--example", "silksong"],
+    "reveal": "no_focus"
+  },
+  {
+    "label": "Run testing",
+    "command": "cargo",
+    "args": ["run", "--example", "testing"],
+    "reveal": "no_focus"
+  },
+  {
+    "label": "Run testing (Release)",
+    "command": "cargo",
+    "args": ["run", "--example", "testing", "--release"],
+    "reveal": "no_focus"
+  },
+  {
+    "label": "Run repro",
+    "command": "cargo",
+    "args": ["run", "--example", "repro"],
+    "reveal": "no_focus"
+  },
+  {
+    "label": "Run unity2rust",
+    "command": "cargo",
+    "args": ["run", "--example", "unity2rust"],
+    "reveal": "no_focus"
+  }
+]
