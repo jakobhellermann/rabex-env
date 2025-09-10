@@ -16,6 +16,7 @@ serde = { version = "1.0", default-features = false }
 serde_derive = "1.0"
 typetree-generator-api = { git = "https://github.com/jakobhellermann/unity-scene-repacker", rev = "4e9e56" }
 rayon = "1.11"
+serde_json = "1.0"
 
 [dev-dependencies]
 steamlocate = "2.0.1"

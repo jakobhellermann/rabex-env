@@ -1,6 +1,8 @@
+pub mod addressables;
 pub mod utils;
 
-use std::io::{Cursor, Read, Seek};
+use std::fs::File;
+use std::io::{BufReader, Cursor, Read, Seek};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -9,6 +11,7 @@ use anyhow::{Context, Result};
 use elsa::sync::FrozenMap;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
+use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 use rabex::files::serializedfile::ObjectRef;
 use rabex::objects::{ClassId, PPtr, TypedPPtr};
 use rabex::tpk::TpkTypeTreeBlob;
@@ -27,6 +30,7 @@ mod typetree_generator_cache;
 pub use resolver::EnvResolver;
 use typetree_generator_api::{GeneratorBackend, TypeTreeGenerator};
 
+use crate::addressables::AddressablesSettings;
 use crate::handle::SerializedFileHandle;
 use crate::resolver::BasedirEnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
@@ -52,6 +56,11 @@ pub struct Environment<R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub serialized_files: FrozenMap<PathBuf, Box<(SerializedFile, Data)>>,
     pub typetree_generator: TypeTreeGeneratorCache,
     unity_version: OnceLock<UnityVersion>,
+    addressables: OnceLock<Option<AddressablesData>>,
+}
+
+struct AddressablesData {
+    settings: AddressablesSettings,
 }
 
 impl<R, P> Environment<R, P> {
@@ -62,6 +71,7 @@ impl<R, P> Environment<R, P> {
             serialized_files: Default::default(),
             typetree_generator: TypeTreeGeneratorCache::empty(),
             unity_version: OnceLock::new(),
+            addressables: OnceLock::new(),
         }
     }
 }
@@ -74,6 +84,7 @@ impl<P: TypeTreeProvider> Environment<GameFiles, P> {
             serialized_files: Default::default(),
             typetree_generator: TypeTreeGeneratorCache::empty(),
             unity_version: OnceLock::new(),
+            addressables: OnceLock::new(),
         })
     }
 }
@@ -108,6 +119,62 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
             developer: developer.to_owned(),
             name: name.to_owned(),
         })
+    }
+
+    pub fn load_addressables_bundle(
+        &self,
+        bundle: &str,
+    ) -> Result<BundleFileReader<Cursor<memmap2::Mmap>>> {
+        let addressables = self
+            .addressables_build_folder()?
+            .context("no addressables settings found")?;
+        let costs = addressables.join(bundle);
+        let data = unsafe { memmap2::Mmap::map(&File::open(costs)?)? };
+
+        let bundle = BundleFileReader::from_reader(
+            Cursor::new(data),
+            &ExtractionConfig::new(None, Some(self.unity_version()?)),
+        )?;
+
+        Ok(bundle)
+    }
+
+    pub fn addressables_build_folder(&self) -> Result<Option<PathBuf>> {
+        let Some(settings) = self.addressables_settings()? else {
+            return Ok(None);
+        };
+
+        let path = self
+            .resolver
+            .base_dir()
+            .join("StreamingAssets/aa")
+            .join(&settings.m_buildTarget);
+
+        Ok(Some(path))
+    }
+
+    pub fn addressables_settings(&self) -> Result<Option<&AddressablesSettings>> {
+        Ok(self.addressables_cache()?.map(|x| &x.settings))
+    }
+
+    fn addressables_cache(&self) -> Result<Option<&AddressablesData>> {
+        match self.addressables.get() {
+            Some(addressables) => Ok(addressables.as_ref()),
+            None => {
+                let path = self
+                    .resolver
+                    .base_dir()
+                    .join("StreamingAssets/aa/settings.json");
+                if !path.exists() {
+                    return Ok(None);
+                }
+                let reader = BufReader::new(File::open(path)?);
+                let settings = serde_json::from_reader(reader)?;
+
+                let cache = AddressablesData { settings };
+                Ok(self.addressables.get_or_init(|| Some(cache)).as_ref())
+            }
+        }
     }
 }
 
