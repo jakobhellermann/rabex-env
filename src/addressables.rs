@@ -2,6 +2,7 @@ use std::path::Path;
 
 use std::collections::HashMap;
 use std::io::{Read, Seek, SeekFrom};
+use std::sync::Arc;
 
 use rustc_hash::FxHashMap;
 use serde_derive::Deserialize;
@@ -16,7 +17,7 @@ pub struct AddressablesSettings {
     pub m_ExtraInitializationData: Vec<()>,
     pub m_DisableCatalogUpdateOnStart: bool,
     pub m_IsLocalCatalogInBundle: bool,
-    pub m_CertificateHandlerType: AssemblyClass,
+    // pub m_CertificateHandlerType: AssemblyClass,
     pub m_AddressablesVersion: String,
     pub m_maxConcurrentWebRequests: u32,
     pub m_CatalogRequestsTimeout: u32,
@@ -29,14 +30,14 @@ pub struct CatalogLocation {
     pub m_InternalId: String,
     pub m_Provider: String,
     pub m_Dependencies: Vec<()>,
-    pub m_ResourceType: AssemblyClass,
+    // pub m_ResourceType: AssemblyClass, TODO
 }
 
 #[allow(non_snake_case)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AssemblyClass {
-    pub m_AssemblyName: String,
-    pub m_ClassName: String,
+    pub m_AssemblyName: Arc<String>,
+    pub m_ClassName: Arc<String>,
 }
 
 // archive:/CAB-asdf/CAB-asdf
@@ -82,9 +83,9 @@ impl AssemblyClass {
 
 #[derive(Debug)]
 pub struct ObjectInitializationData {
-    pub id: String,
+    pub id: Arc<String>,
     pub object_type: AssemblyClass,
-    pub data: String,
+    pub data: Arc<String>,
 }
 impl ObjectInitializationData {
     fn from_reader<R: Read + Seek>(
@@ -110,12 +111,12 @@ impl ObjectInitializationData {
 
 #[derive(Debug)]
 pub struct ResourceLocation {
-    pub internal_id: String,
-    pub provider_id: String,
+    pub internal_id: Arc<String>,
+    pub provider_id: Arc<String>,
     pub dependencies: Vec<ResourceLocation>,
     pub data: Option<Value>,
     pub dependency_hash_code: i32,
-    pub primary_key: String,
+    pub primary_key: Arc<String>,
     pub type_: AssemblyClass,
 }
 impl ResourceLocation {
@@ -160,8 +161,8 @@ impl ResourceLocation {
 }
 #[derive(Debug)]
 pub struct BinaryCatalog {
-    pub locator_id: String,
-    pub build_result_hash: String,
+    pub locator_id: Arc<String>,
+    pub build_result_hash: Arc<String>,
     pub instance_provider_data: ObjectInitializationData,
     pub scene_provider_data: ObjectInitializationData,
     pub resource_provider_data: Vec<ObjectInitializationData>,
@@ -290,7 +291,7 @@ fn read_char<R: Read>(reader: &mut R) -> std::io::Result<char> {
 }
 
 struct Cache {
-    strings: FxHashMap<u32, String>,
+    strings: FxHashMap<u32, Arc<String>>,
     offsets: FxHashMap<u32, Vec<u32>>,
 }
 
@@ -298,7 +299,7 @@ fn read_encoded_string<R: Read + Seek>(
     reader: &mut R,
     cache: &mut Cache,
     encoded_offset: u32,
-) -> Result<String, std::io::Error> {
+) -> Result<Arc<String>, std::io::Error> {
     read_encoded_string_sep(reader, cache, encoded_offset, '\0')
 }
 
@@ -307,13 +308,13 @@ fn read_encoded_string_sep<R: Read + Seek>(
     cache: &mut Cache,
     encoded_offset: u32,
     dynamic_string_separator: char,
-) -> Result<String, std::io::Error> {
+) -> Result<Arc<String>, std::io::Error> {
     if let Some(cached) = cache.strings.get(&encoded_offset) {
-        return Ok(cached.clone());
+        return Ok(Arc::clone(cached));
     }
 
     if encoded_offset == u32::MAX {
-        return Ok(String::new());
+        return Ok(Arc::new(String::new()));
     }
 
     let unicode = (encoded_offset & 0x80000000) != 0;
@@ -326,8 +327,9 @@ fn read_encoded_string_sep<R: Read + Seek>(
         read_basic_string(reader, offset, unicode)?
     };
 
+    let result = Arc::new(result);
     // TODO: should this be encoded_offset?
-    cache.strings.insert(offset, result.clone());
+    cache.strings.insert(offset, Arc::clone(&result));
 
     Ok(result)
 }
@@ -369,6 +371,7 @@ fn read_dynamic_string<R: Read + Seek>(
         reader.seek(SeekFrom::Start(next_part_offset as u64))?;
     }
     parts.reverse();
+    let parts = parts.iter().map(|part| part.as_str()).collect::<Vec<_>>(); // TODO:perf
     Ok(parts.join(&separator.to_string()))
 }
 
@@ -412,7 +415,7 @@ pub struct AssetBundleRequestOptions {
     pub hash: Hash128,
     pub crc: u32,
     pub common_info: CommonInfo,
-    pub bundle_name: String,
+    pub bundle_name: Arc<String>,
     pub bundle_size: u32,
 }
 impl AssetBundleRequestOptions {
@@ -477,7 +480,7 @@ pub enum Value {
     Int(i32),
     Long(i64),
     Bool(bool),
-    String(String),
+    String(Arc<String>),
     Hash128(Hash128),
     Abro(AssemblyClass, AssetBundleRequestOptions),
 }
@@ -535,7 +538,7 @@ fn decode_v2<R: Read + Seek>(
         }
         STRING_MATCHNAME => {
             if is_default_object {
-                return Ok(Some(Value::String(String::new())));
+                return Ok(Some(Value::String(Arc::new(String::new()))));
             }
             reader.seek(SeekFrom::Start(object_offset as u64))?;
             let string_offset = read_u32(reader)?;
