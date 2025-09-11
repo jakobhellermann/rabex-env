@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use serde_derive::Deserialize;
 
 #[allow(non_snake_case)]
@@ -31,4 +33,20 @@ pub struct CatalogLocation {
 pub struct AssemblyClass {
     pub m_AssemblyName: String,
     pub m_ClassName: String,
+}
+
+// archive:/CAB-asdf/CAB-asdf
+
+pub fn wrap_archive(cab: &str) -> String {
+    format!("archive:/{cab}/{cab}")
+}
+pub fn unwrap_archive(path: &Path) -> Option<&str> {
+    let path = path.strip_prefix("archive:").ok()?;
+    let mut parts = path.iter();
+    let first = parts.next()?.to_str()?;
+    let second = parts.next()?.to_str()?;
+    if first != second {
+        return None;
+    }
+    Some(second)
 }

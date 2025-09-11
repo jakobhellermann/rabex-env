@@ -1,19 +1,21 @@
+use std::fmt::Display;
 use std::io::Cursor;
 use std::path::Path;
 
-use anyhow::{Context as _, Result};
+use anyhow::{Context as _, Result, bail};
 use rabex::files::SerializedFile;
 use rabex::files::serializedfile::ObjectRef;
 use rabex::objects::pptr::PathId;
-use rabex::objects::{ClassId, ClassIdType, TypedPPtr};
+use rabex::objects::{ClassId, ClassIdType, PPtr, TypedPPtr};
 use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::TypeTreeProvider;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use serde::Deserialize;
 
+use crate::Environment;
 use crate::game_files::GameFiles;
-use crate::unity::types::MonoScript;
-use crate::{EnvResolver, Environment};
+use crate::resolver::BasedirEnvResolver;
+use crate::unity::types::{MonoBehaviour, MonoScript};
 
 pub struct SerializedFileHandle<'a, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub file: &'a SerializedFile,
@@ -25,7 +27,7 @@ pub struct ObjectRefHandle<'a, T, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBl
     pub file: SerializedFileHandle<'a, R, P>,
 }
 
-impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
+impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
     pub fn reborrow(&self) -> SerializedFileHandle<'a, R, P> {
         SerializedFileHandle {
             file: self.file,
@@ -62,6 +64,61 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
         Ok(iter.map(|o| ObjectRefHandle::new(o, self.reborrow())))
     }
 
+    pub fn scripts<T>(
+        &self,
+        filter: impl ScriptFilter,
+    ) -> Result<impl Iterator<Item = ObjectRefHandle<'a, T, R, P>>> {
+        let mut script = None;
+        for &script_type in self.file.m_ScriptTypes.as_deref().unwrap_or_default() {
+            let script_data = self.env.deref_read(
+                PPtr::from(script_type).typed::<MonoScript>(),
+                self.file,
+                &mut self.reader(),
+            )?;
+            if filter.matches(&script_data) {
+                script = Some(PPtr::from(script_type));
+            }
+        }
+        let script = match script {
+            Some(script) => script,
+            None => {
+                let found = self
+                    .file
+                    .m_ScriptTypes
+                    .as_deref()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|&script_type| -> Result<_> {
+                        let script_data = self.env.deref_read(
+                            PPtr::from(script_type).typed::<MonoScript>(),
+                            self.file,
+                            &mut self.reader(),
+                        )?;
+                        Ok(script_data.m_ClassName)
+                    })
+                    .collect::<Result<Vec<_>>>()?
+                    .join(", ");
+
+                bail!("Script {filter} was not found in serialized file.\nFound {found}",)
+            }
+        };
+
+        Ok(self
+            .objects_of::<MonoBehaviour>()?
+            .filter(move |mb| self.file.script_type(mb.object.info) == Some(script))
+            .map(|mb| mb.cast_owned::<T>()))
+    }
+
+    pub fn deref_optional<T: for<'de> Deserialize<'de>>(
+        &self,
+        pptr: TypedPPtr<T>,
+    ) -> Result<Option<ObjectRefHandle<'a, T, R, P>>> {
+        match pptr.optional() {
+            Some(pptr) => self.deref(pptr).map(Some),
+            None => Ok(None),
+        }
+    }
+
     pub fn deref<T: for<'de> Deserialize<'de>>(
         &self,
         pptr: TypedPPtr<T>,
@@ -75,7 +132,10 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
                 let external_info = &self.file.m_Externals[file_id as usize - 1];
                 let external = self
                     .env
-                    .load_external_file(Path::new(&external_info.pathName))?;
+                    .load_external_file(Path::new(&external_info.pathName))
+                    .with_context(|| {
+                        format!("failed to load external file '{}'", external_info.pathName)
+                    })?;
                 let object = pptr
                     .make_local()
                     .deref_local(external.file, &self.env.tpk)
@@ -92,7 +152,7 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
     }
 }
 
-impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
+impl<'a, T, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     pub fn new(object: ObjectRef<'a, T>, file: SerializedFileHandle<'a, R, P>) -> Self {
         ObjectRefHandle { object, file }
     }
@@ -102,6 +162,7 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         T: for<'de> Deserialize<'de>,
     {
         if self.object.info.m_ClassID == ClassId::MonoBehaviour
+            && self.file.env.typetree_generator.can_generate()
             && self.object.tt.m_Type == "MonoBehaviour"
         {
             let with_tt = self.load_typetree()?;
@@ -121,10 +182,17 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     }
 }
 
-impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
+impl<'a, T, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     pub fn cast<U>(&'a self) -> ObjectRefHandle<'a, U, R, P> {
         ObjectRefHandle {
             object: self.object.cast(),
+            file: self.file.reborrow(),
+        }
+    }
+
+    pub fn cast_owned<U>(self) -> ObjectRefHandle<'a, U, R, P> {
+        ObjectRefHandle {
+            object: self.object.cast_owned(),
             file: self.file.reborrow(),
         }
     }
@@ -162,5 +230,36 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         self.file
             .env
             .deref_read(script_type.typed(), self.file.file, &mut self.file.reader())
+    }
+}
+
+pub trait ScriptFilter: Display {
+    fn matches(&self, script: &MonoScript) -> bool;
+}
+impl ScriptFilter for &dyn ScriptFilter {
+    fn matches(&self, script: &MonoScript) -> bool {
+        (**self).matches(script)
+    }
+}
+impl<T: ScriptFilter> ScriptFilter for &T {
+    fn matches(&self, script: &MonoScript) -> bool {
+        (**self).matches(script)
+    }
+}
+impl ScriptFilter for &'_ str {
+    fn matches(&self, script: &MonoScript) -> bool {
+        script.m_ClassName == *self
+    }
+}
+
+pub struct ScriptFilterContains<'a>(pub &'a str);
+impl Display for ScriptFilterContains<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "containing {}", self.0)
+    }
+}
+impl ScriptFilter for ScriptFilterContains<'_> {
+    fn matches(&self, script: &MonoScript) -> bool {
+        script.m_ClassName.contains(self.0)
     }
 }

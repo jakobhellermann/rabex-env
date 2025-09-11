@@ -49,4 +49,8 @@ impl TypeTreeGeneratorCache {
             }
         }
     }
+
+    pub fn can_generate(&self) -> bool {
+        self.generator.is_some() || !self.cache.is_empty()
+    }
 }
