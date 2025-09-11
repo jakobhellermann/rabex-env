@@ -9,6 +9,7 @@ use std::sync::OnceLock;
 
 use anyhow::{Context, Result, bail};
 use elsa::sync::FrozenMap;
+use memmap2::Mmap;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
@@ -34,6 +35,7 @@ use typetree_generator_api::{GeneratorBackend, TypeTreeGenerator};
 use walkdir::WalkDir;
 
 use crate::addressables::AddressablesSettings;
+use crate::addressables::binary_catalog::{BinaryCatalog, BinaryCatalogReader};
 use crate::handle::SerializedFileHandle;
 use crate::resolver::BasedirEnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
@@ -167,6 +169,34 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
             .m_UnityVersion
             .get_or_insert(self.unity_version()?.clone());
         Ok(file)
+    }
+
+    pub fn addressables_catalog(&self) -> Result<Option<BinaryCatalog>> {
+        let path = self
+            .resolver
+            .base_dir()
+            .join("StreamingAssets/aa")
+            .join("catalog.bin");
+        if !path.exists() {
+            return Ok(None);
+        }
+        let data = unsafe { Mmap::map(&File::open(path)?)? };
+        let catalog = BinaryCatalog::from_reader(Cursor::new(data))?;
+        Ok(Some(catalog))
+    }
+    pub fn addressables_bundle_locations(&self) -> Result<Option<Vec<(String, String)>>> {
+        let path = self
+            .resolver
+            .base_dir()
+            .join("StreamingAssets/aa")
+            .join("catalog.bin");
+        if !path.exists() {
+            return Ok(None);
+        }
+        let data = unsafe { Mmap::map(&File::open(path)?)? };
+        let mut reader = BinaryCatalogReader::new(Cursor::new(data))?;
+        let locations = reader.read_bundle_locations()?;
+        Ok(Some(locations))
     }
 
     pub fn addressables_build_folder(&self) -> Result<Option<PathBuf>> {
