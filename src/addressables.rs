@@ -1,6 +1,7 @@
-use std::path::{Path, PathBuf};
+pub mod binary_catalog;
 
 use serde_derive::Deserialize;
+use std::path::{Path, PathBuf};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
@@ -16,6 +17,12 @@ pub struct AddressablesSettings {
     pub m_AddressablesVersion: String,
     pub m_maxConcurrentWebRequests: u32,
     pub m_CatalogRequestsTimeout: u32,
+}
+impl AddressablesSettings {
+    /// Build folder relative to `game_Data` folder
+    pub fn build_folder(&self) -> PathBuf {
+        Path::new("StreamingAssets/aa").join(&self.m_buildTarget)
+    }
 }
 
 #[allow(non_snake_case)]

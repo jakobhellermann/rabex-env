@@ -5,10 +5,11 @@ use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use anyhow::{Context, Result, bail};
 use elsa::sync::FrozenMap;
+use memmap2::Mmap;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
@@ -35,6 +36,7 @@ use walkdir::WalkDir;
 
 use crate::addressables::AddressablesSettings;
 use crate::addressables::ArchivePath;
+use crate::addressables::binary_catalog::{BinaryCatalogReader, ResourceLocation};
 use crate::handle::SerializedFileHandle;
 use crate::resolver::BasedirEnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
@@ -67,11 +69,54 @@ pub struct Environment<R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
 
 #[derive(Debug)]
 pub struct AddressablesData {
+    base_dir: PathBuf,
     pub settings: AddressablesSettings,
     pub cab_to_bundle: FxHashMap<String, PathBuf>,
     pub bundle_to_cab: FxHashMap<PathBuf, Vec<String>>,
 }
-impl AddressablesData {}
+impl AddressablesData {
+    pub fn catalogs(&self) -> Result<Vec<BinaryCatalogReader<impl Read + Seek>>, std::io::Error> {
+        self.settings
+            .m_CatalogLocations
+            .iter()
+            .filter_map(|catalog| {
+                if catalog.m_Provider
+                    != "UnityEngine.AddressableAssets.ResourceProviders.ContentCatalogProvider"
+                {
+                    tracing::warn!("Unsupported catalog provider: '{}'", catalog.m_Provider);
+                    return None;
+                }
+                let path = self.evaluate_string(&catalog.m_InternalId);
+
+                Some((|| {
+                    let data = unsafe { Mmap::map(&File::open(self.base_dir.join(path))?)? };
+                    BinaryCatalogReader::new(Cursor::new(data))
+                })())
+            })
+            .collect()
+    }
+
+    pub fn resource_locations(&self) -> Result<Vec<Arc<ResourceLocation>>> {
+        let mut all = Vec::new();
+        for mut catalog in self.catalogs()? {
+            let catalog = catalog.read()?;
+
+            for (_key, locations) in catalog.resources {
+                for loc in locations {
+                    all.push(loc);
+                }
+            }
+        }
+        Ok(all)
+    }
+
+    pub fn evaluate_string(&self, str: &str) -> String {
+        str.replace(
+            "{UnityEngine.AddressableAssets.Addressables.RuntimePath}",
+            "StreamingAssets/aa",
+        )
+    }
+}
 
 impl<R, P> Environment<R, P> {
     pub fn new(resolver: R, tpk: P) -> Self {
@@ -226,6 +271,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
                 )
                 .context("could not determine CAB locations")?;
                 let cache = AddressablesData {
+                    base_dir: base_dir.to_owned(),
                     settings,
                     cab_to_bundle: lookup.0,
                     bundle_to_cab: lookup.1,
