@@ -119,7 +119,7 @@ impl ClassIdType for MonoBehaviour {
     const CLASS_ID: ClassId = ClassId::MonoBehaviour;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct MonoScript {
     pub m_Name: String,
     pub m_ExecutionOrder: i32,
@@ -150,4 +150,22 @@ impl MonoScript {
 
 impl ClassIdType for MonoScript {
     const CLASS_ID: ClassId = ClassId::MonoScript;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ResourceManager {
+    pub m_Container: IndexMap<String, PPtr>,
+    pub m_DependentAssets: Vec<(PPtr, Vec<PPtr>)>,
+}
+impl ClassIdType for ResourceManager {
+    const CLASS_ID: ClassId = ClassId::ResourceManager;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TextAsset {
+    pub m_Name: String,
+    pub m_Script: String,
+}
+impl ClassIdType for TextAsset {
+    const CLASS_ID: ClassId = ClassId::TextAsset;
 }

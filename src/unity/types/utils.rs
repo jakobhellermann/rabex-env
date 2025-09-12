@@ -120,9 +120,7 @@ impl Transform {
         reader: &'a mut R,
         tpk: &'a impl TypeTreeProvider,
     ) -> Result<Ancestors<'a, R>, serializedfile::Error> {
-        let transform_typetree = tpk
-            .get_typetree_node(Transform::CLASS_ID, file.m_UnityVersion.unwrap())
-            .ok_or(serializedfile::Error::NoTypetree(Transform::CLASS_ID))?;
+        let transform_typetree = file.get_typetree_for_class(Transform::CLASS_ID, tpk)?;
         Ok(Ancestors {
             file,
             reader,

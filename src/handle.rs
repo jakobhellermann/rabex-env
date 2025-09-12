@@ -15,7 +15,7 @@ use serde::Deserialize;
 use crate::Environment;
 use crate::game_files::GameFiles;
 use crate::resolver::BasedirEnvResolver;
-use crate::unity::types::{MonoBehaviour, MonoScript};
+use crate::unity::types::{GameObject, MonoBehaviour, MonoScript};
 
 pub struct SerializedFileHandle<'a, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub file: &'a SerializedFile,
@@ -25,6 +25,14 @@ pub struct SerializedFileHandle<'a, R = GameFiles, P = TypeTreeCache<TpkTypeTree
 pub struct ObjectRefHandle<'a, T, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub object: ObjectRef<'a, T>,
     pub file: SerializedFileHandle<'a, R, P>,
+}
+
+impl<'a, T, R, P> std::fmt::Debug for ObjectRefHandle<'a, T, R, P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ObjectRefHandle")
+            .field("object", &self.object.info)
+            .finish()
+    }
 }
 
 impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
@@ -54,6 +62,18 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
             return Ok(None);
         };
         Ok(Some(data.read(&mut self.reader())?))
+    }
+
+    pub fn objects<T>(
+        &self,
+    ) -> impl ExactSizeIterator<Item = Result<ObjectRefHandle<'a, T, R, P>>> {
+        self.file.objects().map(|o| {
+            let tt = self.file.get_typetree_for(o, &self.env.tpk)?;
+            Ok(ObjectRefHandle::new(
+                ObjectRef::new(self.file, o, tt),
+                self.reborrow(),
+            ))
+        })
     }
 
     pub fn objects_of<T>(&self) -> Result<impl Iterator<Item = ObjectRefHandle<'a, T, R, P>>>
@@ -119,6 +139,13 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
         }
     }
 
+    pub fn deref_read_optional<T: for<'de> Deserialize<'de>>(
+        &self,
+        pptr: TypedPPtr<T>,
+    ) -> Result<Option<T>> {
+        self.deref_optional(pptr)?.map(|obj| obj.read()).transpose()
+    }
+
     pub fn deref<T: for<'de> Deserialize<'de>>(
         &self,
         pptr: TypedPPtr<T>,
@@ -172,13 +199,23 @@ impl<'a, T, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R
         let data = self.object.read(&mut self.file.reader())?;
         Ok(data)
     }
+}
 
+impl<'a, T, R, P> ObjectRefHandle<'a, T, R, P> {
     pub fn path_id(&self) -> PathId {
         self.object.info.m_PathID
     }
 
     pub fn class_id(&self) -> ClassId {
         self.object.info.m_ClassID
+    }
+}
+impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObject, R, P> {
+    pub fn path(&self) -> Result<String> {
+        let path =
+            self.read()?
+                .path(self.file.file, &mut self.file.reader(), &self.file.env.tpk)?;
+        Ok(path)
     }
 }
 

@@ -36,7 +36,7 @@ use crate::addressables::AddressablesSettings;
 use crate::handle::SerializedFileHandle;
 use crate::resolver::BasedirEnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
-use crate::unity::types::{BuildSettings, MonoBehaviour, MonoScript};
+use crate::unity::types::{BuildSettings, MonoBehaviour, MonoScript, ResourceManager};
 use game_files::GameFiles;
 
 pub enum Data {
@@ -144,8 +144,10 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         &self,
         bundle: impl AsRef<Path>,
     ) -> Result<(SerializedFile, Vec<u8>)> {
-        let costs = self.load_addressables_bundle(bundle.as_ref())?;
-        let mut file = bundle_serializedfile(&costs)?;
+        let bundle = self
+            .load_addressables_bundle(bundle.as_ref())
+            .with_context(|| format!("Failed to load bundle '{}'", bundle.as_ref().display()))?;
+        let mut file = bundle_serializedfile(&bundle)?;
         file.0.m_UnityVersion.get_or_insert(self.unity_version()?);
         Ok(file)
     }
@@ -217,7 +219,18 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
 
     pub fn build_settings(&self) -> Result<BuildSettings> {
         let ggm = self.load_cached("globalgamemanagers")?;
-        ggm.find_object_of::<BuildSettings>().transpose().unwrap()
+        ggm.find_object_of::<BuildSettings>()
+            .transpose()
+            .context("no BuildSettings found in globalgamemanagers")
+            .flatten()
+    }
+
+    pub fn resource_manager(&self) -> Result<ResourceManager> {
+        let ggm = self.load_cached("globalgamemanagers")?;
+        ggm.find_object_of::<ResourceManager>()
+            .transpose()
+            .context("no ResourceManager found in globalgamemanagers")
+            .flatten()
     }
 
     pub fn load_leaf(&self, relative_path: impl AsRef<Path>) -> Result<(SerializedFile, Data)> {
