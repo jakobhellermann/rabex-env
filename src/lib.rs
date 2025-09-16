@@ -147,7 +147,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         let bundle = self
             .load_addressables_bundle(bundle.as_ref())
             .with_context(|| format!("Failed to load bundle '{}'", bundle.as_ref().display()))?;
-        let mut file = bundle_serializedfile(&bundle)?;
+        let mut file = bundle_main_serializedfile(&bundle)?;
         file.0.m_UnityVersion.get_or_insert(self.unity_version()?);
         Ok(file)
     }
@@ -410,13 +410,17 @@ fn load_addressables_bundle_inner(
     Ok(bundle)
 }
 
-fn bundle_serializedfile<T: AsRef<[u8]>>(
+fn bundle_main_serializedfile<T: AsRef<[u8]>>(
     bundle: &BundleFileReader<Cursor<T>>,
 ) -> Result<(SerializedFile, Vec<u8>)> {
     let file = bundle
         .files()
         .iter()
-        .filter(|file| !file.path.ends_with(".resource") && !file.path.ends_with(".resS"))
+        .filter(|file| {
+            !file.path.ends_with(".resource")
+                && !file.path.ends_with(".resS")
+                && !file.path.ends_with(".sharedAssets")
+        })
         .next()
         .context("no non-resource serializedfile in bundle")?;
     let data = bundle.read_at(&file.path)?.unwrap();
