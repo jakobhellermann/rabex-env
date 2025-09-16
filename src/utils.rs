@@ -29,6 +29,10 @@ mod merge {
         fn merge(&mut self, other: Self);
     }
 
+    impl Merge for () {
+        fn merge(&mut self, (): Self) {}
+    }
+
     impl Merge for usize {
         fn merge(&mut self, other: Self) {
             *self += other;
