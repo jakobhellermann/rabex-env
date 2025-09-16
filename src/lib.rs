@@ -23,6 +23,7 @@ pub use rabex;
 pub mod game_files;
 pub mod handle;
 pub mod resolver;
+pub mod scene_lookup;
 pub mod unity;
 
 mod typetree_generator_cache;
