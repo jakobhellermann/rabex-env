@@ -341,7 +341,6 @@ dependencies = [
 [[package]]
 name = "rabex"
 version = "0.0.3"
-source = "git+https://github.com/jakobhellermann/RustyAssetBundleEXtractor?branch=all#a8dd7b38f7c5c09bc5feead56303189fbdf72ce8"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -360,6 +359,7 @@ name = "rabex-env"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "byteorder",
  "csv",
  "elsa",
  "indexmap",

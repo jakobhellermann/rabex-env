@@ -15,7 +15,7 @@ use serde::Deserialize;
 use crate::Environment;
 use crate::game_files::GameFiles;
 use crate::resolver::BasedirEnvResolver;
-use crate::unity::types::{GameObject, MonoBehaviour, MonoScript};
+use crate::unity::types::{GameObject, MonoBehaviour, MonoScript, Transform};
 
 pub struct SerializedFileHandle<'a, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub file: &'a SerializedFile,
@@ -82,6 +82,27 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
     {
         let iter = self.file.objects_of::<T>(&self.env.tpk)?;
         Ok(iter.map(|o| ObjectRefHandle::new(o, self.reborrow())))
+    }
+
+    /// Returns `Transform`s and `RectTransform`s
+    pub fn transforms(&self) -> Result<impl Iterator<Item = ObjectRefHandle<'a, Transform, R, P>>> {
+        let tt = self
+            .env
+            .tpk
+            .get_typetree_node(Transform::CLASS_ID, self.env.unity_version()?)
+            .ok_or(rabex::files::serializedfile::Error::NoTypetree(
+                Transform::CLASS_ID,
+            ))?;
+
+        Ok(self
+            .file
+            .objects()
+            .filter(|obj| {
+                obj.m_ClassID == ClassId::Transform || obj.m_ClassID == ClassId::RectTransform
+            })
+            .map(move |o| {
+                ObjectRefHandle::new(ObjectRef::new(self.file, o, tt.clone()), self.reborrow())
+            }))
     }
 
     pub fn scripts<T>(

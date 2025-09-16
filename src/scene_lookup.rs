@@ -7,14 +7,15 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::io::{Read, Seek};
 
-enum RootLookup {
+#[derive(Debug)]
+pub enum RootLookup {
     Ambiguous(Vec<usize>),
     Root(usize),
 }
 
 pub struct SceneLookup<'a, P> {
     roots: Vec<(PathId, Transform)>,
-    roots_lookup: HashMap<String, RootLookup>,
+    pub roots_lookup: HashMap<String, RootLookup>,
     file: &'a SerializedFile,
     tpk: P,
 }

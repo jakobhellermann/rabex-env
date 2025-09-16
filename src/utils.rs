@@ -3,6 +3,20 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator as _};
 
 pub use merge::Merge;
 
+pub fn seq_fold_reduce<Acc, T>(
+    iter: impl IntoIterator<Item = T>,
+    f: impl Fn(&mut Acc, T) -> Result<()> + Send + Sync,
+) -> Result<Acc>
+where
+    Acc: Merge + Default + Send + Sync,
+{
+    let mut acc = Acc::default();
+    for item in iter {
+        f(&mut acc, item)?;
+    }
+    Ok(acc)
+}
+
 pub fn par_fold_reduce<Acc, T>(
     iter: impl IntoParallelIterator<Item = T>,
     f: impl Fn(&mut Acc, T) -> Result<()> + Send + Sync,

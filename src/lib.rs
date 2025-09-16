@@ -24,6 +24,7 @@ pub mod game_files;
 pub mod handle;
 pub mod resolver;
 pub mod scene_lookup;
+pub mod trace_pptr;
 pub mod unity;
 
 mod typetree_generator_cache;
@@ -144,12 +145,23 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     pub fn load_addressables_bundle_content(
         &self,
         bundle: impl AsRef<Path>,
-    ) -> Result<(SerializedFile, Vec<u8>)> {
+    ) -> Result<SerializedFileHandle<'_, R, P>> {
+        let (archive_name, file, data) = self.load_addressables_bundle_content_leaf(bundle)?;
+        Ok(self.insert_cache(
+            addressables::wrap_archive(&archive_name).into(),
+            file,
+            Data::InMemory(data),
+        ))
+    }
+    fn load_addressables_bundle_content_leaf(
+        &self,
+        bundle: impl AsRef<Path>,
+    ) -> Result<(String, SerializedFile, Vec<u8>)> {
         let bundle = self
             .load_addressables_bundle(bundle.as_ref())
             .with_context(|| format!("Failed to load bundle '{}'", bundle.as_ref().display()))?;
         let mut file = bundle_main_serializedfile(&bundle)?;
-        file.0.m_UnityVersion.get_or_insert(self.unity_version()?);
+        file.1.m_UnityVersion.get_or_insert(self.unity_version()?);
         Ok(file)
     }
 
@@ -169,6 +181,27 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
 
     pub fn addressables_settings(&self) -> Result<Option<&AddressablesSettings>> {
         Ok(self.addressables()?.map(|x| &x.settings))
+    }
+
+    pub fn addressables_bundles(&self) -> impl Iterator<Item = PathBuf> {
+        let build_folder = self.addressables_build_folder().ok().flatten();
+        build_folder
+            .map(|aa| {
+                WalkDir::new(aa)
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .filter_map(|x| {
+                        if x.file_type().is_dir() {
+                            return None;
+                        }
+                        if !x.path().extension().is_some_and(|ext| ext == "bundle") {
+                            return None;
+                        }
+                        Some(x.into_path())
+                    })
+            })
+            .into_iter()
+            .flatten()
     }
 
     pub fn addressables(&self) -> Result<Option<&AddressablesData>> {
@@ -247,16 +280,14 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         self.load_external_file(relative_path.as_ref())
     }
 
-    pub fn load_cached_or_init(
+    fn insert_cache(
         &self,
         path: PathBuf,
-        data: Vec<u8>,
-    ) -> Result<SerializedFileHandle<'_, R, P>> {
-        let serialized = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
-        let file = self
-            .serialized_files
-            .insert(path, Box::new((serialized, Data::InMemory(data))));
-        Ok(SerializedFileHandle::new(self, &file.0, file.1.as_ref()))
+        file: SerializedFile,
+        data: Data,
+    ) -> SerializedFileHandle<'_, R, P> {
+        let file = self.serialized_files.insert(path, Box::new((file, data)));
+        SerializedFileHandle::new(self, &file.0, file.1.as_ref())
     }
 
     fn load_external_file(&self, path_name: &Path) -> Result<SerializedFileHandle<'_, R, P>> {
@@ -394,7 +425,7 @@ fn load_addressables_bundle_inner(
     bundle: &Path,
     unity_version: UnityVersion,
 ) -> Result<BundleFileReader<Cursor<memmap2::Mmap>>> {
-    let file = File::open(&bundle)?;
+    let file = File::open(bundle)?;
     if file.metadata()?.is_dir() {
         bail!(
             "Attempted to load directory '{}' as assetbundle",
@@ -413,18 +444,13 @@ fn load_addressables_bundle_inner(
 
 fn bundle_main_serializedfile<T: AsRef<[u8]>>(
     bundle: &BundleFileReader<Cursor<T>>,
-) -> Result<(SerializedFile, Vec<u8>)> {
-    let file = bundle
+) -> Result<(String, SerializedFile, Vec<u8>)> {
+    let entry = bundle
         .files()
         .iter()
-        .filter(|file| {
-            !file.path.ends_with(".resource")
-                && !file.path.ends_with(".resS")
-                && !file.path.ends_with(".sharedAssets")
-        })
-        .next()
+        .find(|file| (file.flags & 4) != 0 && !file.path.ends_with(".sharedAssets"))
         .context("no non-resource serializedfile in bundle")?;
-    let data = bundle.read_at(&file.path)?.unwrap();
+    let data = bundle.read_at(&entry.path)?.unwrap();
     let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
-    Ok((file, data))
+    Ok((entry.path.clone(), file, data))
 }
