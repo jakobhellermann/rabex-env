@@ -327,6 +327,7 @@ name = "rabex-env"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "byteorder",
  "csv",
  "elsa",
  "indexmap",

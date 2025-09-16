@@ -24,6 +24,7 @@ pub mod game_files;
 pub mod handle;
 pub mod resolver;
 pub mod scene_lookup;
+pub mod trace_pptr;
 pub mod typetree_generator_cache;
 pub mod unity;
 
