@@ -179,6 +179,20 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         let catalog = BinaryCatalog::from_reader(Cursor::new(data))?;
         Ok(Some(catalog))
     }
+    pub fn addressables_bundle_locations(&self) -> Result<Option<Vec<(String, String)>>> {
+        let path = self
+            .resolver
+            .base_dir()
+            .join("StreamingAssets/aa")
+            .join("catalog.bin");
+        if !path.exists() {
+            return Ok(None);
+        }
+        let data = unsafe { Mmap::map(&File::open(path)?)? };
+        let mut reader = addressables::BinaryCatalogReader::new(Cursor::new(data))?;
+        let locations = reader.read_bundle_locations()?;
+        Ok(Some(locations))
+    }
 
     pub fn addressables_build_folder(&self) -> Result<Option<PathBuf>> {
         let Some(settings) = self.addressables_settings()? else {
