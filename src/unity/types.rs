@@ -3,6 +3,7 @@
 mod utils;
 
 use std::borrow::Cow;
+use std::ops::Range;
 use std::path::Path;
 
 use indexmap::IndexMap;
@@ -33,10 +34,12 @@ impl BuildSettings {
     }
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default)]
 pub struct PreloadData {
     pub m_Name: String,
+    // order is irrelevant
     pub m_Assets: Vec<PPtr>,
+    // order is irrelevant
     pub m_Dependencies: Vec<String>,
     pub m_ExplicitDataLayout: bool,
 }
@@ -52,24 +55,95 @@ pub struct AssetBundle {
     pub m_MainAsset: AssetInfo,
     pub m_RuntimeCompatibility: u32,
     pub m_AssetBundleName: String,
+    // order irrelevant
     pub m_Dependencies: Vec<String>,
     pub m_IsStreamedSceneAssetBundle: bool,
     pub m_ExplicitDataLayout: i32,
     pub m_PathFlags: i32,
+    // needs to be specified, value is flexible
     pub m_SceneHashes: IndexMap<String, String>,
 }
 impl ClassIdType for AssetBundle {
     const CLASS_ID: ClassId = ClassId::AssetBundle;
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+impl AssetBundle {
+    /// Create a `AssetBundle` describing a scene asset bundle.
+    /// The iterator specifies the list of scenes (and their scene hash).
+    /// The path must begin with `Assets/` in order to load the scene.
+    pub fn scene<'a>(
+        name: &str,
+        scenes: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) -> AssetBundle {
+        let iter = scenes.into_iter();
+
+        let mut bundle = AssetBundle::scene_base(name);
+        for (path, scene_hash) in iter {
+            bundle.add_scene(path, scene_hash);
+        }
+
+        bundle
+    }
+
+    /// Add a scene to this assetbundle.
+    /// The path must begin with `Assets/` in order to load the scene.
+    /// The scene hash must the same as the `hash` and `hash.sharedAssets` filenames in the bundle
+    #[track_caller]
+    pub fn add_scene(&mut self, path: &str, scene_hash: &str) {
+        debug_assert!(self.m_IsStreamedSceneAssetBundle);
+        self.m_Container
+            .insert(path.to_owned(), AssetInfo::default());
+        self.m_SceneHashes
+            .insert(path.to_owned(), scene_hash.to_owned());
+    }
+
+    pub fn add_preloads<I: IntoIterator<Item = PPtr>>(&mut self, preloads: I) -> Range<usize> {
+        let preload_index = self.m_PreloadTable.len();
+        self.m_PreloadTable.extend(preloads);
+        let preload_index_end = self.m_PreloadTable.len();
+        preload_index..preload_index_end
+    }
+
+    pub fn scene_base(name: &str) -> AssetBundle {
+        AssetBundle {
+            m_Name: name.to_owned(),
+            m_AssetBundleName: name.to_owned(),
+            m_Container: IndexMap::default(),
+            m_IsStreamedSceneAssetBundle: true,
+            // TODO: investigate these
+            m_RuntimeCompatibility: 1,
+            m_ExplicitDataLayout: 1,
+            m_SceneHashes: IndexMap::default(),
+            ..Default::default()
+        }
+    }
+
+    pub fn asset_base(name: &str) -> AssetBundle {
+        AssetBundle {
+            m_Name: name.to_owned(),
+            m_AssetBundleName: name.to_owned(),
+            m_IsStreamedSceneAssetBundle: false,
+            // TODO: investigate these
+            m_RuntimeCompatibility: 1,
+            m_ExplicitDataLayout: 1,
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct AssetInfo {
     pub preloadIndex: i32,
     pub preloadSize: i32,
     pub asset: PPtr,
 }
+impl AssetInfo {
+    pub fn preload_range(&self) -> Range<usize> {
+        self.preloadIndex as usize..(self.preloadIndex + self.preloadSize) as usize
+    }
+}
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Transform {
     pub m_GameObject: TypedPPtr<GameObject>,
     pub m_LocalRotation: (f32, f32, f32, f32),
