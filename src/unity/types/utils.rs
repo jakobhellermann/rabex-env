@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::io::{Read, Seek};
+use std::ops::Range;
 
 use rabex::files::serializedfile::{ObjectRef, Result};
 use rabex::files::{SerializedFile, serializedfile};
@@ -135,6 +136,14 @@ impl AssetInfo {
         AssetInfo {
             preloadIndex: 0,
             preloadSize: 0,
+            asset,
+        }
+    }
+
+    pub fn with_preloads(preloads: Range<usize>, asset: PPtr) -> AssetInfo {
+        AssetInfo {
+            preloadIndex: preloads.start as i32,
+            preloadSize: preloads.len() as i32,
             asset,
         }
     }
