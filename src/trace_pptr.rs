@@ -5,7 +5,7 @@ use rabex::objects::PPtr;
 use rabex::objects::pptr::{FileId, PathId};
 use rabex::typetree::TypeTreeNode;
 use rustc_hash::FxHashMap;
-use std::io::{Cursor, Read, Seek};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 pub fn trace_pptrs_endianned(
     tt: &TypeTreeNode,
@@ -145,7 +145,11 @@ where
 
             return Ok(());
         }
-        "TypelessData" => return Ok(()),
+        "TypelessData" => {
+            let len = reader.read_u32::<B>()?;
+            reader.seek(SeekFrom::Current(len as i64))?;
+            return Ok(());
+        }
         "ReferencedObject" | "ReferencedObjectData" | "ManagedReferencesRegistry" => {
             return Err(std::io::Error::other("ReferencedObject not implemented"));
         }
