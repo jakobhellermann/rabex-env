@@ -297,10 +297,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         SerializedFileHandle::new(self, &file.0, file.1.as_ref())
     }
 
-    pub(crate) fn load_external_file(
-        &self,
-        path_name: &Path,
-    ) -> Result<SerializedFileHandle<'_, R, P>> {
+    pub fn load_external_file(&self, path_name: &Path) -> Result<SerializedFileHandle<'_, R, P>> {
         Ok(match self.serialized_files.get(path_name) {
             Some((file, data)) => SerializedFileHandle {
                 file,
@@ -428,7 +425,7 @@ fn load_addressables_bundle_inner(
     Ok(bundle)
 }
 
-fn bundle_main_serializedfile<T: AsRef<[u8]>>(
+pub fn bundle_main_serializedfile<T: AsRef<[u8]>>(
     bundle: &BundleFileReader<Cursor<T>>,
 ) -> Result<(String, SerializedFile, Vec<u8>)> {
     let entry = bundle
