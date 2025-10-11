@@ -183,6 +183,27 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         Ok(self.addressables()?.map(|x| &x.settings))
     }
 
+    pub fn addressables_bundles(&self) -> impl Iterator<Item = PathBuf> {
+        let build_folder = self.addressables_build_folder().ok().flatten();
+        build_folder
+            .map(|aa| {
+                WalkDir::new(aa)
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .filter_map(|x| {
+                        if x.file_type().is_dir() {
+                            return None;
+                        }
+                        if !x.path().extension().is_some_and(|ext| ext == "bundle") {
+                            return None;
+                        }
+                        Some(x.into_path())
+                    })
+            })
+            .into_iter()
+            .flatten()
+    }
+
     pub fn addressables(&self) -> Result<Option<&AddressablesData>> {
         match self.addressables.get() {
             Some(addressables) => Ok(addressables.as_ref()),
