@@ -82,6 +82,21 @@ impl ClassIdType for Transform {
     const CLASS_ID: ClassId = ClassId::Transform;
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RectTransform {
+    pub m_GameObject: TypedPPtr<GameObject>,
+    pub m_LocalRotation: (f32, f32, f32, f32),
+    pub m_LocalPosition: (f32, f32, f32),
+    pub m_LocalScale: (f32, f32, f32),
+    pub m_Children: Vec<TypedPPtr<Transform>>,
+    pub m_Father: TypedPPtr<Transform>,
+    pub m_AnchorMin: (f32, f32),
+    pub m_AnchorMax: (f32, f32),
+    pub m_AnchoredPosition: (f32, f32),
+    pub m_SizeDelta: (f32, f32),
+    pub m_Pivot: (f32, f32),
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameObject {
     pub m_Component: Vec<ComponentPair>,
@@ -168,4 +183,10 @@ pub struct TextAsset {
 }
 impl ClassIdType for TextAsset {
     const CLASS_ID: ClassId = ClassId::TextAsset;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MeshFilter {
+    pub m_GameObject: TypedPPtr<GameObject>,
+    pub m_Mesh: TypedPPtr<()>,
 }
