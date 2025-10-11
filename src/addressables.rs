@@ -42,9 +42,10 @@ pub fn wrap_archive(cab: &str) -> String {
 }
 pub fn unwrap_archive(path: &Path) -> Option<&str> {
     let path = path.strip_prefix("archive:").ok()?;
+
     let mut parts = path.iter();
     let first = parts.next()?.to_str()?;
-    let second = parts.next()?.to_str()?;
+    let second = parts.next()?.to_str()?.trim_end_matches(".sharedAssets"); // TODO: necessary? or not
     if first != second {
         return None;
     }
