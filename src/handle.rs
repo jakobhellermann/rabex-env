@@ -1,3 +1,4 @@
+use std::collections::{BTreeSet, VecDeque};
 use std::fmt::Display;
 use std::io::Cursor;
 use std::path::Path;
@@ -34,8 +35,7 @@ impl<'a, T, R, P> std::fmt::Debug for ObjectRefHandle<'a, T, R, P> {
             .finish()
     }
 }
-
-impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
+impl<'a, R, P> SerializedFileHandle<'a, R, P> {
     pub fn reborrow(&self) -> SerializedFileHandle<'a, R, P> {
         SerializedFileHandle {
             file: self.file,
@@ -51,7 +51,9 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
     pub fn reader(&self) -> Cursor<&'a [u8]> {
         Cursor::new(self.data)
     }
+}
 
+impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
     pub fn object_at<T>(&self, path_id: PathId) -> Result<ObjectRefHandle<'a, T, R, P>> {
         let object = self.file.get_object(path_id, &self.env.tpk)?;
         Ok(ObjectRefHandle::new(object, self.reborrow()))
@@ -203,6 +205,26 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         let data = self.object.read(&mut self.file.reader())?;
         Ok(data)
     }
+
+    pub fn reachable(&self) -> Result<(BTreeSet<PathId>, BTreeSet<PPtr>)> {
+        let reachable = crate::reachable::reachable(
+            self.file.env,
+            self.file.file,
+            &mut self.file.reader(),
+            VecDeque::from_iter(std::iter::once(self.path_id())),
+        )?;
+        Ok(reachable)
+    }
+
+    pub fn reachable_one(&self) -> Result<Vec<PPtr>> {
+        let reachable = crate::reachable::reachable_one(
+            self.file.env,
+            self.file.file,
+            self.path_id(),
+            &mut self.file.reader(),
+        )?;
+        Ok(reachable)
+    }
 }
 
 impl<'a, T, R, P> ObjectRefHandle<'a, T, R, P> {
@@ -212,6 +234,10 @@ impl<'a, T, R, P> ObjectRefHandle<'a, T, R, P> {
 
     pub fn class_id(&self) -> ClassId {
         self.object.info.m_ClassID
+    }
+
+    pub fn object_reader(&self) -> Cursor<&'a [u8]> {
+        Cursor::new(&self.file.data[self.object.info.m_Offset as usize..])
     }
 }
 impl<'a, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObject, R, P> {
