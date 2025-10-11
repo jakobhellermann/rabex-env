@@ -60,7 +60,10 @@ impl TypeTreeGeneratorCache {
         }
     }
 
-    pub fn can_generate(&self) -> bool {
+    pub fn should_generate(&self) -> bool {
+        self.is_available() && false // TODO
+    }
+    pub fn is_available(&self) -> bool {
         self.generator.is_some() || !self.cache.is_empty()
     }
 }

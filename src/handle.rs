@@ -194,7 +194,7 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         T: for<'de> Deserialize<'de>,
     {
         if self.object.info.m_ClassID == ClassId::MonoBehaviour
-            && self.file.env.typetree_generator.can_generate()
+            && self.file.env.typetree_generator.should_generate()
             && let Ok(tt) = &self.object.tt
             && tt.m_Type == "MonoBehaviour"
         {
