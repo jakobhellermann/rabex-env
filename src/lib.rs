@@ -24,9 +24,8 @@ pub mod game_files;
 pub mod handle;
 pub mod resolver;
 pub mod scene_lookup;
+pub mod typetree_generator_cache;
 pub mod unity;
-
-mod typetree_generator_cache;
 
 pub use resolver::EnvResolver;
 use rustc_hash::FxHashMap;
