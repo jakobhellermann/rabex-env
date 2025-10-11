@@ -144,12 +144,24 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     pub fn load_addressables_bundle_content(
         &self,
         bundle: impl AsRef<Path>,
-    ) -> Result<(SerializedFile, Vec<u8>)> {
+    ) -> Result<SerializedFileHandle<'_, R, P>> {
+        let (archive_name, file, data) = self.load_addressables_bundle_content_leaf(bundle)?;
+        Ok(self.insert_cache(
+            addressables::wrap_archive(&archive_name).into(),
+            file,
+            Data::InMemory(data),
+        ))
+    }
+
+    pub fn load_addressables_bundle_content_leaf(
+        &self,
+        bundle: impl AsRef<Path>,
+    ) -> Result<(String, SerializedFile, Vec<u8>)> {
         let bundle = self
             .load_addressables_bundle(bundle.as_ref())
             .with_context(|| format!("Failed to load bundle '{}'", bundle.as_ref().display()))?;
         let mut file = bundle_main_serializedfile(&bundle)?;
-        file.0.m_UnityVersion.get_or_insert(self.unity_version()?);
+        file.1.m_UnityVersion.get_or_insert(self.unity_version()?);
         Ok(file)
     }
 
@@ -247,16 +259,14 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         self.load_external_file(relative_path.as_ref())
     }
 
-    pub fn load_cached_or_init(
+    fn insert_cache(
         &self,
         path: PathBuf,
-        data: Vec<u8>,
-    ) -> Result<SerializedFileHandle<'_, R, P>> {
-        let serialized = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
-        let file = self
-            .serialized_files
-            .insert(path, Box::new((serialized, Data::InMemory(data))));
-        Ok(SerializedFileHandle::new(self, &file.0, file.1.as_ref()))
+        file: SerializedFile,
+        data: Data,
+    ) -> SerializedFileHandle<'_, R, P> {
+        let file = self.serialized_files.insert(path, Box::new((file, data)));
+        SerializedFileHandle::new(self, &file.0, file.1.as_ref())
     }
 
     fn load_external_file(&self, path_name: &Path) -> Result<SerializedFileHandle<'_, R, P>> {
@@ -394,7 +404,7 @@ fn load_addressables_bundle_inner(
     bundle: &Path,
     unity_version: UnityVersion,
 ) -> Result<BundleFileReader<Cursor<memmap2::Mmap>>> {
-    let file = File::open(&bundle)?;
+    let file = File::open(bundle)?;
     if file.metadata()?.is_dir() {
         bail!(
             "Attempted to load directory '{}' as assetbundle",
@@ -413,18 +423,13 @@ fn load_addressables_bundle_inner(
 
 fn bundle_main_serializedfile<T: AsRef<[u8]>>(
     bundle: &BundleFileReader<Cursor<T>>,
-) -> Result<(SerializedFile, Vec<u8>)> {
-    let file = bundle
+) -> Result<(String, SerializedFile, Vec<u8>)> {
+    let entry = bundle
         .files()
         .iter()
-        .filter(|file| {
-            !file.path.ends_with(".resource")
-                && !file.path.ends_with(".resS")
-                && !file.path.ends_with(".sharedAssets")
-        })
-        .next()
+        .find(|file| (file.flags & 4) != 0 && !file.path.ends_with(".sharedAssets"))
         .context("no non-resource serializedfile in bundle")?;
-    let data = bundle.read_at(&file.path)?.unwrap();
+    let data = bundle.read_at(&entry.path)?.unwrap();
     let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
-    Ok((file, data))
+    Ok((entry.path.clone(), file, data))
 }
