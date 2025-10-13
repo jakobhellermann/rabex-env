@@ -307,7 +307,7 @@ dependencies = [
 [[package]]
 name = "rabex"
 version = "0.0.3"
-source = "git+https://github.com/jakobhellermann/RustyAssetBundleEXtractor?branch=all#a735a6d438243a62d3713e87c2891a5d38881457"
+source = "git+https://github.com/jakobhellermann/RustyAssetBundleEXtractor?branch=all#1644890053a106e7bc9b3f64c14bb274e8cfc220"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -496,7 +496,7 @@ checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 [[package]]
 name = "typetree-generator-api"
 version = "1.0.0"
-source = "git+https://github.com/jakobhellermann/typetree-generator-api-bindings#97147a20209fb11915897c716bf230c02becbad5"
+source = "git+https://github.com/jakobhellermann/typetree-generator-api-bindings#a994c3eeaaddcd78abbee9a72e01c9f1d6f63260"
 dependencies = [
  "libloading",
  "rabex",

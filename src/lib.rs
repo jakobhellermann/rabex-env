@@ -161,7 +161,9 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
             .load_addressables_bundle(bundle.as_ref())
             .with_context(|| format!("Failed to load bundle '{}'", bundle.as_ref().display()))?;
         let mut file = bundle_main_serializedfile(&bundle)?;
-        file.1.m_UnityVersion.get_or_insert(self.unity_version()?);
+        file.1
+            .m_UnityVersion
+            .get_or_insert(self.unity_version()?.clone());
         Ok(file)
     }
 
@@ -236,17 +238,18 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
 }
 
 impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
-    pub fn unity_version(&self) -> Result<UnityVersion> {
+    pub fn unity_version(&self) -> Result<&UnityVersion> {
         match self.unity_version.get() {
-            Some(unity_version) => Ok(*unity_version),
+            Some(unity_version) => Ok(unity_version),
             None => {
                 let ggm = self.load_cached("globalgamemanagers")?;
                 let unity_version = ggm
                     .file
                     .m_UnityVersion
+                    .clone()
                     .context("missing unity version in globalgamemanagers")?;
                 let _ = self.unity_version.set(unity_version);
-                Ok(unity_version)
+                Ok(self.unity_version.get().unwrap())
             }
         }
     }
@@ -313,7 +316,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
                         SerializedFile::from_reader(&mut Cursor::new(cab_data.as_slice()))?;
                     serialized
                         .m_UnityVersion
-                        .get_or_insert(self.unity_version()?);
+                        .get_or_insert(self.unity_version()?.clone());
                     let file = self.serialized_files.insert(
                         path_name.to_owned(),
                         Box::new((serialized, Data::InMemory(cab_data))),
@@ -397,7 +400,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
 
 fn addressables_bundle_lookup(
     aa_build: &Path,
-    unity_version: UnityVersion,
+    unity_version: &UnityVersion,
 ) -> Result<(FxHashMap<String, PathBuf>, FxHashMap<PathBuf, Vec<String>>)> {
     let mut cab_to_bundle = FxHashMap::default();
     let mut bundle_to_cab = FxHashMap::default();
@@ -423,7 +426,7 @@ fn addressables_bundle_lookup(
 
 fn load_addressables_bundle_inner(
     bundle: &Path,
-    unity_version: UnityVersion,
+    unity_version: &UnityVersion,
 ) -> Result<BundleFileReader<Cursor<memmap2::Mmap>>> {
     let file = File::open(bundle)?;
     if file.metadata()?.is_dir() {
@@ -436,7 +439,7 @@ fn load_addressables_bundle_inner(
 
     let bundle = BundleFileReader::from_reader(
         Cursor::new(data),
-        &ExtractionConfig::new(None, Some(unity_version)),
+        &ExtractionConfig::new(None, Some(unity_version.clone())),
     )?;
 
     Ok(bundle)
