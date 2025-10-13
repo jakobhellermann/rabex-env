@@ -30,4 +30,4 @@ serde_repr = "0.1"
 steamlocate = "2.0"
 
 # [patch."https://github.com/jakobhellermann/RustyAssetBundleEXtractor"]
-# rabex = { path = "/home/jakob/dev/unity/RustyAssetBundleEXtractor" }
+# rabex = { path = "../RustyAssetBundleEXtractor" }

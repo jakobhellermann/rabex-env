@@ -348,10 +348,10 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     where
         T: serde::Deserialize<'de>,
     {
-        Ok(match pptr.m_FileID {
-            0 => pptr.deref_local(file, &self.tpk)?.read(reader)?,
-            file_id => {
-                let external_info = &file.m_Externals[file_id as usize - 1];
+        Ok(match pptr.m_FileID.get_externals_index() {
+            None => pptr.deref_local(file, &self.tpk)?.read(reader)?,
+            Some(external_index) => {
+                let external_info = &file.m_Externals[external_index];
                 let external = self
                     .load_external_file(Path::new(&external_info.pathName))
                     .with_context(|| {
@@ -361,7 +361,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
                     .make_local()
                     .deref_local(external.file, &self.tpk)
                     .with_context(|| {
-                        format!("In external {} {}", file_id, external_info.pathName)
+                        format!("In external {} {}", pptr.m_FileID, external_info.pathName)
                     })?;
                 object.read(&mut Cursor::new(external.data))?
             }

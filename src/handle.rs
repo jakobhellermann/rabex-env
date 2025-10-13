@@ -171,25 +171,20 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
         &self,
         pptr: TypedPPtr<T>,
     ) -> Result<ObjectRefHandle<'a, T, R, P>> {
-        Ok(match pptr.m_FileID {
-            0 => {
+        Ok(match pptr.m_FileID.get_external(&self.file) {
+            None => {
                 let object = pptr.deref_local(self.file, &self.env.tpk)?;
                 ObjectRefHandle::new(object, self.reborrow())
             }
-            file_id => {
-                let external_info = &self.file.m_Externals[file_id as usize - 1];
+            Some(external_path) => {
                 let external = self
                     .env
-                    .load_external_file(Path::new(&external_info.pathName))
-                    .with_context(|| {
-                        format!("failed to load external file '{}'", external_info.pathName)
-                    })?;
+                    .load_external_file(Path::new(&external_path))
+                    .with_context(|| format!("failed to load external file '{}'", external_path))?;
                 let object = pptr
                     .make_local()
                     .deref_local(external.file, &self.env.tpk)
-                    .with_context(|| {
-                        format!("In external {} {}", file_id, external_info.pathName)
-                    })?;
+                    .with_context(|| format!("In external {} {}", pptr.m_FileID, external_path))?;
                 ObjectRefHandle::new(object, external)
             }
         })

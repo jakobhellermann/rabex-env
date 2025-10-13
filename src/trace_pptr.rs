@@ -33,7 +33,7 @@ pub fn trace_pptrs<B: ByteOrder>(
             }
 
             let pptr = PPtr {
-                m_FileID: file_id,
+                m_FileID: file_id.into(),
                 m_PathID: path_id,
             };
             if !pptr.is_null() {
@@ -76,18 +76,18 @@ pub fn replace_pptrs_inplace<B: ByteOrder>(
         if tt.m_Type.starts_with("PPtr<") {
             let pos = reader.position() as usize;
 
-            let file_id = reader.read_i32::<B>()?;
+            let file_id = FileId::from(reader.read_i32::<B>()?);
             let path_id = reader.read_i64::<B>()?;
             if tt.requires_align() {
                 reader.align4()?;
             }
 
-            if file_id == 0 {
+            if file_id.is_local() {
                 if let Some(&replacement) = path_id_remap.get(&path_id) {
                     B::write_i64(&mut reader.get_mut()[pos + 4..], replacement);
                 }
             } else if let Some(&replacement) = file_id_remap.get(&file_id) {
-                B::write_i32(&mut reader.get_mut()[pos..], replacement);
+                B::write_i32(&mut reader.get_mut()[pos..], replacement.value());
             }
 
             Ok(true)
@@ -147,9 +147,7 @@ where
         }
         "TypelessData" => return Ok(()),
         "ReferencedObject" | "ReferencedObjectData" | "ManagedReferencesRegistry" => {
-            return Err(std::io::Error::other(
-                "ReferencedObject not implemented",
-            ));
+            return Err(std::io::Error::other("ReferencedObject not implemented"));
         }
         _ => {
             if let [child] = tt.children.as_slice()
