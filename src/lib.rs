@@ -34,6 +34,7 @@ use typetree_generator_api::{GeneratorBackend, TypeTreeGenerator};
 use walkdir::WalkDir;
 
 use crate::addressables::AddressablesSettings;
+use crate::addressables::ArchivePath;
 use crate::handle::SerializedFileHandle;
 use crate::resolver::BasedirEnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
@@ -148,11 +149,8 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         bundle: impl AsRef<Path>,
     ) -> Result<SerializedFileHandle<'_, R, P>> {
         let (archive_name, file, data) = self.load_addressables_bundle_content_leaf(bundle)?;
-        Ok(self.insert_cache(
-            addressables::wrap_archive(&archive_name).into(),
-            file,
-            Data::InMemory(data),
-        ))
+        let archive_path = ArchivePath::same(&archive_name);
+        Ok(self.insert_cache(archive_path.to_string().into(), file, Data::InMemory(data)))
     }
 
     pub fn load_addressables_bundle_content_leaf(
@@ -303,16 +301,18 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
                 env: self,
             },
             None => {
-                if let Some(cab) = addressables::unwrap_archive(path_name) {
+                if let Some(cab) = ArchivePath::try_parse(path_name)? {
                     let aa = self.addressables()?.context(
                         "Can't use archive:/ external files without addressables in the game",
                     )?;
                     let cab_bundle = aa
                         .cab_to_bundle
-                        .get(cab)
+                        .get(cab.bundle)
                         .with_context(|| format!("CAB {} doesn't exist", cab))?;
                     let bundle = self.load_addressables_bundle(cab_bundle)?;
-                    let cab_data = bundle.read_at(cab)?.expect("cab unexpectedly not present");
+                    let cab_data = bundle
+                        .read_at(cab.file)?
+                        .expect("cab unexpectedly not present");
 
                     let mut serialized =
                         SerializedFile::from_reader(&mut Cursor::new(cab_data.as_slice()))?;

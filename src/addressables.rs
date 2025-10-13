@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde_derive::Deserialize;
 
@@ -36,18 +36,60 @@ pub struct AssemblyClass {
 }
 
 // archive:/CAB-asdf/CAB-asdf
-
-pub fn wrap_archive(cab: &str) -> String {
-    format!("archive:/{cab}/{cab}")
+// archive:/CAB-asdf/CAB-asdf.sharedAssets
+#[derive(Debug, Clone, Copy)]
+pub struct ArchivePath<'a> {
+    pub bundle: &'a str,
+    pub file: &'a str,
 }
-pub fn unwrap_archive(path: &Path) -> Option<&str> {
-    let path = path.strip_prefix("archive:").ok()?;
-
-    let mut parts = path.iter();
-    let first = parts.next()?.to_str()?;
-    let second = parts.next()?.to_str()?.trim_end_matches(".sharedAssets"); // TODO: necessary? or not
-    if first != second {
-        return None;
+impl std::fmt::Display for ArchivePath<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "archive:/{}/{}", self.bundle, self.file)
     }
-    Some(second)
 }
+impl From<ArchivePath<'_>> for PathBuf {
+    fn from(value: ArchivePath<'_>) -> Self {
+        PathBuf::from(value.to_string())
+    }
+}
+
+impl<'a> ArchivePath<'a> {
+    pub fn new(bundle: &'a str, file: &'a str) -> Self {
+        ArchivePath { bundle, file }
+    }
+
+    pub fn same(path: &'a str) -> Self {
+        ArchivePath {
+            bundle: path,
+            file: path,
+        }
+    }
+
+    /// Attempts to parse a path as `archive:/bundle/file`.
+    /// Returns `None` if it doesn't match the format.
+    pub fn try_parse(path: &Path) -> Result<Option<ArchivePath<'_>>, InvalidArchivePath> {
+        fn parse_inner(inner: &Path) -> Option<ArchivePath<'_>> {
+            let mut parts = inner.iter();
+            let bundle = parts.next()?.to_str()?;
+            let file = parts.next()?.to_str()?;
+            Some(ArchivePath { bundle, file })
+        }
+
+        let Ok(inner) = path.strip_prefix("archive:") else {
+            return Ok(None);
+        };
+
+        let value =
+            parse_inner(inner).ok_or_else(|| InvalidArchivePath(inner.display().to_string()))?;
+        Ok(Some(value))
+    }
+}
+
+#[derive(Debug)]
+pub struct InvalidArchivePath(String);
+impl std::fmt::Display for InvalidArchivePath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Invalid archive path: `{}`", self.0)
+    }
+}
+impl std::error::Error for InvalidArchivePath {}
