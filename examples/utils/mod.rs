@@ -25,32 +25,45 @@ pub fn for_each_steam_game(mut f: impl FnMut(Environment) -> Result<()>) -> Resu
     Ok(())
 }
 
-pub fn find_game(name: &str) -> Result<Option<Environment>> {
-    let name_filter = name.to_lowercase();
+fn search_transform(input: &str) -> String {
+    input.to_ascii_lowercase().replace(char::is_whitespace, "")
+}
+
+pub fn find_game(name_filter: &str) -> Result<Option<Environment>> {
+    let name_filter = search_transform(&name_filter);
 
     let steam = steamlocate::SteamDir::locate()?;
+
+    let mut candidates = Vec::new();
+
     for lib in steam.libraries()? {
         let lib = lib?;
         for app in lib.apps() {
             let app = app?;
-            let path = lib.resolve_app_dir(&app);
 
-            let Ok(game_files) = GameFiles::probe(path) else {
-                continue;
-            };
+            let name = app.name.as_ref().unwrap_or(&app.install_dir);
+            let name = search_transform(name);
 
-            if app
-                .name
-                .as_deref()
-                .unwrap_or_default()
-                .to_lowercase()
-                .contains(&name_filter)
-            {
-                let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
-                let env = Environment::new(game_files, tpk);
-                return Ok(Some(env));
+            let matches = name.contains(&name_filter);
+
+            if matches {
+                let score = name.len() - name_filter.len();
+                let path = lib.resolve_app_dir(&app);
+                candidates.push((path, score));
             }
         }
     }
-    Ok(None)
+
+    candidates.sort_by_key(|&(_, score)| score);
+    let path = match candidates.as_slice() {
+        [(best, _), ..] => best,
+        _ => return Ok(None),
+    };
+
+    let game_files = GameFiles::probe(path)?;
+
+    let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+    let env = Environment::new(game_files, tpk);
+
+    Ok(Some(env))
 }
