@@ -1,5 +1,5 @@
 use crate::unity::types::Transform;
-use anyhow::Result;
+use anyhow::{Result, bail};
 use rabex::files::SerializedFile;
 use rabex::objects::pptr::PathId;
 use rabex::typetree::TypeTreeProvider;
@@ -40,9 +40,11 @@ impl<'a, P: TypeTreeProvider> SceneLookup<'a, P> {
             roots.push((transform_obj.info.m_PathID, transform));
 
             match roots_lookup.entry(go.m_Name) {
-                Entry::Occupied(mut occupied_entry) => match occupied_entry.get_mut() {
-                    RootLookup::Ambiguous(items) => items.push(index),
-                    other => *other = RootLookup::Ambiguous(vec![index]),
+                Entry::Occupied(mut occupied_entry) => match *occupied_entry.get_mut() {
+                    RootLookup::Ambiguous(ref mut items) => items.push(index),
+                    ref mut other @ RootLookup::Root(old_index) => {
+                        *other = RootLookup::Ambiguous(vec![old_index, index])
+                    }
                 },
                 Entry::Vacant(entry) => drop(entry.insert(RootLookup::Root(index))),
             }
@@ -72,7 +74,10 @@ impl<'a, P: TypeTreeProvider> SceneLookup<'a, P> {
             return Ok(None);
         };
         let root = match self.roots_lookup.get(root_name) {
-            Some(RootLookup::Ambiguous(_)) => todo!(),
+            Some(RootLookup::Ambiguous(ambiguous)) => bail!(
+                "Found {} root objects with the name '{root_name}' (looking for '{path}')",
+                ambiguous.len()
+            ),
             Some(RootLookup::Root(index)) => &self.roots[*index],
             None => return Ok(None),
         };
