@@ -21,7 +21,7 @@ fn main() -> Result<()> {
         let file = env.load_addressables_bundle_content(&bundle)?;
 
         let mut counts = FxHashMap::<String, usize>::default();
-        for mb in file.objects_of::<MonoBehaviour>()? {
+        for mb in file.objects_of::<MonoBehaviour>() {
             let Some(script) = mb.mono_script()? else {
                 continue;
             };

@@ -58,51 +58,38 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
     }
 
     pub fn find_object_of<T: ClassIdType + for<'de> Deserialize<'de>>(&self) -> Result<Option<T>> {
-        let Some(data) = self.file.find_object_of::<T>(&self.env.tpk)? else {
+        let Some(data) = self.file.find_object_of::<T>(&self.env.tpk) else {
             return Ok(None);
         };
         Ok(Some(data.read(&mut self.reader())?))
     }
 
-    pub fn objects<T>(
-        &self,
-    ) -> impl ExactSizeIterator<Item = Result<ObjectRefHandle<'a, T, R, P>>> {
+    pub fn objects<T>(&self) -> impl ExactSizeIterator<Item = ObjectRefHandle<'a, T, R, P>> {
         self.file.objects().map(|o| {
-            let tt = self.file.get_typetree_for(o, &self.env.tpk)?;
-            Ok(ObjectRefHandle::new(
-                ObjectRef::new(self.file, o, tt),
-                self.reborrow(),
-            ))
+            let tt = self.file.get_typetree_for(o, &self.env.tpk);
+            ObjectRefHandle::new(ObjectRef::new(self.file, o, tt), self.reborrow())
         })
     }
 
-    pub fn objects_of<T>(&self) -> Result<impl Iterator<Item = ObjectRefHandle<'a, T, R, P>>>
+    pub fn objects_of<T>(&self) -> impl Iterator<Item = ObjectRefHandle<'a, T, R, P>>
     where
         T: ClassIdType,
     {
-        let iter = self.file.objects_of::<T>(&self.env.tpk)?;
-        Ok(iter.map(|o| ObjectRefHandle::new(o, self.reborrow())))
+        let iter = self.file.objects_of::<T>(&self.env.tpk);
+        iter.map(|o| ObjectRefHandle::new(o, self.reborrow()))
     }
 
     /// Returns `Transform`s and `RectTransform`s
-    pub fn transforms(&self) -> Result<impl Iterator<Item = ObjectRefHandle<'a, Transform, R, P>>> {
-        let tt = self
-            .env
-            .tpk
-            .get_typetree_node(Transform::CLASS_ID, self.env.unity_version()?)
-            .ok_or(rabex::files::serializedfile::Error::NoTypetree(
-                Transform::CLASS_ID,
-            ))?;
-
-        Ok(self
-            .file
+    pub fn transforms(&self) -> impl Iterator<Item = ObjectRefHandle<'a, Transform, R, P>> {
+        self.file
             .objects()
             .filter(|obj| {
                 obj.m_ClassID == ClassId::Transform || obj.m_ClassID == ClassId::RectTransform
             })
             .map(move |o| {
-                ObjectRefHandle::new(ObjectRef::new(self.file, o, tt.clone()), self.reborrow())
-            }))
+                let tt = self.file.get_typetree_for(o, &self.env.tpk);
+                ObjectRefHandle::new(ObjectRef::new(self.file, o, tt), self.reborrow())
+            })
     }
 
     pub fn scripts<T>(
@@ -145,7 +132,7 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
         };
 
         Ok(self
-            .objects_of::<MonoBehaviour>()?
+            .objects_of::<MonoBehaviour>()
             .filter(move |mb| self.file.script_type(mb.object.info) == Some(script))
             .map(|mb| mb.cast_owned::<T>()))
     }
@@ -206,7 +193,8 @@ impl<'a, T, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R
     {
         if self.object.info.m_ClassID == ClassId::MonoBehaviour
             && self.file.env.typetree_generator.can_generate()
-            && self.object.tt.m_Type == "MonoBehaviour"
+            && let Ok(tt) = &self.object.tt
+            && tt.m_Type == "MonoBehaviour"
         {
             let with_tt = self.load_typetree()?;
             return Ok(with_tt.object.read(&mut self.file.reader())?);

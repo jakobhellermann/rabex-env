@@ -37,7 +37,7 @@ fn main() -> Result<()> {
                 UnityFile::Bundle(bundle) => env.load_addressables_bundle_content(bundle)?,
                 UnityFile::SerializedFile(path) => env.load_cached(&path)?,
             };
-            for mb in file.objects_of::<MonoBehaviour>()? {
+            for mb in file.objects_of::<MonoBehaviour>() {
                 let Some(script) = mb.mono_script()? else {
                     continue;
                 };

@@ -20,7 +20,7 @@ fn main() -> Result<()> {
                 let file = SerializedFileHandle::new(&env, &file, data.as_ref());
 
                 let entry = scripts.entry(path.to_owned()).or_default();
-                for script in file.objects_of::<MonoScript>()? {
+                for script in file.objects_of::<MonoScript>() {
                     let script = script.read()?;
                     entry.insert(script.full_name().into_owned());
                 }

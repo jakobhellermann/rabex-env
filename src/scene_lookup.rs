@@ -25,7 +25,7 @@ impl<'a, P: TypeTreeProvider> SceneLookup<'a, P> {
         let mut roots = Vec::new();
         let mut roots_lookup = HashMap::new();
 
-        for transform_obj in file.objects_of::<Transform>(&tpk)? {
+        for transform_obj in file.objects_of::<Transform>(&tpk) {
             let transform = transform_obj.read(reader)?;
             if transform.m_Father.optional().is_some() {
                 continue;

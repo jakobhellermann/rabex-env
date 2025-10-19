@@ -48,8 +48,6 @@ fn main() -> Result<()> {
 
             let mut unreachable = BTreeMap::<_, usize>::default();
             for obj in cx.file.objects::<()>() {
-                let obj = obj?;
-
                 if !cx.reachable.contains(&obj.path_id()) {
                     if SCENE_SINGLETON_OBJECTS.contains(&obj.class_id()) {
                         continue;
