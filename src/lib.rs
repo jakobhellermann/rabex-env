@@ -283,7 +283,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         self.load_external_file(relative_path.as_ref())
     }
 
-    fn insert_cache(
+    pub fn insert_cache(
         &self,
         path: PathBuf,
         file: SerializedFile,

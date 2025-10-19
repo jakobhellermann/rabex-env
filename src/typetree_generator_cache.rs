@@ -34,6 +34,16 @@ impl TypeTreeGeneratorCache {
         }
     }
 
+    pub fn insert_cache<'a>(
+        &'a self,
+        assembly_name: &str,
+        full_name: &str,
+        ty: TypeTreeNode,
+    ) -> &'a TypeTreeNode {
+        let key = (assembly_name.to_owned(), full_name.to_owned());
+        self.cache.insert(key, Box::new(ty))
+    }
+
     pub fn generate(&self, assembly_name: &str, full_name: &str) -> Result<&TypeTreeNode> {
         let key = (assembly_name.to_owned(), full_name.to_owned());
         match self.cache.get(&key) {
