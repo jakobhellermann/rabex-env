@@ -40,6 +40,8 @@ use crate::typetree_generator_cache::TypeTreeGeneratorCache;
 use crate::unity::types::{BuildSettings, MonoBehaviour, MonoScript, ResourceManager};
 use game_files::GameFiles;
 
+pub use typetree_generator_api;
+
 pub enum Data {
     InMemory(Vec<u8>),
     Mmap(memmap2::Mmap),
