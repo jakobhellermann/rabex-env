@@ -7,9 +7,8 @@ use anyhow::{Result, bail, ensure};
 use memmap2::Mmap;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 
-use crate::resolver::BasedirEnvResolver;
-
-use super::{Data, EnvResolver};
+use crate::env::Data;
+use crate::resolver::{BasedirEnvResolver, EnvResolver};
 
 pub struct GameFiles {
     pub game_dir: PathBuf,

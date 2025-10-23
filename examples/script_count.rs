@@ -1,10 +1,11 @@
 #![feature(super_let)]
 mod utils;
 
-use std::{cmp::Reverse, collections::BTreeMap};
+use std::cmp::Reverse;
+use std::collections::BTreeMap;
 
 use anyhow::Result;
-use rabex_env::EnvResolver as _;
+use rabex_env::resolver::EnvResolver as _;
 use rabex_env::unity::types::MonoBehaviour;
 use rabex_env::utils::par_fold_reduce;
 

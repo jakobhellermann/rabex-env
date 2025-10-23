@@ -158,7 +158,7 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
         &self,
         pptr: TypedPPtr<T>,
     ) -> Result<ObjectRefHandle<'a, T, R, P>> {
-        Ok(match pptr.m_FileID.get_external(&self.file) {
+        Ok(match pptr.m_FileID.get_external(self.file) {
             None => {
                 let object = pptr.deref_local(self.file, &self.env.tpk)?;
                 ObjectRefHandle::new(object, self.reborrow())

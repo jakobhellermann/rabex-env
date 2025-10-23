@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use rabex::files::bundlefile::BundleFileReader;
 
-use super::Data;
+use super::env::Data;
 
 /// A trait abstracting where the game files are read from.
 pub trait EnvResolver {

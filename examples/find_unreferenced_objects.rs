@@ -3,13 +3,12 @@ mod utils;
 use std::collections::{BTreeMap, HashSet};
 
 use anyhow::Result;
-use rabex::objects::{ClassId, pptr::PathId};
-use rabex_env::{
-    handle::SerializedFileHandle,
-    scene_lookup::SceneLookup,
-    unity::types::{MeshFilter, Transform},
-    utils::seq_fold_reduce,
-};
+use rabex::objects::ClassId;
+use rabex::objects::pptr::PathId;
+use rabex_env::handle::SerializedFileHandle;
+use rabex_env::scene_lookup::SceneLookup;
+use rabex_env::unity::types::{MeshFilter, Transform};
+use rabex_env::utils::seq_fold_reduce;
 use rustc_hash::FxHashSet;
 
 const SCENE_SINGLETON_OBJECTS: &[ClassId] = &[
