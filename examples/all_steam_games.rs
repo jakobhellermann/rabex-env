@@ -14,7 +14,7 @@ fn main() -> Result<()> {
         println!("-- {name} --");
 
         let scripts = par_fold_reduce::<BTreeMap<String, HashSet<String>>, _>(
-            env.resolver.serialized_files()?,
+            env.game_files.serialized_files()?,
             |scripts, path| {
                 let path = path.to_str().unwrap();
                 let (file, data) = env.load_leaf(&path)?;

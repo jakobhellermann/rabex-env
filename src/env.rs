@@ -39,7 +39,7 @@ impl AsRef<[u8]> for Data {
 }
 
 pub struct Environment<R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
-    pub resolver: R,
+    pub game_files: R,
     pub tpk: P,
     pub typetree_generator: TypeTreeGeneratorCache,
     serialized_files: FrozenMap<PathBuf, Box<(SerializedFile, Data)>>,
@@ -50,7 +50,7 @@ pub struct Environment<R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
 impl<R, P> Environment<R, P> {
     pub fn new(resolver: R, tpk: P) -> Self {
         Environment {
-            resolver,
+            game_files: resolver,
             tpk,
             serialized_files: Default::default(),
             typetree_generator: TypeTreeGeneratorCache::empty(),
@@ -63,7 +63,7 @@ impl<R, P> Environment<R, P> {
 impl<P: TypeTreeProvider> Environment<GameFiles, P> {
     pub fn new_in(path: impl AsRef<Path>, tpk: P) -> Result<Self> {
         Ok(Environment {
-            resolver: GameFiles::probe(path.as_ref())?,
+            game_files: GameFiles::probe(path.as_ref())?,
             tpk,
             serialized_files: Default::default(),
             typetree_generator: TypeTreeGeneratorCache::empty(),
@@ -84,7 +84,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     pub fn load_typetree_generator(&mut self, backend: GeneratorBackend) -> Result<()> {
         let unity_version = self.unity_version()?;
         let generator = TypeTreeGenerator::new_lib_next_to_exe(unity_version, backend)?;
-        generator.load_all_dll_in_dir(self.resolver.base_dir().join("Managed"))?;
+        generator.load_all_dll_in_dir(self.game_files.base_dir().join("Managed"))?;
         let base_node = self
             .tpk
             .get_typetree_node(ClassId::MonoBehaviour, unity_version)
@@ -95,7 +95,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     }
 
     pub fn app_info(&self) -> Result<AppInfo> {
-        let path = self.resolver.base_dir().join("app.info");
+        let path = self.game_files.base_dir().join("app.info");
         let contents = std::fs::read_to_string(path).context("could not find app.info")?;
         let (developer, name) = contents.split_once('\n').context("app.info is malformed")?;
 
@@ -147,7 +147,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
         };
 
         let path = self
-            .resolver
+            .game_files
             .base_dir()
             .join("StreamingAssets/aa")
             .join(&settings.m_buildTarget);
@@ -226,7 +226,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     }
 
     pub fn load_leaf(&self, relative_path: impl AsRef<Path>) -> Result<(SerializedFile, Data)> {
-        let data = self.resolver.read_path(relative_path.as_ref())?;
+        let data = self.game_files.read_path(relative_path.as_ref())?;
         let file = SerializedFile::from_reader(&mut Cursor::new(data.as_ref()))?;
         Ok((file, data))
     }
@@ -285,7 +285,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
                 }
 
                 let data = self
-                    .resolver
+                    .game_files
                     .read_path(Path::new(path_name))
                     .with_context(|| {
                         format!("Cannot read external file {}", path_name.display())
