@@ -14,7 +14,7 @@ use serde::Deserialize;
 
 use crate::Environment;
 use crate::game_files::GameFiles;
-use crate::resolver::BasedirEnvResolver;
+use crate::resolver::EnvResolver;
 use crate::unity::types::{GameObject, MonoBehaviour, MonoScript, Transform};
 
 pub struct SerializedFileHandle<'a, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
@@ -35,7 +35,7 @@ impl<'a, T, R, P> std::fmt::Debug for ObjectRefHandle<'a, T, R, P> {
     }
 }
 
-impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
+impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
     pub fn reborrow(&self) -> SerializedFileHandle<'a, R, P> {
         SerializedFileHandle {
             file: self.file,
@@ -182,7 +182,7 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R,
     }
 }
 
-impl<'a, T, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
+impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     pub fn new(object: ObjectRef<'a, T>, file: SerializedFileHandle<'a, R, P>) -> Self {
         ObjectRefHandle { object, file }
     }
@@ -214,7 +214,7 @@ impl<'a, T, R, P> ObjectRefHandle<'a, T, R, P> {
         self.object.info.m_ClassID
     }
 }
-impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObject, R, P> {
+impl<'a, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObject, R, P> {
     pub fn path(&self) -> Result<String> {
         let path =
             self.read()?
@@ -223,7 +223,7 @@ impl<'a, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObj
     }
 }
 
-impl<'a, T, R: BasedirEnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
+impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     pub fn cast<U>(&'a self) -> ObjectRefHandle<'a, U, R, P> {
         ObjectRefHandle {
             object: self.object.cast(),
