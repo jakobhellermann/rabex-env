@@ -74,7 +74,7 @@ impl AddressablesData {
     pub(crate) fn read<R: BasedirEnvResolver, P: TypeTreeProvider>(
         env: &Environment<R, P>,
     ) -> Result<Option<AddressablesData>> {
-        let base_dir = env.resolver.base_dir();
+        let base_dir = env.game_files.base_dir();
         let aa = base_dir.join("StreamingAssets/aa");
         if !aa.exists() {
             return Ok(None);

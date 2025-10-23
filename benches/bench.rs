@@ -20,7 +20,7 @@ fn addressables_info(c: &mut Criterion) {
     let env = utils::find_game("silksong").unwrap().unwrap();
     c.bench_function("compute addressables info", |b| {
         b.iter(|| {
-            let env = Environment::new(&env.resolver, &env.tpk);
+            let env = Environment::new(&env.game_files, &env.tpk);
             black_box(env.addressables().unwrap().unwrap());
         });
     });

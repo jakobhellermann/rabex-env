@@ -26,7 +26,7 @@ fn main() -> Result<()> {
         println!("-- {name} --");
 
         let mut files = env
-            .resolver
+            .game_files
             .serialized_files()?
             .into_iter()
             .map(UnityFile::SerializedFile)
