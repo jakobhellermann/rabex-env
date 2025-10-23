@@ -18,7 +18,7 @@ use walkdir::WalkDir;
 use crate::Environment;
 use crate::addressables::binary_catalog::{BinaryCatalogReader, ResourceLocation};
 use crate::addressables::settings::AddressablesSettings;
-use crate::resolver::BasedirEnvResolver;
+use crate::resolver::EnvResolver;
 
 pub use archive_path::ArchivePath;
 
@@ -71,7 +71,7 @@ impl AddressablesData {
         )
     }
 
-    pub(crate) fn read<R: BasedirEnvResolver, P: TypeTreeProvider>(
+    pub(crate) fn read<R: EnvResolver, P: TypeTreeProvider>(
         env: &Environment<R, P>,
     ) -> Result<Option<AddressablesData>> {
         let base_dir = env.game_files.base_dir();

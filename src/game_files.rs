@@ -8,7 +8,7 @@ use memmap2::Mmap;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 
 use crate::env::Data;
-use crate::resolver::{BasedirEnvResolver, EnvResolver};
+use crate::resolver::EnvResolver;
 
 pub struct GameFiles {
     pub game_dir: PathBuf,
@@ -97,6 +97,10 @@ impl GameFiles {
 }
 
 impl EnvResolver for GameFiles {
+    fn base_dir(&self) -> &Path {
+        &self.game_dir
+    }
+
     fn read_path(&self, path: &Path) -> Result<Data, std::io::Error> {
         if let Ok(suffix) = path.strip_prefix("Library") {
             let resource_path = self.game_dir.join("Resources").join(suffix);
@@ -112,27 +116,56 @@ impl EnvResolver for GameFiles {
         }
 
         match &self.level_files {
-            LevelFiles::Unpacked => self.game_dir.read_path(path),
-            LevelFiles::Packed(bundle) => bundle.read_path(path),
+            LevelFiles::Unpacked => {
+                let file = File::open(self.game_dir.join(path))?;
+                let mmap = unsafe { memmap2::Mmap::map(&file)? };
+                Ok(Data::Mmap(mmap))
+            }
+            LevelFiles::Packed(bundle) => {
+                let path = path
+                    .to_str()
+                    .ok_or_else(|| std::io::Error::other("non-utf8 string"))?;
+                let data = bundle.read_at(path)?.ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        format!("File '{path}' does not exist in bundle"),
+                    )
+                })?;
+
+                Ok(Data::InMemory(data))
+            }
         }
     }
 
     fn all_files(&self) -> Result<Vec<PathBuf>, std::io::Error> {
         match &self.level_files {
-            LevelFiles::Unpacked => self.game_dir.all_files(),
-            LevelFiles::Packed(bundle) => bundle.all_files(),
+            LevelFiles::Unpacked => {
+                let mut all = Vec::new();
+                for entry in std::fs::read_dir(&self.game_dir)? {
+                    let entry = entry?;
+
+                    if entry.file_type()?.is_dir() {
+                        continue;
+                    }
+
+                    all.push(
+                        entry
+                            .path()
+                            .strip_prefix(&self.game_dir)
+                            .unwrap()
+                            .to_owned(),
+                    );
+                }
+                Ok(all)
+            }
+            LevelFiles::Packed(bundle) => {
+                // TODO: non-unity3d files as well
+                Ok(bundle
+                    .files()
+                    .iter()
+                    .map(|file| file.path.clone().into())
+                    .collect())
+            }
         }
-    }
-}
-
-impl BasedirEnvResolver for GameFiles {
-    fn base_dir(&self) -> &Path {
-        &self.game_dir
-    }
-}
-
-impl<T: BasedirEnvResolver> BasedirEnvResolver for &T {
-    fn base_dir(&self) -> &Path {
-        (**self).base_dir()
     }
 }

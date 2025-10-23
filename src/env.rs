@@ -21,7 +21,7 @@ use crate::addressables::settings::AddressablesSettings;
 use crate::addressables::{AddressablesData, ArchivePath};
 use crate::game_files::GameFiles;
 use crate::handle::SerializedFileHandle;
-use crate::resolver::BasedirEnvResolver;
+use crate::resolver::EnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
 use crate::unity::types::{BuildSettings, MonoBehaviour, MonoScript, ResourceManager};
 
@@ -78,7 +78,7 @@ pub struct AppInfo {
     pub developer: String,
     pub name: String,
 }
-impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
+impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     /// Initializes [`Environment::typetree_generator`] from the `Managed` DLLs.
     /// Requires `libTypeTreeGenerator.so`/`TypeTreeGenerator.dll` next to the executing binary.
     pub fn load_typetree_generator(&mut self, backend: GeneratorBackend) -> Result<()> {
@@ -192,7 +192,7 @@ impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
     }
 }
 
-impl<R: BasedirEnvResolver, P: TypeTreeProvider> Environment<R, P> {
+impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     pub fn unity_version(&self) -> Result<&UnityVersion> {
         match self.unity_version.get() {
             Some(unity_version) => Ok(unity_version),
