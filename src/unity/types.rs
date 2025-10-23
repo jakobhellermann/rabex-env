@@ -44,7 +44,7 @@ impl ClassIdType for PreloadData {
     const CLASS_ID: ClassId = ClassId::PreloadData;
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct AssetBundle {
     pub m_Name: String,
     pub m_PreloadTable: Vec<PPtr>,
@@ -62,7 +62,7 @@ impl ClassIdType for AssetBundle {
     const CLASS_ID: ClassId = ClassId::AssetBundle;
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct AssetInfo {
     pub preloadIndex: i32,
     pub preloadSize: i32,
