@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
 use anyhow::Result;
-use rabex::{tpk::TpkTypeTreeBlob, typetree::typetree_cache::sync::TypeTreeCache};
-use rabex_env::{Environment, game_files::GameFiles};
+use rabex::tpk::TpkTypeTreeBlob;
+use rabex::typetree::typetree_cache::sync::TypeTreeCache;
+use rabex_env::Environment;
+use rabex_env::game_files::GameFiles;
 
 pub fn for_each_steam_game(mut f: impl FnMut(Environment) -> Result<()>) -> Result<()> {
     let steam = steamlocate::SteamDir::locate()?;

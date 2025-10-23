@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, HashSet};
 
 use anyhow::Result;
-use rabex_env::{
-    EnvResolver, handle::SerializedFileHandle, unity::types::MonoScript, utils::par_fold_reduce,
-};
+use rabex_env::handle::SerializedFileHandle;
+use rabex_env::resolver::EnvResolver;
+use rabex_env::unity::types::MonoScript;
+use rabex_env::utils::par_fold_reduce;
 
 mod utils;
 
