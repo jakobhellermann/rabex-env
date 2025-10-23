@@ -130,3 +130,9 @@ impl BasedirEnvResolver for GameFiles {
         &self.game_dir
     }
 }
+
+impl<T: BasedirEnvResolver> BasedirEnvResolver for &T {
+    fn base_dir(&self) -> &Path {
+        (**self).base_dir()
+    }
+}

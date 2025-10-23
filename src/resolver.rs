@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use rabex::files::bundlefile::BundleFileReader;
 
-use super::env::Data;
+use crate::env::Data;
 
 /// A trait abstracting where the game files are read from.
 pub trait EnvResolver {
@@ -90,6 +90,16 @@ impl EnvResolver for PathBuf {
 impl BasedirEnvResolver for PathBuf {
     fn base_dir(&self) -> &Path {
         self
+    }
+}
+
+impl<T: EnvResolver> EnvResolver for &T {
+    fn read_path(&self, path: &Path) -> Result<Data, std::io::Error> {
+        (**self).read_path(path)
+    }
+
+    fn all_files(&self) -> Result<Vec<PathBuf>, std::io::Error> {
+        (**self).all_files()
     }
 }
 
