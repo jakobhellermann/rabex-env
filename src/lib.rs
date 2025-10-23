@@ -421,7 +421,16 @@ fn addressables_bundle_lookup(
                 let bundle_to_cab_files: &mut Vec<_> =
                     acc.1.entry(relative.to_owned()).or_default();
 
-                let bundle = load_addressables_bundle_inner(path.path(), unity_version)?;
+                // PERF: (tested with 2k bundles on silksong)
+                // seq + mmap: 27ms
+                // seq + read: 18ms
+                // par + mmap: 20ms
+                // par + read: 7ms
+                let bundle = BundleFileReader::from_reader(
+                    BufReader::new(File::open(path.path())?),
+                    &ExtractionConfig::new(None, Some(unity_version.clone())),
+                )?;
+
                 for file in bundle.files() {
                     acc.0.insert(file.path.clone(), relative.to_owned());
                     bundle_to_cab_files.push(file.path.clone());
