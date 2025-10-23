@@ -404,26 +404,37 @@ fn addressables_bundle_lookup(
     aa_build: &Path,
     unity_version: &UnityVersion,
 ) -> Result<(FxHashMap<String, PathBuf>, FxHashMap<PathBuf, Vec<String>>)> {
-    let mut cab_to_bundle = FxHashMap::default();
-    let mut bundle_to_cab = FxHashMap::default();
+    use rayon::prelude::*;
 
-    for path in WalkDir::new(aa_build) {
-        let path = path?;
-        if path.file_type().is_dir() {
-            continue;
-        }
-        let relative = path.path().strip_prefix(aa_build).unwrap();
+    WalkDir::new(aa_build)
+        .into_iter()
+        .par_bridge()
+        .try_fold(
+            <(FxHashMap<String, PathBuf>, FxHashMap<PathBuf, Vec<String>>)>::default,
+            |mut acc, path| -> Result<_> {
+                let path = path?;
+                if path.file_type().is_dir() {
+                    return Ok(acc);
+                }
+                let relative = path.path().strip_prefix(aa_build).unwrap();
 
-        let bundle_to_cab_files: &mut Vec<_> =
-            bundle_to_cab.entry(relative.to_owned()).or_default();
+                let bundle_to_cab_files: &mut Vec<_> =
+                    acc.1.entry(relative.to_owned()).or_default();
 
-        let bundle = load_addressables_bundle_inner(path.path(), unity_version)?;
-        for file in bundle.files() {
-            cab_to_bundle.insert(file.path.clone(), relative.to_owned());
-            bundle_to_cab_files.push(file.path.clone());
-        }
-    }
-    Ok((cab_to_bundle, bundle_to_cab))
+                let bundle = load_addressables_bundle_inner(path.path(), unity_version)?;
+                for file in bundle.files() {
+                    acc.0.insert(file.path.clone(), relative.to_owned());
+                    bundle_to_cab_files.push(file.path.clone());
+                }
+
+                Ok(acc)
+            },
+        )
+        .try_reduce(Default::default, |mut acc, item| {
+            acc.0.extend(item.0);
+            acc.1.extend(item.1);
+            Ok(acc)
+        })
 }
 
 fn load_addressables_bundle_inner(
