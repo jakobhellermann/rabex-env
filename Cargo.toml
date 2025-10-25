@@ -35,5 +35,8 @@ steamlocate = "2.0"
 name = "bench"
 harness = false
 
+[lib]
+bench = false
+
 # [patch."https://github.com/jakobhellermann/RustyAssetBundleEXtractor"]
 # rabex = { path = "../RustyAssetBundleEXtractor" }
