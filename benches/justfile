@@ -1,0 +1,21 @@
+bench_exe := `cargo bench --no-run --message-format json | jq -r 'select(.profile.test == true) | .executable' | tail -n1`
+target_dir := `cargo metadata --format-version 1 --no-deps | jq -r '.target_directory'`
+
+list:
+    cargo bench -- --list
+
+bench *filter:
+    cargo bench -- '{{filter}}'
+
+samply filter:
+    samply record {{bench_exe}} --bench '{{filter}}' --profile-time 10
+
+perf filter:
+    perf record -g {{bench_exe}} --bench '{{filter}}' --profile-time 10
+    perf report
+
+open:
+    firefox {{target_dir}}/criterion/report/index.html
+
+clear:
+    rm {{target_dir}}/criterion -fr
