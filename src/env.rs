@@ -383,9 +383,8 @@ fn bundle_main_serializedfile<T: AsRef<[u8]>>(
     bundle: &BundleFileReader<Cursor<T>>,
 ) -> Result<(String, SerializedFile, Vec<u8>)> {
     let entry = bundle
-        .files()
-        .iter()
-        .find(|file| (file.flags & 4) != 0 && !file.path.ends_with(".sharedAssets"))
+        .serialized_files()
+        .find(|file| !file.path.ends_with(".sharedAssets"))
         .context("no non-resource serializedfile in bundle")?;
     let data = bundle.read_at(&entry.path)?.unwrap();
     let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;

@@ -29,6 +29,10 @@ pub struct AddressablesData {
     pub bundle_to_cab: FxHashMap<PathBuf, Vec<String>>,
 }
 impl AddressablesData {
+    pub fn build_folder(&self) -> PathBuf {
+        self.settings.build_folder()
+    }
+
     pub fn catalogs(&self) -> Result<Vec<BinaryCatalogReader<impl Read + Seek>>, std::io::Error> {
         self.settings
             .m_CatalogLocations
