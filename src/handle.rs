@@ -4,13 +4,13 @@ use std::io::Cursor;
 use std::path::Path;
 
 use anyhow::{Context as _, Result, bail};
-use rabex::files::SerializedFile;
 use rabex::files::serializedfile::ObjectRef;
+use rabex::files::{SerializedFile, serializedfile};
 use rabex::objects::pptr::PathId;
 use rabex::objects::{ClassId, ClassIdType, PPtr, TypedPPtr};
 use rabex::tpk::TpkTypeTreeBlob;
-use rabex::typetree::TypeTreeProvider;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
+use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use serde::Deserialize;
 
 use crate::Environment;
@@ -206,6 +206,10 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         Ok(data)
     }
 
+    pub fn typetree(&self) -> Result<&TypeTreeNode, serializedfile::Error> {
+        self.object.typetree()
+    }
+
     pub fn reachable(&self) -> Result<(BTreeSet<PathId>, BTreeSet<PPtr>)> {
         let reachable = crate::reachable::reachable(
             self.file.env,
@@ -236,8 +240,13 @@ impl<'a, T, R, P> ObjectRefHandle<'a, T, R, P> {
         self.object.info.m_ClassID
     }
 
+    pub fn data(&self) -> &'a [u8] {
+        &self.file.data[self.object.info.m_Offset as usize
+            ..(self.object.info.m_Offset as usize + self.object.info.m_Size as usize)]
+    }
+
     pub fn object_reader(&self) -> Cursor<&'a [u8]> {
-        Cursor::new(&self.file.data[self.object.info.m_Offset as usize..])
+        Cursor::new(self.data())
     }
 }
 impl<'a, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObject, R, P> {
