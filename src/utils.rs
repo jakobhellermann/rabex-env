@@ -53,6 +53,14 @@ mod merge {
         }
     }
 
+    impl<T> Merge for Option<T> {
+        fn merge(&mut self, other: Self) {
+            if self.is_none() {
+                *self = other;
+            }
+        }
+    }
+
     impl<T> Merge for Vec<T> {
         fn merge(&mut self, other: Self) {
             self.extend(other);
@@ -106,6 +114,20 @@ mod merge {
                     Entry::Occupied(mut entry) => entry.get_mut().merge(value),
                 }
             }
+        }
+    }
+
+    impl<T0: Merge, T1: Merge> Merge for (T0, T1) {
+        fn merge(&mut self, other: Self) {
+            self.0.merge(other.0);
+            self.1.merge(other.1);
+        }
+    }
+
+    impl<T0: Merge, T1: Merge, T2: Merge> Merge for (T0, T1, T2) {
+        fn merge(&mut self, other: Self) {
+            self.0.merge(other.0);
+            self.1.merge(other.1);
         }
     }
 }
