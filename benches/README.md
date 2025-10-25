@@ -2,5 +2,9 @@
 
 ```sh
 cargo bench
-cargo bench -- 'read BundleFile/tk2d'
+cargo bench -- 'read parse_bundlefile/scenes'
 ```
+
+```sh
+just samply 'deserialize.*song'
+just perf 'deserialize.*song'

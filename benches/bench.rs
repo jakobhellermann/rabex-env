@@ -5,6 +5,7 @@ use std::fs::File;
 use std::hint::black_box;
 use std::io::Cursor;
 
+use anyhow::Context;
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
@@ -20,11 +21,11 @@ fn parse(c: &mut Criterion) {
         "tk2dcollections_assets_areacoral.bundle",
         "textures_assets_areaaqueductareaswamp.bundle",
         "scenes_scenes_scenes/song_17.bundle",
-        "scenes_scenes_scenes/memory_red.bundle",
+        // "scenes_scenes_scenes/memory_red.bundle",
         "herodynamic_assets_all.bundle",
     ];
 
-    let mut bundle_group = c.benchmark_group("parse BundleFile");
+    let mut bundle_group = c.benchmark_group("parse_bundlefile");
     for name in bundles {
         let path = env.game_files.game_dir.join(&build_folder).join(name);
 
@@ -68,7 +69,7 @@ fn parse(c: &mut Criterion) {
     }
     bundle_group.finish();
 
-    let mut serialized_group = c.benchmark_group("parse SerializedFile");
+    let mut serialized_group = c.benchmark_group("parse_serializedfile");
     for name in bundles {
         let bundle = env.load_addressables_bundle(name).unwrap();
         let file = bundle
@@ -86,6 +87,47 @@ fn parse(c: &mut Criterion) {
             },
         );
     }
+    serialized_group.finish();
+
+    let mut objects_group = c.benchmark_group("deserialize_objects");
+    objects_group.sample_size(20);
+
+    for name in bundles {
+        let bundle = env.load_addressables_bundle(name).unwrap();
+        let file = bundle
+            .serialized_files()
+            .find(|x| !x.path.ends_with("sharedAssets"))
+            .unwrap();
+        let data = bundle.read_at_entry(file).unwrap();
+
+        let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice())).unwrap();
+
+        objects_group.throughput(Throughput::Elements(file.objects().len() as u64));
+
+        objects_group.bench_with_input(
+            BenchmarkId::from_parameter(format!("{name} ({})", file.objects().len())),
+            &file,
+            |b, file| {
+                b.iter(|| {
+                    for obj in file.objects() {
+                        let mut reader = Cursor::new(data.as_slice());
+                        match file
+                            .read::<serde_json::Value>(&obj, &env.tpk, &mut reader)
+                            .context(obj.m_PathID)
+                        {
+                            Ok(value) => {
+                                black_box(value);
+                            }
+                            Err(e) => {
+                                panic!("{e:?}")
+                            }
+                        }
+                    }
+                });
+            },
+        );
+    }
+    objects_group.finish();
 }
 
 fn bundle_locations(c: &mut Criterion) {
