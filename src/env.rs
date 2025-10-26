@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek};
 use std::ops::Deref;
@@ -35,6 +36,11 @@ impl AsRef<[u8]> for Data {
             Data::InMemory(data) => data.as_slice(),
             Data::Mmap(mmap) => mmap.as_ref(),
         }
+    }
+}
+impl From<Vec<u8>> for Data {
+    fn from(data: Vec<u8>) -> Self {
+        Data::InMemory(data)
     }
 }
 
@@ -189,6 +195,49 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
                 Ok(cache)
             }
         }
+    }
+}
+
+impl<R: EnvResolver + Send + Sync, P: TypeTreeProvider + Send + Sync> Environment<R, P> {
+    // TODO: non-addressables
+    pub fn load_all_serialized_files(
+        &self,
+    ) -> Result<BTreeMap<String, SerializedFileHandle<'_, R, P>>> {
+        let Some(addressables) = self.addressables()? else {
+            return Ok(Default::default());
+        };
+
+        use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
+
+        addressables
+            .bundle_paths()
+            .par_bridge()
+            .try_fold(BTreeMap::default, |mut acc, bundle_path| {
+                let bundle = self.load_addressables_bundle(&bundle_path)?;
+                let bundle_identifier = bundle
+                    .serialized_files()
+                    .find_map(|file| match Path::new(&file.path).extension().is_some() {
+                        true => None,
+                        false => Some(&file.path),
+                    })
+                    .unwrap();
+
+                for entry in bundle.serialized_files() {
+                    let archive_path = ArchivePath::new(bundle_identifier, &entry.path);
+                    let data = bundle.read_at_entry(entry)?;
+                    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+                    let file = self.insert_cache(archive_path.into(), file, data.into());
+
+                    acc.insert(archive_path.to_string(), file);
+                }
+                Ok(acc)
+            })
+            .try_reduce(Default::default, |mut acc, item| {
+                for other in item {
+                    acc.insert(other.0, other.1);
+                }
+                Ok(acc)
+            })
     }
 }
 

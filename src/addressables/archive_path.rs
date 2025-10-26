@@ -37,7 +37,7 @@ impl<'a> ArchivePath<'a> {
             let mut parts = inner.iter();
             let bundle = parts.next()?.to_str()?;
             let file = parts.next()?.to_str()?;
-            Some(ArchivePath { bundle, file })
+            Some(ArchivePath::new(bundle, file))
         }
 
         let Ok(inner) = path.strip_prefix("archive:") else {

@@ -33,6 +33,10 @@ impl AddressablesData {
         self.settings.build_folder()
     }
 
+    pub fn bundle_paths(&self) -> impl Iterator<Item = &Path> {
+        self.bundle_to_cab.keys().map(AsRef::as_ref)
+    }
+
     pub fn catalogs(&self) -> Result<Vec<BinaryCatalogReader<impl Read + Seek>>, std::io::Error> {
         self.settings
             .m_CatalogLocations
