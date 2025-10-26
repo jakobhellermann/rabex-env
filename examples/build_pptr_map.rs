@@ -3,9 +3,11 @@ mod utils;
 use std::path::Path;
 
 use anyhow::{Context as _, Result};
+use dashmap::DashMap;
 use rabex::objects::pptr::PathId;
 use rabex_env::addressables::ArchivePath;
 use rabex_env::handle::SerializedFileHandle;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rustc_hash::FxHashMap;
 
 // #[global_allocator]
@@ -30,13 +32,11 @@ fn main() -> Result<()> {
         .map(|(i, file)| (file, i as u32))
         .collect();
 
-    let pptr_references = rabex_env::utils::par_fold_reduce(
-        &files,
-        |acc: &mut FxHashMap<GlobalPPtr, Vec<GlobalPPtr>>, (path, file)| {
-            find_pptr_references(acc, &global_file_map, file, path)?;
-            Ok(())
-        },
-    )?;
+    let pptr_references = DashMap::<GlobalPPtr, Vec<GlobalPPtr>>::new();
+
+    files.par_iter().try_for_each(|(path, file)| {
+        find_pptr_references(&pptr_references, &global_file_map, file, path)
+    })?;
 
     let db_path = "pptrs.db";
     std::fs::remove_file(db_path)?;
@@ -89,7 +89,8 @@ CREATE TABLE IF NOT EXISTS pptr_references (
              VALUES (?, ?, ?, ?)",
         )?;
 
-        for (source, references) in &pptr_references {
+        for item in pptr_references.iter() {
+            let (source, references) = item.pair();
             for reference in references {
                 stmt.execute((
                     source.global_file_id,
@@ -110,7 +111,7 @@ CREATE TABLE IF NOT EXISTS pptr_references (
 
 /// Go through all objects, and for each referenced PPtr record the object as one of its references
 fn find_pptr_references(
-    out: &mut FxHashMap<GlobalPPtr, Vec<GlobalPPtr>>,
+    out: &DashMap<GlobalPPtr, Vec<GlobalPPtr>>,
     global_file_map: &FxHashMap<&str, u32>,
     file: &SerializedFileHandle,
     archive_path: &str,

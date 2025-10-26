@@ -28,6 +28,7 @@ tracing = { version = "0.1", default-features = false }
 [dev-dependencies]
 criterion = "0.7"
 csv = "1.3"
+dashmap = "6.1.0"
 dhat = "0.3.3"
 rusqlite = "0.37.0"
 serde-value = { path = "/home/jakob/dev/rust/contrib/serde-value", features = ["preserve_order"] }
