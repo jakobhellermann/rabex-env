@@ -274,6 +274,20 @@ impl BinaryCatalog {
     pub fn from_reader<R: Read + Seek>(reader: R) -> Result<Self, std::io::Error> {
         BinaryCatalogReader::new(reader)?.read()
     }
+
+    pub fn locations(&self) -> impl Iterator<Item = &ResourceLocation> {
+        self.resources
+            .iter()
+            .flat_map(|(_, locations)| locations.iter().map(Arc::as_ref))
+    }
+
+    pub fn locations_of_provider(
+        &self,
+        provider_id: &str,
+    ) -> impl Iterator<Item = &ResourceLocation> {
+        self.locations()
+            .filter(move |item| *item.provider_id == provider_id)
+    }
 }
 
 impl<R: Read + Seek> BinaryCatalogReader<R> {

@@ -1,37 +1,29 @@
 mod utils;
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use anyhow::Result;
+
+const ASSET_BUNDLE_PROVIDER: &str =
+    "UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider";
 
 fn main() -> Result<()> {
     let env = utils::find_game("silksong")?.unwrap();
 
-    let aa = env.addressables()?.unwrap();
+    let addressables = env.addressables()?.unwrap();
 
     let mut bundle_names = BTreeMap::default();
 
-    for mut catalog in aa.catalogs()? {
-        let locations = catalog.location_headers()?;
-        for location in locations {
-            let provider_id = location.provider_id(&mut catalog)?;
-            if *provider_id
-                != "UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider"
-            {
-                continue;
-            }
-            let internal_id = location.internal_id(&mut catalog)?;
-            let abro = location
-                .data(&mut catalog)?
-                .expect("no data for AssetBundleProvider")
-                .into_abro()
+    for mut catalog in addressables.catalogs()? {
+        let catalog = catalog.read()?;
+        for location in catalog.locations_of_provider(ASSET_BUNDLE_PROVIDER) {
+            let abro = location.data.as_ref().unwrap();
+            let path = addressables.evaluate_string(&location.internal_id);
+            let path = Path::new(&path)
+                .strip_prefix(&addressables.build_folder())
                 .unwrap();
-            let path = internal_id
-                .strip_prefix("{UnityEngine.AddressableAssets.Addressables.RuntimePath}")
-                .expect("expected RuntimePath placeholder in provider ID")
-                .trim_start_matches(|x| x == '/' || x == '\\');
-
-            bundle_names.insert(abro.bundle_name.clone(), path.to_owned());
+            bundle_names.insert((*abro.bundle_name).clone(), path.to_owned());
         }
     }
 
