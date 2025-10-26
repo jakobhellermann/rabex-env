@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 // archive:/CAB-asdf/CAB-asdf
 // archive:/CAB-asdf/CAB-asdf.sharedAssets
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ArchivePath<'a> {
     pub bundle: &'a str,
     pub file: &'a str,
