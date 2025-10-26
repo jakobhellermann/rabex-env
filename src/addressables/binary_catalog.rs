@@ -152,7 +152,7 @@ impl ResourceLocationHeader {
 ///   - `primary_key` is the path from the editor I think
 ///   - `data` seems to be None
 ///   - `type_` varies
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 pub struct ResourceLocation {
     pub internal_id: Arc<String>,
     /// - `AssetBundleProvider`
@@ -170,6 +170,24 @@ pub struct ResourceLocation {
     /// Used in `Addressables.LoadAssetAsync<GameObject>(primaryKey)`
     pub primary_key: Arc<String>,
     pub type_: AssemblyClass,
+}
+
+impl std::fmt::Debug for ResourceLocation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ResourceLocation")
+            .field("internal_id", &self.internal_id)
+            .field("provider_id", &self.provider_id)
+            // .field("dependencies", &self.dependencies)
+            .field(
+                "dependencies",
+                &format!("{} dependencies", self.dependencies.len()),
+            )
+            // .field("data", &self.data)
+            // .field("dependency_hash_code", &self.dependency_hash_code)
+            .field("primary_key", &self.primary_key)
+            .field("type_", &self.type_)
+            .finish()
+    }
 }
 impl ResourceLocation {
     pub fn provider_name(&self) -> &str {
