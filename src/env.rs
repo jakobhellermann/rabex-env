@@ -128,12 +128,33 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         &self,
         bundle: impl AsRef<Path>,
     ) -> Result<SerializedFileHandle<'_, R, P>> {
-        let (archive_name, file, data) = self.load_addressables_bundle_content_leaf(bundle)?;
+        let bundle = bundle.as_ref();
+
+        // TODO
+        let aa = self.addressables()?.unwrap();
+        let cab = aa.bundle_to_cab.get(bundle).unwrap().first().unwrap();
+        let archive_path_expected = ArchivePath::same(&cab);
+
+        if let Some(cached) = self
+            .serialized_files
+            .get(Path::new(&archive_path_expected.to_string()))
+        {
+            return Ok(SerializedFileHandle::new(
+                self,
+                &cached.0,
+                cached.1.as_ref(),
+            ));
+        }
+
+        let (archive_name, file, data) = self.load_addressables_bundle_content_uncached(bundle)?;
         let archive_path = ArchivePath::same(&archive_name);
+
+        assert_eq!(archive_path_expected, archive_path);
+
         Ok(self.insert_cache(archive_path.to_string().into(), file, Data::InMemory(data)))
     }
 
-    pub fn load_addressables_bundle_content_leaf(
+    fn load_addressables_bundle_content_uncached(
         &self,
         bundle: impl AsRef<Path>,
     ) -> Result<(String, SerializedFile, Vec<u8>)> {
