@@ -72,7 +72,10 @@ mod merge {
         T: Eq + Hash,
         S: BuildHasher,
     {
-        fn merge(&mut self, other: Self) {
+        fn merge(&mut self, mut other: Self) {
+            if other.len() > self.len() {
+                std::mem::swap(self, &mut other);
+            }
             self.extend(other);
         }
     }
@@ -80,7 +83,10 @@ mod merge {
     where
         T: Ord,
     {
-        fn merge(&mut self, other: Self) {
+        fn merge(&mut self, mut other: Self) {
+            if other.len() > self.len() {
+                std::mem::swap(self, &mut other);
+            }
             self.extend(other);
         }
     }
@@ -91,7 +97,10 @@ mod merge {
         V: Merge + Default,
         S: BuildHasher,
     {
-        fn merge(&mut self, other: Self) {
+        fn merge(&mut self, mut other: Self) {
+            if other.len() > self.len() {
+                std::mem::swap(self, &mut other);
+            }
             use std::collections::hash_map::Entry;
             for (item, value) in other {
                 match self.entry(item) {
@@ -106,7 +115,10 @@ mod merge {
         K: Ord,
         V: Merge + Default,
     {
-        fn merge(&mut self, other: Self) {
+        fn merge(&mut self, mut other: Self) {
+            if other.len() > self.len() {
+                std::mem::swap(self, &mut other);
+            }
             use std::collections::btree_map::Entry;
             for (item, value) in other {
                 match self.entry(item) {
