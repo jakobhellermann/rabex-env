@@ -29,6 +29,13 @@ pub struct AddressablesData {
     pub bundle_to_cab: FxHashMap<PathBuf, Vec<String>>,
 }
 impl AddressablesData {
+    pub fn bundle_main_archive_path(&self, bundle_path: &Path) -> Option<ArchivePath<'_>> {
+        let bundle_contents = self.bundle_to_cab.get(bundle_path)?;
+        let first = bundle_contents.first()?;
+        let archive_path = ArchivePath::same(first);
+        Some(archive_path)
+    }
+
     pub fn build_folder(&self) -> PathBuf {
         self.settings.build_folder()
     }
@@ -91,9 +98,10 @@ impl AddressablesData {
             BufReader::new(File::open(aa.join("settings.json")).context("no settings.json")?);
         let settings: AddressablesSettings = serde_json::from_reader(reader)?;
 
-        let lookup =
+        let mut lookup =
             addressables_bundle_lookup(&aa.join(&settings.m_buildTarget), env.unity_version()?)
                 .context("could not determine CAB locations")?;
+        lookup.1.values_mut().for_each(|files| files.sort());
         let data = AddressablesData {
             base_dir: base_dir.to_owned(),
             settings,
