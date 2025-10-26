@@ -4,12 +4,12 @@ use std::path::Path;
 use std::time::Instant;
 
 use anyhow::{Context as _, Result};
+use dashmap::DashMap;
 use rabex::objects::pptr::PathId;
 use rabex_env::Environment;
 use rabex_env::addressables::{AddressablesData, ArchivePath};
 use rabex_env::handle::SerializedFileHandle;
-use rabex_env::utils::par_fold_reduce;
-use rayon::iter::ParallelBridge as _;
+use rayon::iter::{IntoParallelRefIterator, ParallelBridge as _, ParallelIterator};
 use rustc_hash::FxHashMap;
 
 // #[global_allocator]
@@ -43,15 +43,19 @@ fn main() -> Result<()> {
         let start = Instant::now();
         let referencing_files = find_referencing_files(&env, bundle)?;
 
-        let references = par_fold_reduce(&referencing_files, |mut acc, (path, file)| {
-            find_pptr_references(&mut acc, &global_file_map, &file, &path)
+        let references = DashMap::new();
+        referencing_files.par_iter().try_for_each(|(path, file)| {
+            find_pptr_references(&references, &global_file_map, &file, path)
         })?;
 
         println!("{bundle}");
         println!("- {} object's references computed", references.len());
         println!(
             "- {} total references",
-            references.values().map(|refs| refs.len()).sum::<usize>()
+            references
+                .iter()
+                .map(|item| item.value().len())
+                .sum::<usize>()
         );
         println!("- {} files referencing the bundle", referencing_files.len());
         for (path, _) in referencing_files {
@@ -134,7 +138,7 @@ fn find_referencing_files<'a>(
 
 /// Go through all objects, and for each referenced PPtr record the object as one of its references
 fn find_pptr_references(
-    out: &mut FxHashMap<GlobalPPtr, Vec<GlobalPPtr>>,
+    out: &DashMap<GlobalPPtr, Vec<GlobalPPtr>>,
     global_file_map: &FxHashMap<String, u32>,
     file: &SerializedFileHandle,
     archive_path: &str,
