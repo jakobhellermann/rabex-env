@@ -30,6 +30,9 @@ tracing = { version = "0.1", default-features = false }
 criterion = "0.7"
 csv = "1.3"
 serde-value = { path = "/home/jakob/dev/rust/contrib/serde-value", features = ["preserve_order"] }
+dhat = "0.3"
+fastrand = "2.3"
+rusqlite = "0.37"
 serde_repr = "0.1"
 steamlocate = "2.0"
 tracing-timetree = { path = "../../rust/tracing-timetree" }
