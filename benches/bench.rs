@@ -37,7 +37,7 @@ fn parse(c: &mut Criterion) {
                 let reader = Cursor::new(data);
                 let bundle = BundleFileReader::from_reader(
                     reader,
-                    &ExtractionConfig::new(None, Some(unity_version.clone())),
+                    &ExtractionConfig::default().with_fallback_unity_version(unity_version.clone()),
                 )
                 .unwrap();
                 let file = bundle

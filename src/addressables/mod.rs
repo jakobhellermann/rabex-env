@@ -141,7 +141,7 @@ fn addressables_bundle_lookup(
                 // par + read: 7ms
                 let bundle = BundleFileReader::from_reader(
                     BufReader::new(File::open(path.path())?),
-                    &ExtractionConfig::new(None, Some(unity_version.clone())),
+                    &ExtractionConfig::default().with_fallback_unity_version(unity_version.clone()),
                 )?;
 
                 for file in bundle.files() {

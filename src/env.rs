@@ -422,7 +422,7 @@ fn load_addressables_bundle_inner(
 
     let bundle = BundleFileReader::from_reader(
         Cursor::new(data),
-        &ExtractionConfig::new(None, Some(unity_version.clone())),
+        &ExtractionConfig::default().with_fallback_unity_version(unity_version.clone()),
     )?;
 
     Ok(bundle)
