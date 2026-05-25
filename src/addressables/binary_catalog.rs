@@ -277,8 +277,8 @@ impl BinaryCatalog {
 
     pub fn locations(&self) -> impl Iterator<Item = &ResourceLocation> {
         self.resources
-            .iter()
-            .flat_map(|(_, locations)| locations.iter().map(Arc::as_ref))
+            .values()
+            .flat_map(|locations| locations.iter().map(Arc::as_ref))
     }
 
     pub fn locations_of_provider(
