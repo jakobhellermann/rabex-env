@@ -23,6 +23,12 @@ pub struct SerializedFileHandle<'a, R = GameFiles, P = TypeTreeCache<TpkTypeTree
     pub data: &'a [u8],
     pub env: &'a Environment<R, P>,
 }
+
+impl<'a, R, P> std::fmt::Debug for SerializedFileHandle<'a, R, P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.file.fmt(f)
+    }
+}
 pub struct ObjectRefHandle<'a, T, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub object: ObjectRef<'a, T>,
     pub file: SerializedFileHandle<'a, R, P>,

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek};
 use std::ops::Deref;
@@ -51,6 +52,19 @@ pub struct Environment<R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     serialized_files: FrozenMap<PathBuf, Box<(SerializedFile, Data)>>,
     unity_version: OnceLock<UnityVersion>,
     addressables: OnceLock<Option<AddressablesData>>,
+}
+
+impl<R: Debug, P> std::fmt::Debug for Environment<R, P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Environment")
+            .field("game_files", &self.game_files)
+            .field(
+                "loaded_serialized_files",
+                &self.serialized_files.keys_cloned(),
+            )
+            .field("unity_version", &self.unity_version)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<R, P> Environment<R, P> {

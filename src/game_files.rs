@@ -10,11 +10,13 @@ use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 use crate::env::Data;
 use crate::resolver::EnvResolver;
 
+#[derive(Debug)]
 pub struct GameFiles {
     pub game_dir: PathBuf,
     pub level_files: LevelFiles,
 }
 
+#[derive(Debug)]
 pub enum LevelFiles {
     Unpacked,
     Packed(Box<BundleFileReader<Cursor<Mmap>>>),
