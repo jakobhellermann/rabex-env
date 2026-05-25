@@ -28,6 +28,16 @@ pub struct AddressablesData {
     pub cab_to_bundle: FxHashMap<String, PathBuf>,
     pub bundle_to_cab: FxHashMap<PathBuf, Vec<String>>,
 }
+
+impl std::fmt::Debug for AddressablesData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AddressablesData")
+            .field("base_dir", &self.base_dir)
+            .field("settings", &self.settings)
+            .field("bundle_to_cab", &self.bundle_to_cab)
+            .finish()
+    }
+}
 impl AddressablesData {
     pub fn bundle_main_archive_path(&self, bundle_path: &Path) -> Option<ArchivePath<'_>> {
         let bundle_contents = self.bundle_to_cab.get(bundle_path)?;
