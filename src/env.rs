@@ -227,7 +227,7 @@ impl<R: EnvResolver + Send + Sync, P: TypeTreeProvider + Send + Sync> Environmen
             .bundle_paths()
             .par_bridge()
             .try_fold(BTreeMap::default, |mut acc, bundle_path| {
-                let bundle = self.load_addressables_bundle(&bundle_path)?;
+                let bundle = self.load_addressables_bundle(bundle_path)?;
                 let bundle_identifier = bundle
                     .serialized_files()
                     .find_map(|file| match Path::new(&file.path).extension().is_some() {

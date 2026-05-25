@@ -1,4 +1,3 @@
-#![feature(super_let)]
 mod utils;
 
 use std::cmp::Reverse;
