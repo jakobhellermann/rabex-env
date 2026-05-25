@@ -166,23 +166,27 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
         &self,
         pptr: TypedPPtr<T>,
     ) -> Result<ObjectRefHandle<'a, T, R, P>> {
-        Ok(match pptr.m_FileID.get_external(self.file) {
-            None => {
-                let object = pptr.deref_local(self.file, &self.env.tpk)?;
-                ObjectRefHandle::new(object, self.reborrow())
-            }
-            Some(external_path) => {
-                let external = self
-                    .env
-                    .load_external_file(Path::new(&external_path))
-                    .with_context(|| format!("failed to load external file '{}'", external_path))?;
-                let object = pptr
-                    .make_local()
-                    .deref_local(external.file, &self.env.tpk)
-                    .with_context(|| format!("In external {} {}", pptr.m_FileID, external_path))?;
-                ObjectRefHandle::new(object, external)
-            }
-        })
+        if !pptr.m_FileID.is_external() {
+            let object = pptr
+                .deref_local(self.file, &self.env.tpk)
+                .with_context(|| format!("trying to deref {:?}", pptr))?;
+            return Ok(ObjectRefHandle::new(object, self.reborrow()));
+        }
+
+        let external_path = pptr
+            .m_FileID
+            .get_external(self.file)
+            .with_context(|| format!("Could not deref {:?}, its file ID is not present", pptr))?;
+
+        let external = self
+            .env
+            .load_external_file(Path::new(&external_path))
+            .with_context(|| format!("failed to load external file '{}'", external_path))?;
+        let object = pptr
+            .make_local()
+            .deref_local(external.file, &self.env.tpk)
+            .with_context(|| format!("In external {} {}", pptr.m_FileID, external_path))?;
+        Ok(ObjectRefHandle::new(object, external))
     }
 
     pub fn deref_read<T: for<'de> Deserialize<'de>>(&self, pptr: TypedPPtr<T>) -> Result<T> {
