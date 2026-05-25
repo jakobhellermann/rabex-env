@@ -13,7 +13,7 @@ elsa = "1.11"
 indexmap = { version = "2.11", features = ["serde"] }
 memmap2 = "0.9"
 rabex = { git = "https://github.com/jakobhellermann/RustyAssetBundleEXtractor", default-features = false, features = [
-    "embed-tpk",
+  "embed-tpk",
 ] }
 rustc-hash = "2.1"
 serde = { version = "1.0", default-features = false }
@@ -44,3 +44,9 @@ bench = false
 # rabex = { path = "../RustyAssetBundleEXtractor" }
 # [patch."https://github.com/jakobhellermann/typetree2ksy"]
 # typetree2ksy = { path = "../typetree2ksy" }
+
+[workspace]
+members = [".", "crates/*"]
+
+[patch."https://github.com/jakobhellermann/rabex-env"]
+rabex-env = { path = "/home/jakob/dev/unity/rabex-env" }
