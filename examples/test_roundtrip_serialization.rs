@@ -6,14 +6,13 @@ use anyhow::{Context, Result, bail};
 use byteorder::LE;
 use rabex::objects::ClassId;
 use rabex::serde_typetree;
-use rayon::iter::ParallelBridge as _;
 
 fn main() -> Result<()> {
     let env = utils::find_game("silksong")?.unwrap();
 
     let start = Instant::now();
     let result = rabex_env::utils::par_fold_reduce(
-        env.addressables_bundles().par_bridge(),
+        env.addressables_bundles()?,
         |acc: &mut (usize, usize), bundle| {
             let file = env.load_addressables_bundle_content(&bundle)?;
             for item in file.objects::<serde_value::Value>() {

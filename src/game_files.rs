@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Result, bail, ensure};
 use memmap2::Mmap;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
+use walkdir::WalkDir;
 
 use crate::env::Data;
 use crate::resolver::EnvResolver;
@@ -99,10 +100,6 @@ impl GameFiles {
 }
 
 impl EnvResolver for GameFiles {
-    fn base_dir(&self) -> &Path {
-        &self.game_dir
-    }
-
     fn read_path(&self, path: &Path) -> Result<Data, std::io::Error> {
         if let Ok(suffix) = path.strip_prefix("Library") {
             let resource_path = self.game_dir.join("Resources").join(suffix);
@@ -117,25 +114,34 @@ impl EnvResolver for GameFiles {
             }
         }
 
-        match &self.level_files {
-            LevelFiles::Unpacked => {
-                let file = File::open(self.game_dir.join(path))?;
-                let mmap = unsafe { memmap2::Mmap::map(&file)? };
-                Ok(Data::Mmap(mmap))
-            }
-            LevelFiles::Packed(bundle) => {
-                let path = path
-                    .to_str()
-                    .ok_or_else(|| std::io::Error::other("non-utf8 string"))?;
-                let data = bundle.read_at(path)?.ok_or_else(|| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::NotFound,
-                        format!("File '{path}' does not exist in bundle"),
-                    )
-                })?;
+        // PERF: decide on whether to look into packed files based on name?
 
-                Ok(Data::InMemory(data))
+        let fs_path = self.game_dir.join(path);
+        match File::open(&fs_path) {
+            Ok(val) => {
+                let mmap = unsafe { memmap2::Mmap::map(&val)? };
+                return Ok(Data::Mmap(mmap));
             }
+            Err(e) if e.kind() == ErrorKind::NotFound => match &self.level_files {
+                LevelFiles::Unpacked => Err(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("File '{}' not found", fs_path.display()),
+                )),
+                LevelFiles::Packed(bundle) => {
+                    let path = path
+                        .to_str()
+                        .ok_or_else(|| std::io::Error::other("non-utf8 string"))?;
+                    let data = bundle.read_at(path)?.ok_or_else(|| {
+                        std::io::Error::new(
+                            std::io::ErrorKind::NotFound,
+                            format!("File '{path}' does not exist in bundle"),
+                        )
+                    })?;
+
+                    Ok(Data::InMemory(data))
+                }
+            },
+            Err(e) => return Err(e),
         }
     }
 
@@ -169,5 +175,28 @@ impl EnvResolver for GameFiles {
                     .collect())
             }
         }
+    }
+
+    fn list_under(&self, prefix: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
+        let abs_prefix = self.game_dir.join(prefix);
+        let mut out = Vec::new();
+        for entry in WalkDir::new(&abs_prefix).into_iter() {
+            let entry = entry.map_err(|e| {
+                e.into_io_error()
+                    .unwrap_or_else(|| std::io::Error::other("walkdir error"))
+            })?;
+            if entry.file_type().is_dir() {
+                continue;
+            }
+            out.push(
+                entry
+                    .path()
+                    // TODO: validate this is correct
+                    .strip_prefix(&self.game_dir)
+                    .unwrap()
+                    .to_owned(),
+            );
+        }
+        Ok(out)
     }
 }

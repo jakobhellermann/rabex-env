@@ -10,7 +10,7 @@ fn main() -> Result<()> {
 
     let mut results = IndexMap::new();
 
-    for bundle in env.addressables_bundles() {
+    for bundle in env.addressables_bundles()? {
         let name = bundle.to_str().unwrap();
         if !name.contains("") {
             continue;

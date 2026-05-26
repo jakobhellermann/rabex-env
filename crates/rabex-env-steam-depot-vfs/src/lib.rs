@@ -47,10 +47,6 @@ impl<C: ChunkStore> SteamDepotGameFiles<C> {
 }
 
 impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
-    fn base_dir(&self) -> &Path {
-        todo!()
-    }
-
     #[track_caller]
     #[cfg_attr(
         feature = "tracing-instrument",
@@ -94,6 +90,23 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
                     .strip_prefix(&self.data_dir)
                     .ok()
                     .map(PathBuf::from)
+            })
+            .collect())
+    }
+
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(skip_all, fields(prefix = %prefix.display()))
+    )]
+    fn list_under(&self, prefix: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
+        // PERF: O(n)
+        Ok(self
+            .manifest_store
+            .manifest()
+            .normal_paths()
+            .filter_map(|p| {
+                let rel = Path::new(p).strip_prefix(&self.data_dir).ok()?;
+                rel.starts_with(prefix).then(|| rel.to_owned())
             })
             .collect())
     }

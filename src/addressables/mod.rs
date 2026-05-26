@@ -2,18 +2,15 @@ mod archive_path;
 pub mod binary_catalog;
 pub mod settings;
 
-use std::fs::File;
-use std::io::{BufReader, Cursor, Read, Seek};
+use std::io::{Cursor, Read, Seek};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::{Context as _, Result};
-use memmap2::Mmap;
 use rabex::UnityVersion;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 use rabex::typetree::TypeTreeProvider;
 use rustc_hash::FxHashMap;
-use walkdir::WalkDir;
 
 use crate::Environment;
 use crate::addressables::binary_catalog::{BinaryCatalogReader, ResourceLocation};
@@ -23,7 +20,6 @@ use crate::resolver::EnvResolver;
 pub use archive_path::ArchivePath;
 
 pub struct AddressablesData {
-    base_dir: PathBuf,
     pub settings: AddressablesSettings,
     pub cab_to_bundle: FxHashMap<String, PathBuf>,
     pub bundle_to_cab: FxHashMap<PathBuf, Vec<String>>,
@@ -32,7 +28,6 @@ pub struct AddressablesData {
 impl std::fmt::Debug for AddressablesData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AddressablesData")
-            .field("base_dir", &self.base_dir)
             .field("settings", &self.settings)
             .field("bundle_to_cab", &self.bundle_to_cab)
             .finish()
@@ -54,7 +49,10 @@ impl AddressablesData {
         self.bundle_to_cab.keys().map(AsRef::as_ref)
     }
 
-    pub fn catalogs(&self) -> Result<Vec<BinaryCatalogReader<impl Read + Seek>>, std::io::Error> {
+    pub fn catalogs(
+        &self,
+        env: &impl EnvResolver,
+    ) -> Result<Vec<BinaryCatalogReader<impl Read + Seek>>, std::io::Error> {
         self.settings
             .m_CatalogLocations
             .iter()
@@ -68,16 +66,16 @@ impl AddressablesData {
                 let path = self.evaluate_string(&catalog.m_InternalId);
 
                 Some((|| {
-                    let data = unsafe { Mmap::map(&File::open(self.base_dir.join(path))?)? };
+                    let data = env.read_path(Path::new(&path))?;
                     BinaryCatalogReader::new(Cursor::new(data))
                 })())
             })
             .collect()
     }
 
-    pub fn resource_locations(&self) -> Result<Vec<Arc<ResourceLocation>>> {
+    pub fn resource_locations(&self, env: &impl EnvResolver) -> Result<Vec<Arc<ResourceLocation>>> {
         let mut all = Vec::new();
-        for mut catalog in self.catalogs()? {
+        for mut catalog in self.catalogs(env)? {
             let catalog = catalog.read()?;
 
             for (_key, locations) in catalog.resources {
@@ -96,24 +94,24 @@ impl AddressablesData {
         )
     }
 
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     pub(crate) fn read<R: EnvResolver, P: TypeTreeProvider>(
         env: &Environment<R, P>,
     ) -> Result<Option<AddressablesData>> {
-        let base_dir = env.game_files.base_dir();
-        let aa = base_dir.join("StreamingAssets/aa");
-        if !aa.exists() {
-            return Ok(None);
-        }
-        let reader =
-            BufReader::new(File::open(aa.join("settings.json")).context("no settings.json")?);
-        let settings: AddressablesSettings = serde_json::from_reader(reader)?;
+        let settings = Path::new("StreamingAssets/aa/settings.json");
+        let settings_bytes = match env.game_files.read_path(settings) {
+            Ok(d) => d,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(e.into()),
+        };
+        let settings: AddressablesSettings = serde_json::from_slice(settings_bytes.as_ref())?;
 
+        let aa_build = Path::new("StreamingAssets/aa").join(&settings.m_buildTarget);
         let mut lookup =
-            addressables_bundle_lookup(&aa.join(&settings.m_buildTarget), env.unity_version()?)
+            addressables_bundle_lookup(&env.game_files, &aa_build, env.unity_version()?)
                 .context("could not determine CAB locations")?;
         lookup.1.values_mut().for_each(|files| files.sort());
         let data = AddressablesData {
-            base_dir: base_dir.to_owned(),
             settings,
             cab_to_bundle: lookup.0,
             bundle_to_cab: lookup.1,
@@ -124,7 +122,8 @@ impl AddressablesData {
 
 #[allow(clippy::type_complexity)]
 #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
-fn addressables_bundle_lookup(
+fn addressables_bundle_lookup<R: EnvResolver>(
+    env: &R,
     aa_build: &Path,
     unity_version: &UnityVersion,
 ) -> Result<(FxHashMap<String, PathBuf>, FxHashMap<PathBuf, Vec<String>>)> {
@@ -133,20 +132,16 @@ fn addressables_bundle_lookup(
     #[cfg(feature = "tracing-instrument")]
     let parent_span = tracing::Span::current();
 
-    WalkDir::new(aa_build)
-        .into_iter()
-        .par_bridge()
+    let files = env.list_under(aa_build)?;
+    files
+        .into_par_iter()
         .try_fold(
             <(FxHashMap<String, PathBuf>, FxHashMap<PathBuf, Vec<String>>)>::default,
             |mut acc, path| -> Result<_> {
                 #[cfg(feature = "tracing-instrument")]
                 let _parent = parent_span.enter();
 
-                let path = path?;
-                if path.file_type().is_dir() {
-                    return Ok(acc);
-                }
-                let relative = path.path().strip_prefix(aa_build).unwrap();
+                let relative = path.strip_prefix(aa_build).unwrap();
 
                 let bundle_to_cab_files: &mut Vec<_> =
                     acc.1.entry(relative.to_owned()).or_default();
@@ -155,12 +150,16 @@ fn addressables_bundle_lookup(
                 let _span = tracing::info_span!("read_bundle").entered();
 
                 // PERF: (tested with 2k bundles on silksong)
-                // seq + mmap: 27ms
-                // seq + read: 18ms
-                // par + mmap: 20ms
-                // par + read: 7ms
+
+                // Just doing BufReader<File> takes 2.5ms.
+                // Doing `read_path` which does mmap internally takes 15ms.
+                // TODO: figure out how to architect this better
+
+                let data = env.read_path(&path)?;
+                let mut data = data.as_ref();
+                let data = Cursor::new(&mut data);
                 let bundle = BundleFileReader::from_reader(
-                    BufReader::new(File::open(path.path())?),
+                    data,
                     &ExtractionConfig::default().with_fallback_unity_version(unity_version.clone()),
                 )?;
 

@@ -134,7 +134,7 @@ fn bundle_locations(c: &mut Criterion) {
     let env = utils::find_game("silksong").unwrap().unwrap();
 
     c.bench_function("scan for bundle locations", |b| {
-        b.iter(|| env.addressables_bundles().collect::<Vec<_>>())
+        b.iter(|| env.addressables_bundles())
     });
 }
 

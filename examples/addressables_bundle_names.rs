@@ -15,7 +15,7 @@ fn main() -> Result<()> {
 
     let mut bundle_names = BTreeMap::default();
 
-    for mut catalog in addressables.catalogs()? {
+    for mut catalog in addressables.catalogs(&env.game_files)? {
         let catalog = catalog.read()?;
         for location in catalog.locations_of_provider(ASSET_BUNDLE_PROVIDER) {
             let abro = location.data.as_ref().unwrap();

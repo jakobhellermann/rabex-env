@@ -1,12 +1,11 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::fs::File;
 use std::io::{Cursor, Read, Seek};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use elsa::sync::FrozenMap;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
@@ -17,7 +16,6 @@ use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::TypeTreeProvider;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use typetree_generator_api::{GeneratorBackend, TypeTreeGenerator};
-use walkdir::WalkDir;
 
 use crate::addressables::settings::AddressablesSettings;
 use crate::addressables::{AddressablesData, ArchivePath};
@@ -91,20 +89,13 @@ impl<P: TypeTreeProvider> Environment<GameFiles, P> {
             addressables: OnceLock::new(),
         })
     }
-}
 
-#[derive(Debug)]
-pub struct AppInfo {
-    pub developer: String,
-    pub name: String,
-}
-impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     /// Initializes [`Environment::typetree_generator`] from the `Managed` DLLs.
     /// Requires `libTypeTreeGenerator.so`/`TypeTreeGenerator.dll` next to the executing binary.
     pub fn load_typetree_generator(&mut self, backend: GeneratorBackend) -> Result<()> {
         let unity_version = self.unity_version()?;
         let generator = TypeTreeGenerator::new_lib_next_to_exe(unity_version, backend)?;
-        generator.load_all_dll_in_dir(self.game_files.base_dir().join("Managed"))?;
+        generator.load_all_dll_in_dir(self.game_files.game_dir.join("Managed"))?;
         let base_node = self
             .tpk
             .get_typetree_node(ClassId::MonoBehaviour, unity_version)
@@ -113,10 +104,20 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
 
         Ok(())
     }
+}
 
+#[derive(Debug)]
+pub struct AppInfo {
+    pub developer: String,
+    pub name: String,
+}
+impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     pub fn app_info(&self) -> Result<AppInfo> {
-        let path = self.game_files.base_dir().join("app.info");
-        let contents = std::fs::read_to_string(path).context("could not find app.info")?;
+        let data = self
+            .game_files
+            .read_path(Path::new("app.info"))
+            .context("could not find app.info")?;
+        let contents = std::str::from_utf8(data.as_ref()).context("app.info is not valid UTF-8")?;
         let (developer, name) = contents.split_once('\n').context("app.info is malformed")?;
 
         Ok(AppInfo {
@@ -125,17 +126,24 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         })
     }
 
-    /// bundle is relative to the adressables build folder (or absolute)
+    /// bundle is relative to the addressables build folder.
     pub fn load_addressables_bundle(
         &self,
         bundle: impl AsRef<Path>,
-    ) -> Result<BundleFileReader<Cursor<memmap2::Mmap>>> {
+    ) -> Result<BundleFileReader<Cursor<Data>>> {
         let aa_build = self
             .addressables_build_folder()?
             .context("no addressables settings found")?;
-
-        let bundle = aa_build.join(bundle);
-        load_addressables_bundle_inner(&bundle, self.unity_version()?)
+        let bundle_path = aa_build.join(bundle);
+        let data = self
+            .game_files
+            .read_path(&bundle_path)
+            .with_context(|| format!("read bundle {}", bundle_path.display()))?;
+        let reader = BundleFileReader::from_reader(
+            Cursor::new(data),
+            &ExtractionConfig::default().with_fallback_unity_version(self.unity_version()?.clone()),
+        )?;
+        Ok(reader)
     }
 
     pub fn load_addressables_bundle_content(
@@ -161,17 +169,12 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         Ok(file)
     }
 
+    /// Relative path to the addressables build folder.
     pub fn addressables_build_folder(&self) -> Result<Option<PathBuf>> {
         let Some(settings) = self.addressables_settings()? else {
             return Ok(None);
         };
-
-        let path = self
-            .game_files
-            .base_dir()
-            .join("StreamingAssets/aa")
-            .join(&settings.m_buildTarget);
-
+        let path = Path::new("StreamingAssets/aa").join(&settings.m_buildTarget);
         Ok(Some(path))
     }
 
@@ -179,25 +182,19 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         Ok(self.addressables()?.map(|x| &x.settings))
     }
 
-    pub fn addressables_bundles(&self) -> impl Iterator<Item = PathBuf> {
-        let build_folder = self.addressables_build_folder().ok().flatten();
-        build_folder
-            .map(|aa| {
-                WalkDir::new(&aa)
-                    .into_iter()
-                    .filter_map(Result::ok)
-                    .filter_map(move |x| {
-                        if x.file_type().is_dir() {
-                            return None;
-                        }
-                        if x.path().extension().is_none_or(|ext| ext != "bundle") {
-                            return None;
-                        }
-                        Some(x.into_path().strip_prefix(&aa).unwrap().to_owned())
-                    })
-            })
+    /// All `.bundle` files living under, and relative to the addressables build folder.
+    /// Can be passsed to [`load_addressables_bundle`]).
+    pub fn addressables_bundles(&self) -> Result<Vec<PathBuf>> {
+        let Some(build) = self.addressables_build_folder()? else {
+            return Ok(Vec::new());
+        };
+        Ok(self
+            .game_files
+            .list_under(&build)?
             .into_iter()
-            .flatten()
+            .filter(|p| p.extension().is_some_and(|ext| ext == "bundle"))
+            .filter_map(|p| p.strip_prefix(&build).ok().map(PathBuf::from))
+            .collect())
     }
 
     #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
@@ -431,27 +428,6 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     pub fn loaded_files(&mut self) -> impl Iterator<Item = &Path> {
         self.serialized_files.as_mut().keys().map(Deref::deref)
     }
-}
-
-fn load_addressables_bundle_inner(
-    bundle: &Path,
-    unity_version: &UnityVersion,
-) -> Result<BundleFileReader<Cursor<memmap2::Mmap>>> {
-    let file = File::open(bundle)?;
-    if file.metadata()?.is_dir() {
-        bail!(
-            "Attempted to load directory '{}' as assetbundle",
-            bundle.display()
-        );
-    }
-    let data = unsafe { memmap2::Mmap::map(&file)? };
-
-    let bundle = BundleFileReader::from_reader(
-        Cursor::new(data),
-        &ExtractionConfig::default().with_fallback_unity_version(unity_version.clone()),
-    )?;
-
-    Ok(bundle)
 }
 
 pub fn bundle_main_serializedfile<T: AsRef<[u8]>>(

@@ -30,7 +30,11 @@ fn main() -> Result<()> {
             .into_iter()
             .map(UnityFile::SerializedFile)
             .collect::<Vec<_>>();
-        files.extend(env.addressables_bundles().map(UnityFile::Bundle));
+        files.extend(
+            env.addressables_bundles()?
+                .into_iter()
+                .map(UnityFile::Bundle),
+        );
 
         let scripts = par_fold_reduce::<BTreeMap<String, usize>, _>(files, |scripts, path| {
             let file = match path {
