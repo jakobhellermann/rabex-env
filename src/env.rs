@@ -123,8 +123,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
             .game_files
             .read_path(Path::new("app.info"))
             .context("could not find app.info")?;
-        let contents = std::str::from_utf8(data.as_ref())
-            .context("app.info is not valid UTF-8")?;
+        let contents = std::str::from_utf8(data.as_ref()).context("app.info is not valid UTF-8")?;
         let (developer, name) = contents.split_once('\n').context("app.info is malformed")?;
 
         Ok(AppInfo {
@@ -214,6 +213,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
             .collect())
     }
 
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     pub fn addressables(&self) -> Result<Option<&AddressablesData>> {
         match self.addressables.get() {
             Some(addressables) => Ok(addressables.as_ref()),
@@ -270,6 +270,7 @@ impl<R: EnvResolver + Send + Sync, P: TypeTreeProvider + Send + Sync> Environmen
 }
 
 impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     pub fn unity_version(&self) -> Result<&UnityVersion> {
         match self.unity_version.get() {
             Some(unity_version) => Ok(unity_version),
@@ -308,6 +309,10 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         Ok((file, data))
     }
 
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(skip_all, fields(path = %relative_path.as_ref().display()))
+    )]
     pub fn load_cached(
         &self,
         relative_path: impl AsRef<Path>,
@@ -325,6 +330,10 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         SerializedFileHandle::new(self, &file.0, file.1.as_ref())
     }
 
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(skip_all, fields(path = %path_name.display()))
+    )]
     pub fn load_external_file(&self, path_name: &Path) -> Result<SerializedFileHandle<'_, R, P>> {
         Ok(match self.serialized_files.get(path_name) {
             Some((file, data)) => SerializedFileHandle {
@@ -373,6 +382,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         })
     }
 
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     pub fn deref_read_untyped<'de, T>(
         &self,
         pptr: PPtr,
@@ -414,6 +424,10 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         self.deref_read_untyped(pptr.untyped(), file, reader)
     }
 
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(skip_all, fields(assembly = %script.assembly_name(), full_name = %script.full_name()))
+    )]
     pub fn load_typetree_as<'a, T>(
         &'a self,
         mb_obj: &ObjectRef<'a, MonoBehaviour>,

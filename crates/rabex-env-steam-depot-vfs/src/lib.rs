@@ -46,6 +46,10 @@ impl<C: ChunkStore> SteamDepotGameFiles<C> {
 
 impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
     #[track_caller]
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(skip_all, fields(path = %path.display()))
+    )]
     fn read_path(&self, path: &Path) -> Result<rabex_env::env::Data, std::io::Error> {
         // PERF: reduce allocation
         let path = if let Ok(suffix) = path.strip_prefix("Library") {
@@ -73,6 +77,7 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
         Ok(rabex_env::env::Data::InMemory(out))
     }
 
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     fn all_files(&self) -> Result<Vec<PathBuf>, std::io::Error> {
         // Resolver paths are data-dir-relative (mirror of `read_path`,
         // which joins with `self.data_dir`). Strip the prefix on the
@@ -91,6 +96,10 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
             .collect())
     }
 
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(skip_all, fields(prefix = %prefix.display()))
+    )]
     fn list_under(&self, prefix: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
         // Walk the manifest directly instead of `all_files() + filter`
         // — same complexity in theory (manifest paths are in-memory),

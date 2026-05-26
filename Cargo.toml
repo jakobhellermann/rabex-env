@@ -6,6 +6,7 @@ edition = "2024"
 
 [features]
 serde_path_to_error = ["rabex/serde_path_to_error"]
+tracing-instrument = []
 
 [dependencies]
 anyhow = "1.0"

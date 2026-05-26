@@ -3,12 +3,16 @@ name = "rabex-env-steam-depot-vfs"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+tracing-instrument = []
+
 [dependencies]
 anyhow = "1.0"
 rabex-env = { git = "https://github.com/jakobhellermann/rabex-env" }
 steam-depot-vfs = { git = "https://github.com/jakobhellermann/steam-depot-vfs" }
 steam-vent-depot = { git = "https://github.com/jakobhellermann/steam-vent-depot" }
 tokio = { version = "1.52.3", features = ["rt-multi-thread"] }
+tracing = { version = "0.1", default-features = false }
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

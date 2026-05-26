@@ -92,6 +92,7 @@ impl AddressablesData {
         )
     }
 
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     pub(crate) fn read<R: EnvResolver, P: TypeTreeProvider>(
         env: &Environment<R, P>,
     ) -> Result<Option<AddressablesData>> {
@@ -124,6 +125,7 @@ impl AddressablesData {
 }
 
 #[allow(clippy::type_complexity)]
+#[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
 fn addressables_bundle_lookup<R: EnvResolver>(
     env: &R,
     aa_build_rel: &Path,
