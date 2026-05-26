@@ -7,6 +7,9 @@ use rabex_env::{Environment, rabex};
 use rabex_env_steam_depot_vfs::SteamDepotGameFiles;
 use steam_depot_vfs::DepotStore;
 use steam_depot_vfs::session::LazyCachedAuth;
+use tracing::info;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 async fn steam_game_files(
     app_id: u32,
@@ -34,7 +37,14 @@ async fn steam_game_files(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt().init();
+    let filter =
+        tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
+    let registry = tracing_subscriber::registry()
+        .with(filter)
+        .with(tracing_subscriber::fmt::layer());
+    #[cfg(feature = "tracing-instrument")]
+    let registry = registry.with(tracing_timetree::layer().with_min_ms(0).with_target(true));
+    registry.init();
 
     let app_id = 1030300;
     let depot_id = 1030303;
@@ -51,7 +61,7 @@ async fn main() -> Result<()> {
 
         let aa = env.addressables()?.unwrap();
 
-        eprintln!("finished reading {} bundles", aa.bundle_to_cab.len());
+        info!(count = aa.bundle_to_cab.len(), "finished reading bundles");
 
         Ok::<_, anyhow::Error>(())
     })?;
