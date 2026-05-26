@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{Cursor, ErrorKind};
+use std::io::{BufReader, Cursor, ErrorKind};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, bail, ensure};
@@ -9,7 +9,7 @@ use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 use walkdir::WalkDir;
 
 use crate::env::Data;
-use crate::resolver::EnvResolver;
+use crate::resolver::{DataOrFile, EnvResolver};
 
 #[derive(Debug)]
 pub struct GameFiles {
@@ -99,16 +99,22 @@ impl GameFiles {
     }
 }
 
-impl EnvResolver for GameFiles {
-    fn read_path(&self, path: &Path) -> Result<Data, std::io::Error> {
+/// Result of resolving a path against [`GameFiles`]: either an open file on
+/// disk or bytes extracted from the packed bundle.
+enum Resolved {
+    File(File),
+    Packed(Vec<u8>),
+}
+
+impl GameFiles {
+    /// Locate `path` and return either a [`File`] (for unpacked layouts and
+    /// `Library/` resources) or the in-memory bytes from the packed bundle.
+    /// The caller decides how to consume it (mmap vs. streaming read).
+    fn resolve(&self, path: &Path) -> Result<Resolved, std::io::Error> {
         if let Ok(suffix) = path.strip_prefix("Library") {
             let resource_path = self.game_dir.join("Resources").join(suffix);
-
             match File::open(resource_path) {
-                Ok(val) => {
-                    let mmap = unsafe { memmap2::Mmap::map(&val)? };
-                    return Ok(Data::Mmap(mmap));
-                }
+                Ok(f) => return Ok(Resolved::File(f)),
                 Err(e) if e.kind() == ErrorKind::NotFound => {}
                 Err(e) => return Err(e),
             }
@@ -118,30 +124,47 @@ impl EnvResolver for GameFiles {
 
         let fs_path = self.game_dir.join(path);
         match File::open(&fs_path) {
-            Ok(val) => {
-                let mmap = unsafe { memmap2::Mmap::map(&val)? };
-                return Ok(Data::Mmap(mmap));
-            }
+            Ok(f) => Ok(Resolved::File(f)),
             Err(e) if e.kind() == ErrorKind::NotFound => match &self.level_files {
                 LevelFiles::Unpacked => Err(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
                     format!("File '{}' not found", fs_path.display()),
                 )),
                 LevelFiles::Packed(bundle) => {
-                    let path = path
+                    let path_str = path
                         .to_str()
                         .ok_or_else(|| std::io::Error::other("non-utf8 string"))?;
-                    let data = bundle.read_at(path)?.ok_or_else(|| {
+                    let data = bundle.read_at(path_str)?.ok_or_else(|| {
                         std::io::Error::new(
                             std::io::ErrorKind::NotFound,
-                            format!("File '{path}' does not exist in bundle"),
+                            format!("File '{path_str}' does not exist in bundle"),
                         )
                     })?;
-
-                    Ok(Data::InMemory(data))
+                    Ok(Resolved::Packed(data))
                 }
             },
-            Err(e) => return Err(e),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+impl EnvResolver for GameFiles {
+    type Reader<'a> = DataOrFile;
+
+    fn open_path(&self, path: &Path) -> Result<Self::Reader<'_>, std::io::Error> {
+        match self.resolve(path)? {
+            Resolved::File(f) => Ok(DataOrFile::File(BufReader::new(f))),
+            Resolved::Packed(data) => Ok(DataOrFile::Data(Cursor::new(Data::InMemory(data)))),
+        }
+    }
+
+    fn read_path(&self, path: &Path) -> Result<Data, std::io::Error> {
+        match self.resolve(path)? {
+            Resolved::File(f) => {
+                let mmap = unsafe { memmap2::Mmap::map(&f)? };
+                Ok(Data::Mmap(mmap))
+            }
+            Resolved::Packed(data) => Ok(Data::InMemory(data)),
         }
     }
 

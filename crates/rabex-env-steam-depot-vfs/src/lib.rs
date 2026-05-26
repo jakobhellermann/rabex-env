@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use rabex_env::resolver::EnvResolver;
 use steam_depot_vfs::chunk_store::{ChunkStore, FsCacheStore};
-use steam_depot_vfs::fs::DepotManifestStore;
+use steam_depot_vfs::fs::{DepotFileReader, DepotManifestStore};
 use tokio::runtime::Handle;
 
 pub struct SteamDepotGameFiles<C: ChunkStore = FsCacheStore> {
@@ -47,6 +47,25 @@ impl<C: ChunkStore> SteamDepotGameFiles<C> {
 }
 
 impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
+    type Reader<'a>
+        = DepotFileReader<'a, C>
+    where
+        Self: 'a;
+
+    fn open_path(&self, path: &Path) -> Result<Self::Reader<'_>, std::io::Error> {
+        let path = self.data_dir.join(path);
+        let Some(path) = path.to_str() else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidFilename,
+                format!("'{}' is not a valid utf8 filename", path.display()),
+            ));
+        };
+        let reader = self
+            .manifest_store
+            .open_reader(&path, self.handle.clone())?;
+        Ok(reader)
+    }
+
     #[track_caller]
     #[cfg_attr(
         feature = "tracing-instrument",

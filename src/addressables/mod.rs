@@ -149,17 +149,11 @@ fn addressables_bundle_lookup<R: EnvResolver>(
                 #[cfg(feature = "tracing-instrument")]
                 let _span = tracing::info_span!("read_bundle").entered();
 
-                // PERF: (tested with 2k bundles on silksong)
-
-                // Just doing BufReader<File> takes 2.5ms.
-                // Doing `read_path` which does mmap internally takes 15ms.
-                // TODO: figure out how to architect this better
-
-                let data = env.read_path(&path)?;
-                let mut data = data.as_ref();
-                let data = Cursor::new(&mut data);
+                // Only the header is read, so mmap'ing or reading the whole
+                // file would be a waste.
+                let reader = env.open_path(&path)?;
                 let bundle = BundleFileReader::from_reader(
-                    data,
+                    reader,
                     &ExtractionConfig::default().with_fallback_unity_version(unity_version.clone()),
                 )?;
 
