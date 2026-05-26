@@ -183,17 +183,17 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         let build_folder = self.addressables_build_folder().ok().flatten();
         build_folder
             .map(|aa| {
-                WalkDir::new(aa)
+                WalkDir::new(&aa)
                     .into_iter()
                     .filter_map(Result::ok)
-                    .filter_map(|x| {
+                    .filter_map(move |x| {
                         if x.file_type().is_dir() {
                             return None;
                         }
                         if x.path().extension().is_none_or(|ext| ext != "bundle") {
                             return None;
                         }
-                        Some(x.into_path())
+                        Some(x.into_path().strip_prefix(&aa).unwrap().to_owned())
                     })
             })
             .into_iter()

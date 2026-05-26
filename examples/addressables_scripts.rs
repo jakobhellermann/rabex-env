@@ -10,10 +10,8 @@ fn main() -> Result<()> {
 
     let mut results = IndexMap::new();
 
-    let data_assets = env.addressables_build_folder()?.unwrap().join("");
-
     for bundle in env.addressables_bundles() {
-        let name = bundle.strip_prefix(&data_assets).unwrap().to_str().unwrap();
+        let name = bundle.to_str().unwrap();
         if !name.contains("") {
             continue;
         }
