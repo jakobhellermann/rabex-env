@@ -123,11 +123,15 @@ impl AddressablesData {
 }
 
 #[allow(clippy::type_complexity)]
+#[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
 fn addressables_bundle_lookup(
     aa_build: &Path,
     unity_version: &UnityVersion,
 ) -> Result<(FxHashMap<String, PathBuf>, FxHashMap<PathBuf, Vec<String>>)> {
     use rayon::prelude::*;
+
+    #[cfg(feature = "tracing-instrument")]
+    let parent_span = tracing::Span::current();
 
     WalkDir::new(aa_build)
         .into_iter()
@@ -135,6 +139,9 @@ fn addressables_bundle_lookup(
         .try_fold(
             <(FxHashMap<String, PathBuf>, FxHashMap<PathBuf, Vec<String>>)>::default,
             |mut acc, path| -> Result<_> {
+                #[cfg(feature = "tracing-instrument")]
+                let _parent = parent_span.enter();
+
                 let path = path?;
                 if path.file_type().is_dir() {
                     return Ok(acc);
@@ -143,6 +150,9 @@ fn addressables_bundle_lookup(
 
                 let bundle_to_cab_files: &mut Vec<_> =
                     acc.1.entry(relative.to_owned()).or_default();
+
+                #[cfg(feature = "tracing-instrument")]
+                let _span = tracing::info_span!("read_bundle").entered();
 
                 // PERF: (tested with 2k bundles on silksong)
                 // seq + mmap: 27ms

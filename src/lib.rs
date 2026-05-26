@@ -11,6 +11,7 @@ pub mod typetree_generator_cache;
 pub mod unity;
 pub mod utils;
 
-pub use {rabex, typetree_generator_api};
+pub use rabex;
+pub use typetree_generator_api;
 
 pub use env::Environment;
