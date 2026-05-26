@@ -45,10 +45,6 @@ impl<C: ChunkStore> SteamDepotGameFiles<C> {
 }
 
 impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
-    fn base_dir(&self) -> &Path {
-        todo!()
-    }
-
     #[track_caller]
     fn read_path(&self, path: &Path) -> Result<rabex_env::env::Data, std::io::Error> {
         // PERF: reduce allocation
@@ -78,11 +74,36 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
     }
 
     fn all_files(&self) -> Result<Vec<PathBuf>, std::io::Error> {
+        // Resolver paths are data-dir-relative (mirror of `read_path`,
+        // which joins with `self.data_dir`). Strip the prefix on the
+        // way out so callers like `addressables::list_under` see the
+        // same shape they pass back into `read_path`.
         Ok(self
             .manifest_store
             .manifest()
             .normal_paths()
-            .map(PathBuf::from)
+            .filter_map(|p| {
+                Path::new(p)
+                    .strip_prefix(&self.data_dir)
+                    .ok()
+                    .map(PathBuf::from)
+            })
+            .collect())
+    }
+
+    fn list_under(&self, prefix: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
+        // Walk the manifest directly instead of `all_files() + filter`
+        // — same complexity in theory (manifest paths are in-memory),
+        // but skips two allocations per entry and gives a cheaper
+        // happy path for the common "addressables bundle scan" case.
+        Ok(self
+            .manifest_store
+            .manifest()
+            .normal_paths()
+            .filter_map(|p| {
+                let rel = Path::new(p).strip_prefix(&self.data_dir).ok()?;
+                rel.starts_with(prefix).then(|| rel.to_owned())
+            })
             .collect())
     }
 }

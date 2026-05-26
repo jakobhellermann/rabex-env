@@ -7,7 +7,7 @@ use anyhow::Result;
 fn main() -> Result<()> {
     let env = utils::find_game("silksong")?.unwrap();
     let addressables = env.addressables()?.unwrap();
-    let resources = addressables.resource_locations()?;
+    let resources = addressables.resource_locations(&env.game_files)?;
 
     let mut provider_counts = BTreeMap::default();
 

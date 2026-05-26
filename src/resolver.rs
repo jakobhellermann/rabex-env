@@ -4,12 +4,27 @@ use anyhow::Result;
 
 use crate::env::Data;
 
-/// A trait abstracting where the game files are read from.
+/// A trait abstracting where the game files are read from. All paths
+/// are interpreted as relative to the resolver's root — for the
+/// `GameFiles` backend that's the `_Data/` directory (mirrors what
+/// `probe_dir` lands on); depot-backed resolvers map the same shape
+/// onto their manifest.
 pub trait EnvResolver {
-    fn base_dir(&self) -> &Path;
-
     fn read_path(&self, path: &Path) -> Result<Data, std::io::Error>;
     fn all_files(&self) -> Result<Vec<PathBuf>, std::io::Error>;
+
+    /// List every file under `prefix` (paths relative to the resolver
+    /// root). The default impl filters [`all_files`] in O(N), which is
+    /// fine for in-memory backings (e.g. depot manifests). Filesystem-
+    /// backed resolvers should override with a directory walk so the
+    /// addressables-bundle scan doesn't read the whole game tree.
+    fn list_under(&self, prefix: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
+        Ok(self
+            .all_files()?
+            .into_iter()
+            .filter(|p| p.starts_with(prefix))
+            .collect())
+    }
 
     fn serialized_files(&self) -> Result<Vec<PathBuf>, std::io::Error> {
         Ok(self
@@ -45,15 +60,15 @@ pub trait EnvResolver {
 }
 
 impl<T: EnvResolver> EnvResolver for &T {
-    fn base_dir(&self) -> &Path {
-        (**self).base_dir()
-    }
-
     fn read_path(&self, path: &Path) -> Result<Data, std::io::Error> {
         (**self).read_path(path)
     }
 
     fn all_files(&self) -> Result<Vec<PathBuf>, std::io::Error> {
         (**self).all_files()
+    }
+
+    fn list_under(&self, prefix: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
+        (**self).list_under(prefix)
     }
 }

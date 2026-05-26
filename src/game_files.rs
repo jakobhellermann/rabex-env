@@ -99,10 +99,6 @@ impl GameFiles {
 }
 
 impl EnvResolver for GameFiles {
-    fn base_dir(&self) -> &Path {
-        &self.game_dir
-    }
-
     fn read_path(&self, path: &Path) -> Result<Data, std::io::Error> {
         if let Ok(suffix) = path.strip_prefix("Library") {
             let resource_path = self.game_dir.join("Resources").join(suffix);
@@ -117,12 +113,25 @@ impl EnvResolver for GameFiles {
             }
         }
 
-        match &self.level_files {
-            LevelFiles::Unpacked => {
-                let file = File::open(self.game_dir.join(path))?;
-                let mmap = unsafe { memmap2::Mmap::map(&file)? };
-                Ok(Data::Mmap(mmap))
+        // Try the filesystem first regardless of the install layout:
+        // packed installs (data.unity3d) still have sibling files like
+        // `StreamingAssets/aa/settings.json` on disk, and the level-
+        // files bundle wouldn't contain them. Fall back to the bundle
+        // only when the path isn't on disk.
+        let fs_path = self.game_dir.join(path);
+        match File::open(&fs_path) {
+            Ok(val) => {
+                let mmap = unsafe { memmap2::Mmap::map(&val)? };
+                return Ok(Data::Mmap(mmap));
             }
+            Err(e) if e.kind() == ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+        match &self.level_files {
+            LevelFiles::Unpacked => Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("File '{}' not found", fs_path.display()),
+            )),
             LevelFiles::Packed(bundle) => {
                 let path = path
                     .to_str()
@@ -169,5 +178,43 @@ impl EnvResolver for GameFiles {
                     .collect())
             }
         }
+    }
+
+    /// Walk only the subtree under `prefix` — addressables scans need
+    /// `StreamingAssets/aa/<build_target>/` recursively without paying
+    /// the cost of listing the whole game tree first.
+    fn list_under(&self, prefix: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
+        use walkdir::WalkDir;
+        let abs_prefix = self.game_dir.join(prefix);
+        let mut out = Vec::new();
+        for entry in WalkDir::new(&abs_prefix).into_iter() {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) => {
+                    // The addressables build folder is optional; treat
+                    // a missing prefix the same as "no files under it"
+                    // rather than an error so callers stay simple.
+                    if let Some(io_err) = e.io_error()
+                        && io_err.kind() == ErrorKind::NotFound
+                    {
+                        return Ok(out);
+                    }
+                    return Err(e
+                        .into_io_error()
+                        .unwrap_or_else(|| std::io::Error::other("walkdir error")));
+                }
+            };
+            if entry.file_type().is_dir() {
+                continue;
+            }
+            out.push(
+                entry
+                    .path()
+                    .strip_prefix(&self.game_dir)
+                    .unwrap()
+                    .to_owned(),
+            );
+        }
+        Ok(out)
     }
 }
