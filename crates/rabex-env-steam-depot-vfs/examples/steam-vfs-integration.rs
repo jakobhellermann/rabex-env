@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -19,7 +20,7 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    let store = "/home/jakob/.local/share/steam-multiversion-viewer/store";
+    let store = "/tmp/steam-vfs-store";
     let store = DepotStore::new(store.into());
 
     let manifest_store = store
@@ -33,9 +34,11 @@ async fn main() -> Result<()> {
     env.unity_version()?;
 
     let file = env.load_cached("level0")?;
+    let mut counts = BTreeMap::<_, usize>::default();
     for obj in file.objects::<()>() {
-        dbg!(obj.class_id());
+        *counts.entry(obj.class_id()).or_default() += 1;
     }
+    dbg!(counts);
 
     Ok(())
 }
