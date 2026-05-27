@@ -93,7 +93,7 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
             .manifest_store
             .read_into(path, 0, metadata.size, &mut out);
 
-        self.handle.block_on(f).unwrap();
+        self.handle.block_on(f)?;
 
         Ok(rabex_env::env::Data::InMemory(out))
     }
