@@ -6,6 +6,9 @@ use steam_depot_vfs::chunk_store::{ChunkStore, FsCacheStore};
 use steam_depot_vfs::fs::{DepotFileReader, DepotManifestStore};
 use tokio::runtime::Handle;
 
+pub use steam_depot_vfs;
+pub use steam_vent_depot;
+
 pub struct SteamDepotGameFiles<C: ChunkStore = FsCacheStore> {
     data_dir: PathBuf,
     manifest_store: Arc<DepotManifestStore<C>>,
