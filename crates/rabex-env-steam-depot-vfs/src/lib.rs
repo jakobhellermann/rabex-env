@@ -44,6 +44,28 @@ impl<C: ChunkStore> SteamDepotGameFiles<C> {
     pub fn data_dir(&self) -> &Path {
         &self.data_dir
     }
+
+    fn depot_path(&self, path: &Path) -> PathBuf {
+        // TODO: consolidate and move away from the trait implementations?
+        let mut components = path.components();
+        let first = components.next().and_then(|c| c.as_os_str().to_str());
+        let is_resource_dir =
+            first.is_some_and(|s| matches!(s, "library" | "Library" | "resources" | "Resources"));
+        if is_resource_dir {
+            return self.data_dir().join("Resources").join(&components);
+        }
+
+        self.data_dir.join(path)
+    }
+}
+
+fn utf8_path(path: &Path) -> Result<String, std::io::Error> {
+    path.to_str().map(str::to_owned).ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidFilename,
+            format!("'{}' is not a valid utf8 filename", path.display()),
+        )
+    })
 }
 
 impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
@@ -53,13 +75,8 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
         Self: 'a;
 
     fn open_path(&self, path: &Path) -> Result<Self::Reader<'_>, std::io::Error> {
-        let path = self.data_dir.join(path);
-        let Some(path) = path.to_str() else {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidFilename,
-                format!("'{}' is not a valid utf8 filename", path.display()),
-            ));
-        };
+        let path = self.depot_path(path);
+        let path = utf8_path(&path)?;
         let reader = self
             .manifest_store
             .open_reader(&path, self.handle.clone())?;
@@ -72,26 +89,15 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
         tracing::instrument(skip_all, fields(path = %path.display()))
     )]
     fn read_path(&self, path: &Path) -> Result<rabex_env::env::Data, std::io::Error> {
-        // PERF: reduce allocation
-        let path = if let Ok(suffix) = path.strip_prefix("Library") {
-            self.data_dir.join("Resources").join(suffix)
-        } else {
-            self.data_dir.join(path)
-        };
+        let path = self.depot_path(path);
+        let path = utf8_path(&path)?;
 
-        // TODO: O(n)
-        let Some(path) = path.to_str() else {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidFilename,
-                format!("'{}' is not a valid utf8 filename", path.display()),
-            ));
-        };
-        let metadata = self.manifest_store.metadata(path)?;
+        let metadata = self.manifest_store.metadata(&path)?;
 
         let mut out = Vec::with_capacity(metadata.size as usize);
         let f = self
             .manifest_store
-            .read_into(path, 0, metadata.size, &mut out);
+            .read_into(&path, 0, metadata.size, &mut out);
 
         self.handle.block_on(f)?;
 

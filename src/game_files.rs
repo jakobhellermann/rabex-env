@@ -111,13 +111,14 @@ impl GameFiles {
     /// `Library/` resources) or the in-memory bytes from the packed bundle.
     /// The caller decides how to consume it (mmap vs. streaming read).
     fn resolve(&self, path: &Path) -> Result<Resolved, std::io::Error> {
-        if let Ok(suffix) = path.strip_prefix("Library") {
-            let resource_path = self.game_dir.join("Resources").join(suffix);
-            match File::open(resource_path) {
-                Ok(f) => return Ok(Resolved::File(f)),
-                Err(e) if e.kind() == ErrorKind::NotFound => {}
-                Err(e) => return Err(e),
-            }
+        // TODO: consolidate and move away from the trait implementations?
+        let mut components = path.components();
+        let first = components.next().and_then(|c| c.as_os_str().to_str());
+        let is_resource_dir =
+            first.is_some_and(|s| matches!(s, "library" | "Library" | "resources" | "Resources"));
+        if is_resource_dir {
+            let resource_path = self.game_dir.join("Resources").join(&components);
+            return File::open(resource_path).map(Resolved::File);
         }
 
         // PERF: decide on whether to look into packed files based on name?
