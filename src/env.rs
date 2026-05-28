@@ -10,8 +10,7 @@ use elsa::sync::FrozenMap;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
-use rabex::files::serializedfile::ObjectRef;
-use rabex::objects::{ClassId, PPtr, TypedPPtr};
+use rabex::objects::{ClassId, TypedPPtr};
 use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::TypeTreeProvider;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
@@ -23,7 +22,7 @@ use crate::game_files::GameFiles;
 use crate::handle::SerializedFileHandle;
 use crate::resolver::EnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
-use crate::unity::types::{BuildSettings, MonoBehaviour, MonoScript, ResourceManager};
+use crate::unity::types::{BuildSettings, ResourceManager};
 
 pub enum Data {
     InMemory(Vec<u8>),
@@ -43,6 +42,7 @@ impl From<Vec<u8>> for Data {
     }
 }
 
+/// The central entrypoint to a untiy game.
 pub struct Environment<R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub game_files: R,
     pub tpk: P,
@@ -66,6 +66,7 @@ impl<R: Debug, P> std::fmt::Debug for Environment<R, P> {
 }
 
 impl<R, P> Environment<R, P> {
+    /// Construct a new `Environment` with the specified resolver and typetree provider.
     pub fn new(resolver: R, tpk: P) -> Self {
         Environment {
             game_files: resolver,
@@ -79,6 +80,16 @@ impl<R, P> Environment<R, P> {
 }
 
 impl<P: TypeTreeProvider> Environment<GameFiles, P> {
+    /// Construct a new `Environment` from the path to a unity game.
+    ///
+    /// Accepts both the `unitygame_Data` directory and its parent.
+    /// ```no_run
+    /// # use rabex_env::Environment;
+    /// # use rabex::tpk::TpkTypeTreeBlob;
+    /// # use rabex::typetree::typetree_cache::TypeTreeCache;
+    /// let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+    /// let env = Environment::new("/path/to/game", tpk);
+    /// ```
     pub fn new_in(path: impl AsRef<Path>, tpk: P) -> Result<Self> {
         Ok(Environment {
             game_files: GameFiles::probe(path.as_ref())?,
@@ -111,7 +122,9 @@ pub struct AppInfo {
     pub developer: String,
     pub name: String,
 }
+
 impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
+    /// Reads the data from the `app.info` file
     pub fn app_info(&self) -> Result<AppInfo> {
         let data = self
             .game_files
@@ -126,140 +139,12 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         })
     }
 
-    /// bundle is relative to the addressables build folder.
-    pub fn load_addressables_bundle(
-        &self,
-        bundle: impl AsRef<Path>,
-    ) -> Result<BundleFileReader<Cursor<Data>>> {
-        let aa_build = self
-            .addressables_build_folder()?
-            .context("no addressables settings found")?;
-        let bundle_path = aa_build.join(bundle);
-        let data = self
-            .game_files
-            .read_path(&bundle_path)
-            .with_context(|| format!("read bundle {}", bundle_path.display()))?;
-        let reader = BundleFileReader::from_reader(
-            Cursor::new(data),
-            &ExtractionConfig::default().with_fallback_unity_version(self.unity_version()?.clone()),
-        )?;
-        Ok(reader)
-    }
-
-    pub fn load_addressables_bundle_content(
-        &self,
-        bundle: impl AsRef<Path>,
-    ) -> Result<SerializedFileHandle<'_, R, P>> {
-        let (archive_name, file, data) = self.load_addressables_bundle_content_leaf(bundle)?;
-        let archive_path = ArchivePath::same(&archive_name);
-        Ok(self.insert_cache(archive_path.to_string().into(), file, Data::InMemory(data)))
-    }
-
-    pub fn load_addressables_bundle_content_leaf(
-        &self,
-        bundle: impl AsRef<Path>,
-    ) -> Result<(String, SerializedFile, Vec<u8>)> {
-        let bundle = self
-            .load_addressables_bundle(bundle.as_ref())
-            .with_context(|| format!("Failed to load bundle '{}'", bundle.as_ref().display()))?;
-        let mut file = bundle_main_serializedfile(&bundle)?;
-        file.1
-            .m_UnityVersion
-            .get_or_insert(self.unity_version()?.clone());
-        Ok(file)
-    }
-
-    /// Relative path to the addressables build folder.
-    pub fn addressables_build_folder(&self) -> Result<Option<PathBuf>> {
-        let Some(settings) = self.addressables_settings()? else {
-            return Ok(None);
-        };
-        let path = Path::new("StreamingAssets/aa").join(&settings.m_buildTarget);
-        Ok(Some(path))
-    }
-
-    pub fn addressables_settings(&self) -> Result<Option<&AddressablesSettings>> {
-        Ok(self.addressables()?.map(|x| &x.settings))
-    }
-
-    /// All `.bundle` files living under, and relative to the addressables build folder.
-    /// Can be passsed to [`load_addressables_bundle`]).
-    pub fn addressables_bundles(&self) -> Result<Vec<PathBuf>> {
-        let Some(build) = self.addressables_build_folder()? else {
-            return Ok(Vec::new());
-        };
-        Ok(self
-            .game_files
-            .list_under(&build)?
-            .into_iter()
-            .filter(|p| p.extension().is_some_and(|ext| ext == "bundle"))
-            .filter_map(|p| p.strip_prefix(&build).ok().map(PathBuf::from))
-            .collect())
-    }
-
-    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
-    pub fn addressables(&self) -> Result<Option<&AddressablesData>> {
-        match self.addressables.get() {
-            Some(addressables) => Ok(addressables.as_ref()),
-            None => {
-                let data = AddressablesData::read(self)?;
-                let cache = self.addressables.get_or_init(|| data).as_ref();
-                Ok(cache)
-            }
-        }
-    }
-}
-
-impl<R: EnvResolver + Send + Sync, P: TypeTreeProvider + Send + Sync> Environment<R, P> {
-    // TODO: non-addressables
-    pub fn load_all_serialized_files(
-        &self,
-    ) -> Result<BTreeMap<String, SerializedFileHandle<'_, R, P>>> {
-        let Some(addressables) = self.addressables()? else {
-            return Ok(Default::default());
-        };
-
-        use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
-
-        addressables
-            .bundle_paths()
-            .par_bridge()
-            .try_fold(BTreeMap::default, |mut acc, bundle_path| {
-                let bundle = self.load_addressables_bundle(bundle_path)?;
-                let bundle_identifier = bundle
-                    .serialized_files()
-                    .find_map(|file| match Path::new(&file.path).extension().is_some() {
-                        true => None,
-                        false => Some(&file.path),
-                    })
-                    .unwrap();
-
-                for entry in bundle.serialized_files() {
-                    let archive_path = ArchivePath::new(bundle_identifier, &entry.path);
-                    let data = bundle.read_at_entry(entry)?;
-                    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
-                    let file = self.insert_cache(archive_path.into(), file, data.into());
-
-                    acc.insert(archive_path.to_string(), file);
-                }
-                Ok(acc)
-            })
-            .try_reduce(Default::default, |mut acc, item| {
-                for other in item {
-                    acc.insert(other.0, other.1);
-                }
-                Ok(acc)
-            })
-    }
-}
-
-impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     pub fn unity_version(&self) -> Result<&UnityVersion> {
         match self.unity_version.get() {
             Some(unity_version) => Ok(unity_version),
             None => {
-                let ggm = self.load_cached("globalgamemanagers")?;
+                let ggm = self.load_serialized("globalgamemanagers")?;
                 let unity_version = ggm
                     .file
                     .m_UnityVersion
@@ -272,7 +157,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     }
 
     pub fn build_settings(&self) -> Result<BuildSettings> {
-        let ggm = self.load_cached("globalgamemanagers")?;
+        let ggm = self.load_serialized("globalgamemanagers")?;
         ggm.find_object_of::<BuildSettings>()
             .transpose()
             .context("no BuildSettings found in globalgamemanagers")
@@ -280,28 +165,31 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     }
 
     pub fn resource_manager(&self) -> Result<ResourceManager> {
-        let ggm = self.load_cached("globalgamemanagers")?;
+        let ggm = self.load_serialized("globalgamemanagers")?;
         ggm.find_object_of::<ResourceManager>()
             .transpose()
             .context("no ResourceManager found in globalgamemanagers")
             .flatten()
     }
 
-    pub fn load_leaf(&self, relative_path: impl AsRef<Path>) -> Result<(SerializedFile, Data)> {
-        let data = self.game_files.read_path(relative_path.as_ref())?;
-        let file = SerializedFile::from_reader(&mut Cursor::new(data.as_ref()))?;
-        Ok((file, data))
-    }
-
     #[cfg_attr(
         feature = "tracing-instrument",
         tracing::instrument(skip_all, fields(path = %relative_path.as_ref().display()))
     )]
-    pub fn load_cached(
+    pub fn load_serialized(
         &self,
         relative_path: impl AsRef<Path>,
     ) -> Result<SerializedFileHandle<'_, R, P>> {
         self.load_external_file(relative_path.as_ref())
+    }
+
+    pub fn load_serialized_uncached(
+        &self,
+        relative_path: impl AsRef<Path>,
+    ) -> Result<(SerializedFile, Data)> {
+        let data = self.game_files.read_path(relative_path.as_ref())?;
+        let file = SerializedFile::from_reader(&mut Cursor::new(data.as_ref()))?;
+        Ok((file, data))
     }
 
     pub fn insert_cache(
@@ -318,7 +206,10 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         feature = "tracing-instrument",
         tracing::instrument(skip_all, fields(path = %path_name.display()))
     )]
-    pub fn load_external_file(&self, path_name: &Path) -> Result<SerializedFileHandle<'_, R, P>> {
+    pub(crate) fn load_external_file(
+        &self,
+        path_name: &Path,
+    ) -> Result<SerializedFileHandle<'_, R, P>> {
         Ok(match self.serialized_files.get(path_name) {
             Some((file, data)) => SerializedFileHandle {
                 file,
@@ -367,9 +258,9 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
     }
 
     #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
-    pub fn deref_read_untyped<'de, T>(
+    pub fn deref_read<'de, T>(
         &self,
-        pptr: PPtr,
+        pptr: TypedPPtr<T>,
         file: &SerializedFile,
         reader: &mut (impl Read + Seek),
     ) -> Result<T>
@@ -396,48 +287,145 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         })
     }
 
-    pub fn deref_read<'de, T>(
-        &self,
-        pptr: TypedPPtr<T>,
-        file: &SerializedFile,
-        reader: &mut (impl Read + Seek),
-    ) -> Result<T>
-    where
-        T: serde::Deserialize<'de>,
-    {
-        self.deref_read_untyped(pptr.untyped(), file, reader)
-    }
-
-    #[cfg_attr(
-        feature = "tracing-instrument",
-        tracing::instrument(skip_all, fields(assembly = %script.assembly_name(), full_name = %script.full_name()))
-    )]
-    pub fn load_typetree_as<'a, T>(
-        &'a self,
-        mb_obj: &ObjectRef<'a, MonoBehaviour>,
-        script: &MonoScript,
-    ) -> Result<ObjectRef<'a, T>> {
-        let tt = self
-            .typetree_generator
-            .generate(&script.assembly_name(), &script.full_name());
-        let tt = tt?;
-        let data = mb_obj.with_typetree::<T>(tt);
-        Ok(data)
-    }
-
     pub fn loaded_files(&mut self) -> impl Iterator<Item = &Path> {
         self.serialized_files.as_mut().keys().map(Deref::deref)
     }
 }
 
-pub fn bundle_main_serializedfile<T: AsRef<[u8]>>(
-    bundle: &BundleFileReader<Cursor<T>>,
-) -> Result<(String, SerializedFile, Vec<u8>)> {
-    let entry = bundle
-        .serialized_files()
-        .find(|file| !file.path.ends_with(".sharedAssets"))
-        .context("no non-resource serializedfile in bundle")?;
-    let data = bundle.read_at(&entry.path)?.unwrap();
-    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
-    Ok((entry.path.clone(), file, data))
+impl<R: EnvResolver, P: TypeTreeProvider + Sync> Environment<R, P> {
+    // TODO: non-addressables
+    pub fn load_all_serialized_files(
+        &self,
+    ) -> Result<BTreeMap<String, SerializedFileHandle<'_, R, P>>> {
+        let Some(addressables) = self.addressables()? else {
+            return Ok(Default::default());
+        };
+
+        use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
+
+        addressables
+            .bundle_paths()
+            .par_bridge()
+            .try_fold(BTreeMap::default, |mut acc, bundle_path| {
+                let bundle = self.load_addressables_bundle(bundle_path)?;
+                let bundle_identifier = bundle
+                    .serialized_files()
+                    .find_map(|file| match Path::new(&file.path).extension().is_some() {
+                        true => None,
+                        false => Some(&file.path),
+                    })
+                    .unwrap();
+
+                for entry in bundle.serialized_files() {
+                    let archive_path = ArchivePath::new(bundle_identifier, &entry.path);
+                    let data = bundle.read_at_entry(entry)?;
+                    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+                    let file = self.insert_cache(archive_path.into(), file, data.into());
+
+                    acc.insert(archive_path.to_string(), file);
+                }
+                Ok(acc)
+            })
+            .try_reduce(Default::default, |mut acc, item| {
+                for other in item {
+                    acc.insert(other.0, other.1);
+                }
+                Ok(acc)
+            })
+    }
+}
+
+/// # Addressables
+impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
+    /// Load an assetbundle from the [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@3.1/manual/index.html) system.
+    ///
+    /// The path is relative to the addressables build folder `StreamingAssets/aa/StandaloneLinux64`.
+    pub fn load_addressables_bundle(
+        &self,
+        bundle: impl AsRef<Path>,
+    ) -> Result<BundleFileReader<Cursor<Data>>> {
+        let aa_build = self
+            .addressables_build_folder()?
+            .context("no addressables settings found")?;
+        let bundle_path = aa_build.join(bundle);
+        let data = self
+            .game_files
+            .read_path(&bundle_path)
+            .with_context(|| format!("read bundle {}", bundle_path.display()))?;
+        let reader = BundleFileReader::from_reader(
+            Cursor::new(data),
+            &ExtractionConfig::default().with_fallback_unity_version(self.unity_version()?.clone()),
+        )?;
+        Ok(reader)
+    }
+
+    /// Loads the main `SerializedFile` from an assetbundle.
+    pub fn load_addressables_bundle_content(
+        &self,
+        bundle: impl AsRef<Path>,
+    ) -> Result<SerializedFileHandle<'_, R, P>> {
+        let (archive_name, file, data) = self.load_addressables_bundle_content_leaf(bundle)?;
+        let archive_path = ArchivePath::same(&archive_name);
+        Ok(self.insert_cache(archive_path.to_string().into(), file, Data::InMemory(data)))
+    }
+
+    /// Loads the main `SerializedFile` from an assetbundle without internally caching it.
+    pub fn load_addressables_bundle_content_leaf(
+        &self,
+        bundle: impl AsRef<Path>,
+    ) -> Result<(String, SerializedFile, Vec<u8>)> {
+        let bundle = self
+            .load_addressables_bundle(bundle.as_ref())
+            .with_context(|| format!("Failed to load bundle '{}'", bundle.as_ref().display()))?;
+
+        let entry = bundle
+            .main_serializedfile()
+            .context("no non-resource serializedfile in bundle")?;
+        let data = bundle.read_at(&entry.path)?.unwrap();
+        let mut file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+        file.m_UnityVersion
+            .get_or_insert(self.unity_version()?.clone());
+        Ok((entry.path.clone(), file, data))
+    }
+
+    /// Relative path to the addressables build folder.
+    pub fn addressables_build_folder(&self) -> Result<Option<PathBuf>> {
+        let Some(settings) = self.addressables_settings()? else {
+            return Ok(None);
+        };
+        let path = Path::new("StreamingAssets/aa").join(&settings.m_buildTarget);
+        Ok(Some(path))
+    }
+
+    /// Returns the contents of the addressables `settings.json`
+    pub fn addressables_settings(&self) -> Result<Option<&AddressablesSettings>> {
+        Ok(self.addressables()?.map(|x| &x.settings))
+    }
+
+    /// All `.bundle` files living under, and relative to the addressables build folder.
+    /// Can be passsed to [`Self::load_addressables_bundle`]).
+    pub fn addressables_bundles(&self) -> Result<Vec<PathBuf>> {
+        let Some(build) = self.addressables_build_folder()? else {
+            return Ok(Vec::new());
+        };
+        Ok(self
+            .game_files
+            .list_under(&build)?
+            .into_iter()
+            .filter(|p| p.extension().is_some_and(|ext| ext == "bundle"))
+            .filter_map(|p| p.strip_prefix(&build).ok().map(PathBuf::from))
+            .collect())
+    }
+
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
+    pub fn addressables(&self) -> Result<Option<&AddressablesData>> {
+        match self.addressables.get() {
+            Some(addressables) => Ok(addressables.as_ref()),
+            None => {
+                let data = AddressablesData::read(self)?;
+                let cache = self.addressables.get_or_init(|| data).as_ref();
+                Ok(cache)
+            }
+        }
+    }
 }

@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
     let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
     let env = Environment::new(game_files, &tpk);
 
-    let file = env.load_cached(&relative_path)?;
+    let file = env.load_serialized(&relative_path)?;
     print_class_stats(&file);
     println!();
     print_hierarchy(&file)?;

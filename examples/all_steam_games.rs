@@ -17,7 +17,7 @@ fn main() -> Result<()> {
             env.game_files.serialized_files()?,
             |scripts, path| {
                 let path = path.to_str().unwrap();
-                let (file, data) = env.load_leaf(&path)?;
+                let (file, data) = env.load_serialized_uncached(&path)?;
                 let file = SerializedFileHandle::new(&env, &file, data.as_ref());
 
                 let entry = scripts.entry(path.to_owned()).or_default();

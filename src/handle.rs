@@ -293,14 +293,21 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         self.load_typetree_as(&script)
     }
 
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(skip_all, fields(assembly = %script.assembly_name(), full_name = %script.full_name()))
+    )]
     fn load_typetree_as<U>(&'a self, script: &MonoScript) -> Result<ObjectRefHandle<'a, U, R, P>>
     where
         U: for<'de> Deserialize<'de>,
     {
-        let data = self
+        let tt = self
             .file
             .env
-            .load_typetree_as(&self.object.cast(), script)?;
+            .typetree_generator
+            .generate(&script.assembly_name(), &script.full_name());
+        let tt = tt?;
+        let data = self.object.with_typetree::<U>(tt);
 
         Ok(ObjectRefHandle {
             object: data,

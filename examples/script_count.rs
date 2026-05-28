@@ -39,7 +39,7 @@ fn main() -> Result<()> {
         let scripts = par_fold_reduce::<BTreeMap<String, usize>, _>(files, |scripts, path| {
             let file = match path {
                 UnityFile::Bundle(bundle) => env.load_addressables_bundle_content(bundle)?,
-                UnityFile::SerializedFile(path) => env.load_cached(&path)?,
+                UnityFile::SerializedFile(path) => env.load_serialized(&path)?,
             };
             for mb in file.objects_of::<MonoBehaviour>() {
                 let Some(script) = mb.mono_script()? else {

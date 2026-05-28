@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
     let env = Environment::new(game_files, &tpk);
     env.unity_version()?;
 
-    let file = env.load_cached("level0")?;
+    let file = env.load_serialized("level0")?;
     let mut counts = BTreeMap::<_, usize>::default();
     for obj in file.objects::<()>() {
         *counts.entry(obj.class_id()).or_default() += 1;
