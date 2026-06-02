@@ -305,8 +305,14 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
             .file
             .env
             .typetree_generator
-            .generate(&script.assembly_name(), &script.full_name());
-        let tt = tt?;
+            .generate(&script.assembly_name(), &script.full_name())?
+            .with_context(|| {
+                format!(
+                    "no type tree for {} ({}): type not found in the loaded assemblies",
+                    script.full_name(),
+                    script.assembly_name()
+                )
+            })?;
         let data = self.object.with_typetree::<U>(tt);
 
         Ok(ObjectRefHandle {

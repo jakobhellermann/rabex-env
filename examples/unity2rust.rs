@@ -112,7 +112,11 @@ impl<'a> Context<'a> {
         self.generate(&tt)
     }
     pub fn generate_script(&mut self, assembly: &str, script: &str) -> Result<()> {
-        let tt = self.env.typetree_generator.generate(assembly, script)?;
+        let tt = self
+            .env
+            .typetree_generator
+            .generate(assembly, script)?
+            .with_context(|| format!("type tree not found for {script} ({assembly})"))?;
         self.generate(tt)
     }
 
@@ -184,11 +188,12 @@ impl<'a> Context<'a> {
                         .env
                         .typetree_generator
                         .generate("Assembly-CSharp", asm_ty)?;
-                    if ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour" {
-                        format!("PPtr /* {asm_ty} */")
-                    } else {
-                        self.queue(ty);
-                        format!("TypedPPtr<{}>", self.escape_typename(ty))
+                    match ty {
+                        Some(ty) if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") => {
+                            self.queue(ty);
+                            format!("TypedPPtr<{}>", self.escape_typename(ty))
+                        }
+                        _ => format!("PPtr /* {asm_ty} */"),
                     }
                 } else {
                     format!("TypedPPtr<{}>", pptr)

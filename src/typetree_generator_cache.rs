@@ -44,20 +44,22 @@ impl TypeTreeGeneratorCache {
         self.cache.insert(key, Box::new(ty))
     }
 
-    pub fn generate(&self, assembly_name: &str, full_name: &str) -> Result<&TypeTreeNode> {
+    /// Generates the type tree for `assembly_name`/`full_name`
+    ///
+    /// May be `None` if the type can't be resolved in the loaded assemblies
+    /// (e.g. a an editor-only type)
+    pub fn generate(&self, assembly_name: &str, full_name: &str) -> Result<Option<&TypeTreeNode>> {
         let key = (assembly_name.to_owned(), full_name.to_owned());
-        match self.cache.get(&key) {
-            Some(value) => Ok(value),
-            None => {
-                let Some(generator) = &self.generator else {
-                    bail!("Missing {assembly_name} / {full_name} in monobehaviour typetree export");
-                };
-                let value = generator
-                    .generate_typetree_raw(self.base_node.clone(), assembly_name, full_name)?
-                    .unwrap_or_else(|| self.base_node.clone());
-                Ok(self.cache.insert(key, Box::new(value)))
-            }
+        if let Some(value) = self.cache.get(&key) {
+            return Ok(Some(value));
         }
+
+        let Some(generator) = &self.generator else {
+            bail!("Missing {assembly_name} / {full_name} in monobehaviour typetree export");
+        };
+        let value =
+            generator.generate_typetree_raw(self.base_node.clone(), assembly_name, full_name)?;
+        Ok(value.map(|value| self.cache.insert(key, Box::new(value))))
     }
 
     pub fn can_generate(&self) -> bool {
