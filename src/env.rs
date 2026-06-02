@@ -106,6 +106,11 @@ impl<P: TypeTreeProvider> Environment<GameFiles, P> {
     pub fn load_typetree_generator(&mut self, backend: GeneratorBackend) -> Result<()> {
         let unity_version = self.unity_version()?;
         let generator = TypeTreeGenerator::new_lib_next_to_exe(unity_version, backend)?;
+        // The cache prepends the MonoBehaviour base nodes itself (via
+        // `generate_typetree_raw`'s `base`), so disable the native lib's
+        // own root-node insertion — otherwise the header is emitted twice
+        // and every field reads one header too late.
+        generator.set_add_monobehaviour_root_nodes(false)?;
         generator.load_all_dll_in_dir(self.game_files.game_dir.join("Managed"))?;
         let base_node = self
             .tpk
