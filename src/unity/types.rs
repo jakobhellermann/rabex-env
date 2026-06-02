@@ -3,6 +3,7 @@
 mod utils;
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::ops::Range;
 use std::path::Path;
 
@@ -263,4 +264,14 @@ impl ClassIdType for TextAsset {
 pub struct MeshFilter {
     pub m_GameObject: TypedPPtr<GameObject>,
     pub m_Mesh: TypedPPtr<()>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MonoManager {
+    pub m_RuntimeClassHashes: BTreeMap<i32, [u8; 16]>,
+    pub m_Scripts: Vec<TypedPPtr<MonoScript>>,
+}
+
+impl ClassIdType for MonoManager {
+    const CLASS_ID: ClassId = ClassId::MonoManager;
 }

@@ -22,7 +22,7 @@ use crate::game_files::GameFiles;
 use crate::handle::SerializedFileHandle;
 use crate::resolver::EnvResolver;
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
-use crate::unity::types::{BuildSettings, ResourceManager};
+use crate::unity::types::{BuildSettings, MonoManager, MonoScript, ResourceManager};
 
 pub enum Data {
     InMemory(Vec<u8>),
@@ -149,7 +149,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         match self.unity_version.get() {
             Some(unity_version) => Ok(unity_version),
             None => {
-                let ggm = self.load_serialized("globalgamemanagers")?;
+                let ggm = self.globalgamemanagers()?;
                 let unity_version = ggm
                     .file
                     .m_UnityVersion
@@ -161,20 +161,48 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         }
     }
 
+    /// Reads the `globalgamemanagers` serialized file, which contains
+    /// global singletons like `MonoManager`, `PlayerSettings`, `BuildSettings` etc.
+    pub fn globalgamemanagers(&self) -> Result<SerializedFileHandle<'_, R, P>> {
+        self.load_serialized("globalgamemanagers")
+    }
+
+    /// Reads the [`BuildSettings`] singleton from `globalgamemanagers`
     pub fn build_settings(&self) -> Result<BuildSettings> {
-        let ggm = self.load_serialized("globalgamemanagers")?;
+        let ggm = self.globalgamemanagers()?;
         ggm.find_object_of::<BuildSettings>()
             .transpose()
             .context("no BuildSettings found in globalgamemanagers")
             .flatten()
     }
 
+    /// Reads the [`ResourceManager`] singleton from `globalgamemanagers`
     pub fn resource_manager(&self) -> Result<ResourceManager> {
-        let ggm = self.load_serialized("globalgamemanagers")?;
+        let ggm = self.globalgamemanagers()?;
         ggm.find_object_of::<ResourceManager>()
             .transpose()
             .context("no ResourceManager found in globalgamemanagers")
             .flatten()
+    }
+
+    /// Reads the [`MonoManager`] singleton from `globalgamemanagers`
+    pub fn mono_manager(&self) -> Result<MonoManager> {
+        let ggm = self.globalgamemanagers()?;
+        ggm.find_object_of::<MonoManager>()
+            .transpose()
+            .context("no MonoManager found in globalgamemanagers")
+            .flatten()
+    }
+
+    /// Reads all [`MonoScript`]s from `globalgamemanagers`
+    pub fn mono_scripts(&self) -> Result<Vec<MonoScript>> {
+        let ggm = self.globalgamemanagers()?;
+        let mono_manager = ggm.find_object_of::<MonoManager>()?.unwrap();
+        mono_manager
+            .m_Scripts
+            .iter()
+            .map(|script| ggm.deref_read(*script))
+            .collect::<Result<Vec<_>, _>>()
     }
 
     #[cfg_attr(
