@@ -18,8 +18,7 @@ const SCENE_SINGLETON_OBJECTS: &[ClassId] = &[
 ];
 
 fn main() -> Result<()> {
-    let mut env = utils::find_game("silksong")?.unwrap();
-    env.load_typetree_generator(typetree_generator_api::GeneratorBackend::AssetsTools)?;
+    let env = utils::find_game("silksong")?.unwrap();
 
     let aa = env.addressables_build_folder()?.unwrap();
     seq_fold_reduce::<(), _>(

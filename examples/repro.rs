@@ -5,7 +5,6 @@ use rabex::objects::pptr::PathId;
 
 fn main() -> Result<()> {
     let env = utils::find_game("silksong")?.unwrap();
-    // env.load_typetree_generator(typetree_generator_api::GeneratorBackend::AssetsTools)?;
 
     let bundle = "scenes_scenes_scenes/song_17.bundle";
     let path_id: PathId = -7545636390849209228;

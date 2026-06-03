@@ -12,9 +12,8 @@ use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
 use rabex::objects::{ClassId, TypedPPtr};
 use rabex::tpk::TpkTypeTreeBlob;
-use rabex::typetree::TypeTreeProvider;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
-use typetree_generator_api::{GeneratorBackend, TypeTreeGenerator};
+use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 
 use crate::addressables::settings::AddressablesSettings;
 use crate::addressables::{AddressablesData, ArchivePath};
@@ -99,26 +98,6 @@ impl<P: TypeTreeProvider> Environment<GameFiles, P> {
             unity_version: OnceLock::new(),
             addressables: OnceLock::new(),
         })
-    }
-
-    /// Initializes [`Environment::typetree_generator`] from the `Managed` DLLs.
-    /// Requires `libTypeTreeGenerator.so`/`TypeTreeGenerator.dll` next to the executing binary.
-    pub fn load_typetree_generator(&mut self, backend: GeneratorBackend) -> Result<()> {
-        let unity_version = self.unity_version()?;
-        let generator = TypeTreeGenerator::new_lib_next_to_exe(unity_version, backend)?;
-        // The cache prepends the MonoBehaviour base nodes itself (via
-        // `generate_typetree_raw`'s `base`), so disable the native lib's
-        // own root-node insertion — otherwise the header is emitted twice
-        // and every field reads one header too late.
-        generator.set_add_monobehaviour_root_nodes(false)?;
-        generator.load_all_dll_in_dir(self.game_files.game_dir.join("Managed"))?;
-        let base_node = self
-            .tpk
-            .get_typetree_node(ClassId::MonoBehaviour, unity_version)
-            .expect("missing MonoBehaviour class");
-        self.typetree_generator = TypeTreeGeneratorCache::new(generator, base_node.into_owned());
-
-        Ok(())
     }
 }
 
@@ -460,5 +439,39 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
                 Ok(cache)
             }
         }
+    }
+}
+
+impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
+    fn load_managed_assembly(&self, name: &str) -> Result<Vec<u8>, std::io::Error> {
+        let data = self
+            .game_files
+            .read_path(&Path::new("Managed").join(name))?;
+        // PERF: remove copy
+        Ok(data.as_ref().to_vec())
+    }
+
+    /// Generate the MonoBehaviour type tree for `full_name` (e.g.
+    /// `Some.Namespace.Foo`) defined in `assembly` (e.g. `Assembly-CSharp.dll`),
+    /// May return `None` if the type can't be resolved (e.g. editor-only)
+    pub fn generate_typetree(
+        &self,
+        assembly: &str,
+        full_name: &str,
+    ) -> Result<Option<&TypeTreeNode>> {
+        self.typetree_generator.generate(
+            || {
+                let unity_version = self.unity_version()?;
+                let base_node = self
+                    .tpk
+                    .get_typetree_node(ClassId::MonoBehaviour, unity_version)
+                    .expect("missing MonoBehaviour class")
+                    .into_owned();
+                Ok((unity_version.clone(), base_node))
+            },
+            &|name| self.load_managed_assembly(name),
+            assembly,
+            full_name,
+        )
     }
 }

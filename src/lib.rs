@@ -12,6 +12,5 @@ pub mod unity;
 pub mod utils;
 
 pub use rabex;
-pub use typetree_generator_api;
 
 pub use env::Environment;

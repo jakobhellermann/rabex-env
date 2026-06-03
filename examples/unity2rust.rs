@@ -12,8 +12,7 @@ use std::fmt::Write as _;
 use std::io::Write;
 
 fn main() -> Result<()> {
-    let mut env = utils::find_game("silksong")?.unwrap();
-    env.load_typetree_generator(typetree_generator_api::GeneratorBackend::AssetsTools)?;
+    let env = utils::find_game("silksong")?.unwrap();
 
     let settings = Settings {
         derives: Some("Debug, serde::Deserialize"),
@@ -114,8 +113,7 @@ impl<'a> Context<'a> {
     pub fn generate_script(&mut self, assembly: &str, script: &str) -> Result<()> {
         let tt = self
             .env
-            .typetree_generator
-            .generate(assembly, script)?
+            .generate_typetree(assembly, script)?
             .with_context(|| format!("type tree not found for {script} ({assembly})"))?;
         self.generate(tt)
     }
@@ -184,10 +182,7 @@ impl<'a> Context<'a> {
             Classify::Primitive(ty) => ty.to_owned(),
             Classify::PPtr(pptr) => {
                 if let Some(asm_ty) = pptr.strip_prefix('$') {
-                    let ty = self
-                        .env
-                        .typetree_generator
-                        .generate("Assembly-CSharp", asm_ty)?;
+                    let ty = self.env.generate_typetree("Assembly-CSharp", asm_ty)?;
                     match ty {
                         Some(ty) if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") => {
                             self.queue(ty);

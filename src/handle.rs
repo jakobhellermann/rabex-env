@@ -204,7 +204,6 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         T: for<'de> Deserialize<'de>,
     {
         if self.object.info.m_ClassID == ClassId::MonoBehaviour
-            && self.file.env.typetree_generator.can_generate()
             && let Ok(tt) = &self.object.tt
             && tt.m_Type == "MonoBehaviour"
         {
@@ -304,8 +303,7 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         let tt = self
             .file
             .env
-            .typetree_generator
-            .generate(&script.assembly_name(), &script.full_name())?
+            .generate_typetree(&script.assembly_name(), &script.full_name())?
             .with_context(|| {
                 format!(
                     "no type tree for {} ({}): type not found in the loaded assemblies",

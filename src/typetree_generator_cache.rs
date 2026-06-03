@@ -1,36 +1,42 @@
-use anyhow::{Result, bail};
-use elsa::sync::FrozenMap;
-use rabex::typetree::TypeTreeNode;
-use typetree_generator_api::TypeTreeGenerator;
+use std::sync::OnceLock;
 
-pub struct TypeTreeGeneratorCache {
-    generator: Option<TypeTreeGenerator>,
-    cache: FrozenMap<(String, String), Box<TypeTreeNode>>,
+use anyhow::Result;
+use elsa::sync::FrozenMap;
+use rabex::UnityVersion;
+use rabex::typetree::TypeTreeNode;
+use unity_typetree_gen::{AssemblyTypeTreeGenerator, Loader};
+
+struct Backend {
+    generator: AssemblyTypeTreeGenerator,
     base_node: TypeTreeNode,
 }
+
+pub struct TypeTreeGeneratorCache {
+    backend: OnceLock<Backend>,
+    cache: FrozenMap<(String, String), Box<TypeTreeNode>>,
+}
 impl TypeTreeGeneratorCache {
-    pub fn new(generator: TypeTreeGenerator, base_node: TypeTreeNode) -> Self {
-        TypeTreeGeneratorCache {
-            generator: Some(generator),
-            cache: FrozenMap::default(),
+    pub fn new(unity_version: UnityVersion, base_node: TypeTreeNode) -> Self {
+        let backend = OnceLock::new();
+        let _ = backend.set(Backend {
+            generator: AssemblyTypeTreeGenerator::new(unity_version),
             base_node,
+        });
+        TypeTreeGeneratorCache {
+            backend,
+            cache: FrozenMap::default(),
         }
     }
-    pub fn prefilled(
-        cache: FrozenMap<(String, String), Box<TypeTreeNode>>,
-        base_node: TypeTreeNode,
-    ) -> Self {
+    pub fn prefilled(cache: FrozenMap<(String, String), Box<TypeTreeNode>>) -> Self {
         TypeTreeGeneratorCache {
-            generator: None,
+            backend: OnceLock::new(),
             cache,
-            base_node,
         }
     }
     pub fn empty() -> Self {
         TypeTreeGeneratorCache {
-            generator: None,
+            backend: OnceLock::new(),
             cache: FrozenMap::default(),
-            base_node: TypeTreeNode::default(),
         }
     }
 
@@ -44,25 +50,45 @@ impl TypeTreeGeneratorCache {
         self.cache.insert(key, Box::new(ty))
     }
 
-    /// Generates the type tree for `assembly_name`/`full_name`
-    ///
-    /// May be `None` if the type can't be resolved in the loaded assemblies
-    /// (e.g. a an editor-only type)
-    pub fn generate(&self, assembly_name: &str, full_name: &str) -> Result<Option<&TypeTreeNode>> {
+    pub(crate) fn generate(
+        &self,
+        init: impl FnOnce() -> Result<(UnityVersion, TypeTreeNode)>,
+        loader: &Loader,
+        assembly_name: &str,
+        full_name: &str,
+    ) -> Result<Option<&TypeTreeNode>> {
         let key = (assembly_name.to_owned(), full_name.to_owned());
         if let Some(value) = self.cache.get(&key) {
             return Ok(Some(value));
         }
 
-        let Some(generator) = &self.generator else {
-            bail!("Missing {assembly_name} / {full_name} in monobehaviour typetree export");
-        };
-        let value =
-            generator.generate_typetree_raw(self.base_node.clone(), assembly_name, full_name)?;
+        let backend = self.get_or_init(init)?;
+        let (namespace, type_name) = full_name.rsplit_once('.').unwrap_or(("", full_name));
+        let value = backend
+            .generator
+            .generate(loader, assembly_name, namespace, type_name)?
+            .map(|mut node| {
+                // prepend MonoBehaviour header
+                node.children
+                    .splice(0..0, backend.base_node.children.clone());
+                node
+            });
         Ok(value.map(|value| self.cache.insert(key, Box::new(value))))
     }
 
-    pub fn can_generate(&self) -> bool {
-        self.generator.is_some() || !self.cache.is_empty()
+    fn get_or_init(
+        &self,
+        init: impl FnOnce() -> Result<(UnityVersion, TypeTreeNode)>,
+    ) -> Result<&Backend> {
+        if let Some(backend) = self.backend.get() {
+            return Ok(backend);
+        }
+        let (unity_version, base_node) = init()?;
+        let generator = AssemblyTypeTreeGenerator::new(unity_version);
+        // A racing initializer may win; either backend is equivalent.
+        Ok(self.backend.get_or_init(|| Backend {
+            generator,
+            base_node,
+        }))
     }
 }
