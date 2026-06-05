@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use rabex_env::resolver::EnvResolver;
+use steam_depot_vfs::FileKind;
 use steam_depot_vfs::chunk_store::{ChunkStore, FsCacheStore};
 use steam_depot_vfs::fs::{DepotFileReader, DepotManifestStore};
 use tokio::runtime::Handle;
@@ -17,26 +18,43 @@ pub struct SteamDepotGameFiles<C: ChunkStore = FsCacheStore> {
 
 impl<C: ChunkStore> SteamDepotGameFiles<C> {
     pub fn new(manifest_store: Arc<DepotManifestStore<C>>) -> Result<Self, std::io::Error> {
-        let root_files = manifest_store
-            .list_dir("/")
-            .map_err(|e| std::io::Error::other(e))?;
-        let data_dir = root_files
-            .iter()
-            .find(|x| x.name.ends_with("_Data"))
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    format!(
-                        "couldnt find unity data dir, found {:?}",
-                        root_files.iter().map(|x| &x.name).collect::<Vec<_>>()
-                    ),
-                )
-            })?;
+        let data_dir = Self::find_data_dir(&manifest_store)?;
         Ok(Self {
-            data_dir: PathBuf::from(data_dir.name.clone()),
+            data_dir,
             manifest_store,
             handle: Handle::current(),
         })
+    }
+
+    fn find_data_dir(manifest_store: &DepotManifestStore<C>) -> Result<PathBuf, std::io::Error> {
+        let root_files = manifest_store
+            .list_dir("/")
+            .map_err(std::io::Error::other)?;
+
+        if let Some(entry) = root_files.iter().find(|x| x.name.ends_with("_Data")) {
+            return Ok(PathBuf::from(entry.name.clone()));
+        }
+
+        // On macOS the player ships as a `.app` bundle with the Unity data dir
+        // at `<Game>.app/Contents/Resources/Data`.
+        for entry in root_files.iter().filter(|x| x.name.ends_with(".app")) {
+            let data_dir = Path::new(&entry.name).join("Contents/Resources/Data");
+            let depot_path = format_depot_path(&data_dir)?;
+            if matches!(
+                manifest_store.metadata(&depot_path),
+                Ok(meta) if matches!(meta.kind, FileKind::Directory)
+            ) {
+                return Ok(data_dir);
+            }
+        }
+
+        Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!(
+                "couldnt find unity data dir, found {:?}",
+                root_files.iter().map(|x| &x.name).collect::<Vec<_>>()
+            ),
+        ))
     }
 
     /// Directory the unity build keeps its assets in, relative to the
