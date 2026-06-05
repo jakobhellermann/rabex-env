@@ -49,8 +49,8 @@ fn main() -> Result<()> {
     ] {
         cx.generate_script("Assembly-CSharp", script)?;
     }
-    cx.generate_script("PlayMaker", "PlayMakerFSM")?;
-    // cx.generate_classid(ClassId::RectTransform)?;
+    // cx.generate_script("PlayMaker", "PlayMakerFSM")?;
+    cx.generate_classid(ClassId::Shader)?;
 
     cx.finish(std::io::stdout().lock())?;
 
@@ -92,6 +92,9 @@ impl<'a> Context<'a> {
             writer,
             "use rabex_env::rabex::objects::{{PPtr, TypedPPtr}};"
         )?;
+        if self.generated_code.iter().any(|c| c.contains("HashMap<")) {
+            writeln!(writer, "use std::collections::HashMap;")?;
+        }
         writeln!(writer, "")?;
         for code in &self.generated_code {
             writeln!(writer, "{code}")?;
@@ -202,6 +205,13 @@ impl<'a> Context<'a> {
             Classify::Array(item) => {
                 format!("Vec<{}>", self.field_type(item)?)
             }
+            Classify::Map { key, value } => {
+                format!(
+                    "HashMap<{}, {}>",
+                    self.field_type(key)?,
+                    self.field_type(value)?
+                )
+            }
         };
         Ok(field_ty)
     }
@@ -227,7 +237,12 @@ impl<'a> Context<'a> {
             "string" => Classify::Primitive("String"),
             "bool" => Classify::Primitive("bool"),
             "TypelessData" => Classify::Primitive("Vec<u8>"),
-            "map" => todo!(),
+            "map" => {
+                let pair = &tt.children[0].children[1];
+                let key = &pair.children[0];
+                let value = &pair.children[1];
+                Classify::Map { key, value }
+            }
             _ if tt.children.len() == 1 && tt.children[0].m_Type == "Array" => {
                 let item = &tt.children[0].children[1];
                 Classify::Array(item)
@@ -255,4 +270,8 @@ enum Classify<'a> {
     PPtr(String),
     Other(&'a TypeTreeNode),
     Array(&'a TypeTreeNode),
+    Map {
+        key: &'a TypeTreeNode,
+        value: &'a TypeTreeNode,
+    },
 }
