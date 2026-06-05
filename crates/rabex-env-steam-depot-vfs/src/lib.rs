@@ -62,13 +62,17 @@ impl<C: ChunkStore> SteamDepotGameFiles<C> {
     }
 }
 
-fn utf8_path(path: &Path) -> Result<String, std::io::Error> {
-    path.to_str().map(str::to_owned).ok_or_else(|| {
-        std::io::Error::new(
-            std::io::ErrorKind::InvalidFilename,
-            format!("'{}' is not a valid utf8 filename", path.display()),
-        )
-    })
+fn format_depot_path(path: &Path) -> Result<String, std::io::Error> {
+    path.to_str()
+        // Depot manifests always use `/` as separator.
+        // On Windows, PathBuf::join inserts `\` between components.
+        .map(|s| s.replace('\\', "/"))
+        .ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidFilename,
+                format!("'{}' is not a valid utf8 filename", path.display()),
+            )
+        })
 }
 
 impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
@@ -79,7 +83,7 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
 
     fn open_path(&self, path: &Path) -> Result<Self::Reader<'_>, std::io::Error> {
         let path = self.depot_path(path);
-        let path = utf8_path(&path)?;
+        let path = format_depot_path(&path)?;
         let reader = self
             .manifest_store
             .open_reader(&path, self.handle.clone())?;
@@ -93,7 +97,7 @@ impl<C: ChunkStore> EnvResolver for SteamDepotGameFiles<C> {
     )]
     fn read_path(&self, path: &Path) -> Result<rabex_env::env::Data, std::io::Error> {
         let path = self.depot_path(path);
-        let path = utf8_path(&path)?;
+        let path = format_depot_path(&path)?;
 
         let metadata = self.manifest_store.metadata(&path)?;
 
