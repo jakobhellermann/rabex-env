@@ -35,6 +35,17 @@ impl Default for MemResolver {
     }
 }
 
+impl<P: Into<PathBuf>> FromIterator<(P, Vec<u8>)> for MemResolver {
+    fn from_iter<I: IntoIterator<Item = (P, Vec<u8>)>>(iter: I) -> Self {
+        Self {
+            files: iter
+                .into_iter()
+                .map(|(path, bytes)| (path.into(), bytes))
+                .collect(),
+        }
+    }
+}
+
 impl EnvResolver for MemResolver {
     type Reader<'a>
         = Cursor<&'a [u8]>
