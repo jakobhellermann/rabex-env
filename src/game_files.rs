@@ -26,7 +26,25 @@ pub enum LevelFiles {
 fn find_unity_data_dir(install_dir: &Path) -> Result<Option<PathBuf>> {
     Ok(std::fs::read_dir(install_dir)?
         .filter_map(Result::ok)
-        .find_map(|entry| is_unity_data_dir(&entry.path()).then(|| entry.path())))
+        .find_map(|entry| {
+            let path = entry.path();
+            if is_unity_data_dir(&path) {
+                return Some(path);
+            }
+            // On macOS the player ships as a `.app` bundle with the Unity data
+            // dir at `<Game>.app/Contents/Resources/Data`.
+            let is_app_bundle = path
+                .extension()
+                .and_then(OsStr::to_str)
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("app"));
+            if is_app_bundle {
+                let data_dir = path.join("Contents/Resources/Data");
+                if data_dir.is_dir() {
+                    return Some(data_dir);
+                }
+            }
+            None
+        }))
 }
 
 fn is_unity_data_dir(dir: &Path) -> bool {
