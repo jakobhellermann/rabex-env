@@ -6,6 +6,9 @@ use anyhow::Result;
 
 use crate::env::Data;
 
+mod mem;
+pub use mem::MemResolver;
+
 /// A trait abstracting where the game files are read from.
 /// All paths are interpreted as relative to the `Game_Data/` directory.
 pub trait EnvResolver: Sync {
