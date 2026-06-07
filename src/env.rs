@@ -10,7 +10,7 @@ use elsa::sync::FrozenMap;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
-use rabex::objects::{ClassId, TypedPPtr};
+use rabex::objects::TypedPPtr;
 use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
@@ -443,14 +443,6 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
 }
 
 impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
-    fn load_managed_assembly(&self, name: &str) -> Result<Vec<u8>, std::io::Error> {
-        let data = self
-            .game_files
-            .read_path(&Path::new("Managed").join(name))?;
-        // PERF: remove copy
-        Ok(data.as_ref().to_vec())
-    }
-
     /// Generate the MonoBehaviour type tree for `full_name` (e.g.
     /// `Some.Namespace.Foo`) defined in `assembly` (e.g. `Assembly-CSharp.dll`),
     /// May return `None` if the type can't be resolved (e.g. editor-only)
@@ -459,19 +451,8 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         assembly: &str,
         full_name: &str,
     ) -> Result<Option<&TypeTreeNode>> {
-        self.typetree_generator.generate(
-            || {
-                let unity_version = self.unity_version()?;
-                let base_node = self
-                    .tpk
-                    .get_typetree_node(ClassId::MonoBehaviour, unity_version)
-                    .expect("missing MonoBehaviour class")
-                    .into_owned();
-                Ok((unity_version.clone(), base_node))
-            },
-            &|name| self.load_managed_assembly(name),
-            assembly,
-            full_name,
-        )
+        self.typetree_generator
+            .backend(self)?
+            .generate(assembly, full_name)
     }
 }

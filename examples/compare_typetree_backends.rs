@@ -155,12 +155,12 @@ fn compare_game<P: TypeTreeProvider>(
             (Ok(None), Ok(None)) => both_ok += 1,
             // rust produced a tree, native didn't (not-found or error).
             (Ok(Some(_)), Ok(None)) | (Ok(Some(_)), Err(_)) => {
-                native_only += 1;
+                rust_only += 1;
                 eprintln!("native missing (rust produced a tree): {label}");
             }
             // native produced a tree, rust didn't.
             (Ok(None), Ok(Some(_))) | (Err(_), Ok(Some(_))) => {
-                rust_only += 1;
+                native_only += 1;
                 eprintln!("rust missing (native produced a tree): {label}");
             }
             (Err(_), Err(_)) | (Ok(None), Err(_)) | (Err(_), Ok(None)) => both_failed += 1,
