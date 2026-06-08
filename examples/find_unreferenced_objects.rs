@@ -6,9 +6,10 @@ use anyhow::Result;
 use rabex::objects::ClassId;
 use rabex::objects::pptr::PathId;
 use rabex_env::handle::SerializedFileHandle;
+use rabex_env::resolver::EnvResolver;
 use rabex_env::scene_lookup::SceneLookup;
 use rabex_env::unity::types::{MeshFilter, Transform};
-use rabex_env::utils::seq_fold_reduce;
+use rabex_env::utils::par_fold_reduce;
 use rustc_hash::FxHashSet;
 
 const SCENE_SINGLETON_OBJECTS: &[ClassId] = &[
@@ -21,52 +22,51 @@ fn main() -> Result<()> {
     let env = utils::find_game("silksong")?.unwrap();
 
     let aa = env.addressables_build_folder()?.unwrap();
-    seq_fold_reduce::<(), _>(
-        std::fs::read_dir(aa.join("scenes_scenes_scenes"))?,
-        |_, scene| {
-            let scene = scene?;
+    let scenes = env
+        .game_files
+        .list_under(&aa.join("scenes_scenes_scenes"))?;
+    par_fold_reduce::<(), _>(scenes, |_, scene| {
+        let scene = scene.strip_prefix(&aa).unwrap();
+        let file = env.load_addressables_bundle_content(&scene)?;
+        let lookup = SceneLookup::new(&file.file, &mut file.reader(), &env.tpk)?;
 
-            let file = env.load_addressables_bundle_content(scene.path())?;
-            let lookup = SceneLookup::new(&file.file, &mut file.reader(), &env.tpk)?;
+        let mut cx = Cx {
+            lookup,
+            file,
+            reachable: HashSet::default(),
+        };
+        let roots: Vec<_> = cx
+            .lookup
+            .roots()
+            .map(|(path_id, transform)| (path_id, transform.clone()))
+            .collect();
+        for &(path_id, ref transform) in &roots {
+            cx.reachable.insert(path_id);
+            cx.visit(&transform)?;
+        }
 
-            let mut cx = Cx {
-                lookup,
-                file,
-                reachable: HashSet::default(),
-            };
-            let roots: Vec<_> = cx
-                .lookup
-                .roots()
-                .map(|(path_id, transform)| (path_id, transform.clone()))
-                .collect();
-            for &(path_id, ref transform) in &roots {
-                cx.reachable.insert(path_id);
-                cx.visit(&transform)?;
-            }
-
-            let mut unreachable = BTreeMap::<_, usize>::default();
-            for obj in cx.file.objects::<()>() {
-                if !cx.reachable.contains(&obj.path_id()) {
-                    if SCENE_SINGLETON_OBJECTS.contains(&obj.class_id()) {
-                        continue;
-                    }
-                    println!(
-                        "{} {:?} {}",
-                        scene.path().file_name().unwrap().display(),
-                        obj.class_id(),
-                        obj.path_id()
-                    );
-
-                    *unreachable.entry(obj.class_id()).or_default() += 1;
+        let mut unreachable = BTreeMap::<_, usize>::default();
+        for obj in cx.file.objects::<()>() {
+            if !cx.reachable.contains(&obj.path_id()) {
+                if SCENE_SINGLETON_OBJECTS.contains(&obj.class_id()) {
+                    continue;
                 }
-            }
-            if !unreachable.is_empty() {
-                println!("{}: {:#?}", scene.file_name().display(), unreachable);
-            }
+                println!(
+                    "{} {:?} {}",
+                    scene.file_name().unwrap().display(),
+                    obj.class_id(),
+                    obj.path_id()
+                );
 
-            Ok(())
-        },
-    )?;
+                *unreachable.entry(obj.class_id()).or_default() += 1;
+            }
+        }
+        if !unreachable.is_empty() {
+            println!("{}: {:#?}", scene.display(), unreachable);
+        }
+
+        Ok(())
+    })?;
 
     Ok(())
 }
