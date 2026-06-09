@@ -1,8 +1,6 @@
 pub mod addressables;
 pub mod env;
-pub mod game_files;
 pub mod handle;
-pub mod prune;
 pub mod reachable;
 pub mod resolver;
 pub mod scene_lookup;
@@ -13,4 +11,5 @@ pub mod utils;
 
 pub use rabex;
 
+#[doc(inline)]
 pub use env::Environment;

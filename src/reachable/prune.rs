@@ -1,3 +1,4 @@
+//! Compute reachable subsets of a serializedfile.
 use anyhow::{Context, Result};
 use rabex::files::SerializedFile;
 use rabex::objects::pptr::PathId;
@@ -74,7 +75,7 @@ pub fn prune_scene<'a>(
     )
 }
 
-pub fn prune_scene_inner(
+fn prune_scene_inner(
     env: &Environment,
     file: &SerializedFile,
     reader: &mut (impl Read + Seek),

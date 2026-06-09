@@ -1,3 +1,4 @@
+//! Provider and cache for generated typetrees from assemblies
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::OnceLock;

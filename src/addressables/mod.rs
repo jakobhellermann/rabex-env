@@ -1,3 +1,4 @@
+//! Types for interacting with the [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@3.1/manual/index.html) unity package
 mod archive_path;
 pub mod binary_catalog;
 pub mod settings;
@@ -19,6 +20,8 @@ use crate::resolver::EnvResolver;
 
 pub use archive_path::ArchivePath;
 
+/// Data required for interacting with the collection of addressables bundles
+#[non_exhaustive]
 pub struct AddressablesData {
     pub settings: AddressablesSettings,
     pub cab_to_bundle: FxHashMap<String, PathBuf>,

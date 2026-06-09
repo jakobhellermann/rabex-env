@@ -142,6 +142,8 @@ impl ResourceLocationHeader {
     }
 }
 
+/// Descriptor of a catalog resource location
+///
 /// `provider_id` is usually one of:
 /// - `UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider`
 ///   - `internal_id` is the runtime path

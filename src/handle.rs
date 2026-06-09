@@ -1,5 +1,5 @@
+//! Convenience wrappers for objects, files bound to an [`Environment`]
 use std::collections::{BTreeSet, VecDeque};
-use std::fmt::Display;
 use std::io::Cursor;
 use std::path::Path;
 
@@ -14,10 +14,11 @@ use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use serde::Deserialize;
 
 use crate::Environment;
-use crate::game_files::GameFiles;
-use crate::resolver::EnvResolver;
+use crate::handle::script_filter::ScriptFilter;
+use crate::resolver::{EnvResolver, GameFiles};
 use crate::unity::types::{GameObject, MonoBehaviour, MonoScript, Transform};
 
+/// A [`SerializedFile`] equipped access to the [`Environment`]
 pub struct SerializedFileHandle<'a, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub file: &'a SerializedFile,
     pub data: &'a [u8],
@@ -29,6 +30,7 @@ impl<'a, R, P> std::fmt::Debug for SerializedFileHandle<'a, R, P> {
         self.file.fmt(f)
     }
 }
+/// An [`ObjectRef`] equipped access to the [`Environment`]
 pub struct ObjectRefHandle<'a, T, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
     pub object: ObjectRef<'a, T>,
     pub file: SerializedFileHandle<'a, R, P>,
@@ -42,16 +44,16 @@ impl<'a, T, R, P> std::fmt::Debug for ObjectRefHandle<'a, T, R, P> {
     }
 }
 impl<'a, R, P> SerializedFileHandle<'a, R, P> {
+    pub fn new(env: &'a Environment<R, P>, file: &'a SerializedFile, data: &'a [u8]) -> Self {
+        SerializedFileHandle { file, data, env }
+    }
+
     pub fn reborrow(&self) -> SerializedFileHandle<'a, R, P> {
         SerializedFileHandle {
             file: self.file,
             data: self.data,
             env: self.env,
         }
-    }
-
-    pub fn new(env: &'a Environment<R, P>, file: &'a SerializedFile, data: &'a [u8]) -> Self {
-        SerializedFileHandle { file, data, env }
     }
 
     pub fn reader(&self) -> Cursor<&'a [u8]> {
@@ -79,10 +81,7 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
         })
     }
 
-    pub fn objects_of<T>(&self) -> impl Iterator<Item = ObjectRefHandle<'a, T, R, P>>
-    where
-        T: ClassIdType,
-    {
+    pub fn objects_of<T: ClassIdType>(&self) -> impl Iterator<Item = ObjectRefHandle<'a, T, R, P>> {
         let iter = self.file.objects_of::<T>(&self.env.tpk);
         iter.map(|o| ObjectRefHandle::new(o, self.reborrow()))
     }
@@ -145,27 +144,10 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
             .map(|mb| mb.cast_owned::<T>()))
     }
 
-    pub fn deref_optional<T: for<'de> Deserialize<'de>>(
-        &self,
-        pptr: TypedPPtr<T>,
-    ) -> Result<Option<ObjectRefHandle<'a, T, R, P>>> {
-        match pptr.optional() {
-            Some(pptr) => self.deref(pptr).map(Some),
-            None => Ok(None),
-        }
-    }
-
-    pub fn deref_read_optional<T: for<'de> Deserialize<'de>>(
-        &self,
-        pptr: TypedPPtr<T>,
-    ) -> Result<Option<T>> {
-        self.deref_optional(pptr)?.map(|obj| obj.read()).transpose()
-    }
-
-    pub fn deref<T: for<'de> Deserialize<'de>>(
-        &self,
-        pptr: TypedPPtr<T>,
-    ) -> Result<ObjectRefHandle<'a, T, R, P>> {
+    pub fn deref<T>(&self, pptr: TypedPPtr<T>) -> Result<ObjectRefHandle<'a, T, R, P>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
         if !pptr.m_FileID.is_external() {
             let object = pptr
                 .deref_local(self.file, &self.env.tpk)
@@ -189,16 +171,72 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
         Ok(ObjectRefHandle::new(object, external))
     }
 
-    pub fn deref_read<T: for<'de> Deserialize<'de>>(&self, pptr: TypedPPtr<T>) -> Result<T> {
+    pub fn deref_read<T>(&self, pptr: TypedPPtr<T>) -> Result<T>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
         self.deref(pptr)?.read()
+    }
+
+    pub fn deref_optional<T>(
+        &self,
+        pptr: TypedPPtr<T>,
+    ) -> Result<Option<ObjectRefHandle<'a, T, R, P>>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        match pptr.optional() {
+            Some(pptr) => self.deref(pptr).map(Some),
+            None => Ok(None),
+        }
+    }
+
+    pub fn deref_read_optional<T>(&self, pptr: TypedPPtr<T>) -> Result<Option<T>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        self.deref_optional(pptr)?.map(|obj| obj.read()).transpose()
     }
 }
 
-impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
+impl<'a, T, R, P> ObjectRefHandle<'a, T, R, P> {
     pub fn new(object: ObjectRef<'a, T>, file: SerializedFileHandle<'a, R, P>) -> Self {
         ObjectRefHandle { object, file }
     }
 
+    pub fn path_id(&self) -> PathId {
+        self.object.info.m_PathID
+    }
+
+    pub fn class_id(&self) -> ClassId {
+        self.object.info.m_ClassID
+    }
+
+    pub fn data(&self) -> &'a [u8] {
+        &self.file.data[self.object.info.m_Offset as usize
+            ..(self.object.info.m_Offset as usize + self.object.info.m_Size as usize)]
+    }
+
+    pub fn object_reader(&self) -> Cursor<&'a [u8]> {
+        Cursor::new(self.data())
+    }
+
+    pub fn cast<U>(&'a self) -> ObjectRefHandle<'a, U, R, P> {
+        ObjectRefHandle {
+            object: self.object.cast(),
+            file: self.file.reborrow(),
+        }
+    }
+
+    pub fn cast_owned<U>(self) -> ObjectRefHandle<'a, U, R, P> {
+        ObjectRefHandle {
+            object: self.object.cast_owned(),
+            file: self.file.reborrow(),
+        }
+    }
+}
+
+impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     pub fn read(&self) -> Result<T>
     where
         T: for<'de> Deserialize<'de>,
@@ -237,49 +275,6 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
             &mut self.file.reader(),
         )?;
         Ok(reachable)
-    }
-}
-
-impl<'a, T, R, P> ObjectRefHandle<'a, T, R, P> {
-    pub fn path_id(&self) -> PathId {
-        self.object.info.m_PathID
-    }
-
-    pub fn class_id(&self) -> ClassId {
-        self.object.info.m_ClassID
-    }
-
-    pub fn data(&self) -> &'a [u8] {
-        &self.file.data[self.object.info.m_Offset as usize
-            ..(self.object.info.m_Offset as usize + self.object.info.m_Size as usize)]
-    }
-
-    pub fn object_reader(&self) -> Cursor<&'a [u8]> {
-        Cursor::new(self.data())
-    }
-}
-impl<'a, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObject, R, P> {
-    pub fn path(&self) -> Result<String> {
-        let path =
-            self.read()?
-                .path(self.file.file, &mut self.file.reader(), &self.file.env.tpk)?;
-        Ok(path)
-    }
-}
-
-impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
-    pub fn cast<U>(&'a self) -> ObjectRefHandle<'a, U, R, P> {
-        ObjectRefHandle {
-            object: self.object.cast(),
-            file: self.file.reborrow(),
-        }
-    }
-
-    pub fn cast_owned<U>(self) -> ObjectRefHandle<'a, U, R, P> {
-        ObjectRefHandle {
-            object: self.object.cast_owned(),
-            file: self.file.reborrow(),
-        }
     }
 
     fn load_typetree(&'a self) -> Result<ObjectRefHandle<'a, T, R, P>>
@@ -331,33 +326,50 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
     }
 }
 
-pub trait ScriptFilter: Display {
-    fn matches(&self, script: &MonoScript) -> bool;
-}
-impl ScriptFilter for &dyn ScriptFilter {
-    fn matches(&self, script: &MonoScript) -> bool {
-        (**self).matches(script)
-    }
-}
-impl<T: ScriptFilter> ScriptFilter for &T {
-    fn matches(&self, script: &MonoScript) -> bool {
-        (**self).matches(script)
-    }
-}
-impl ScriptFilter for &'_ str {
-    fn matches(&self, script: &MonoScript) -> bool {
-        script.m_ClassName == *self
+impl<'a, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, GameObject, R, P> {
+    pub fn path(&self) -> Result<String> {
+        let path =
+            self.read()?
+                .path(self.file.file, &mut self.file.reader(), &self.file.env.tpk)?;
+        Ok(path)
     }
 }
 
-pub struct ScriptFilterContains<'a>(pub &'a str);
-impl Display for ScriptFilterContains<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "containing {}", self.0)
+impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {}
+
+pub mod script_filter {
+    use std::fmt::Display;
+
+    use crate::unity::types::MonoScript;
+
+    pub trait ScriptFilter: Display {
+        fn matches(&self, script: &MonoScript) -> bool;
     }
-}
-impl ScriptFilter for ScriptFilterContains<'_> {
-    fn matches(&self, script: &MonoScript) -> bool {
-        script.m_ClassName.contains(self.0)
+    impl ScriptFilter for &dyn ScriptFilter {
+        fn matches(&self, script: &MonoScript) -> bool {
+            (**self).matches(script)
+        }
+    }
+    impl<T: ScriptFilter> ScriptFilter for &T {
+        fn matches(&self, script: &MonoScript) -> bool {
+            (**self).matches(script)
+        }
+    }
+    impl ScriptFilter for &'_ str {
+        fn matches(&self, script: &MonoScript) -> bool {
+            script.m_ClassName == *self
+        }
+    }
+
+    pub struct ScriptFilterContains<'a>(pub &'a str);
+    impl Display for ScriptFilterContains<'_> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "containing {}", self.0)
+        }
+    }
+    impl ScriptFilter for ScriptFilterContains<'_> {
+        fn matches(&self, script: &MonoScript) -> bool {
+            script.m_ClassName.contains(self.0)
+        }
     }
 }

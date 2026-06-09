@@ -1,3 +1,4 @@
+//! Filesystem abstraction for game files
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek};
 use std::path::{Path, PathBuf};
@@ -6,7 +7,10 @@ use anyhow::Result;
 
 use crate::env::Data;
 
+pub mod game_files;
 mod mem;
+
+pub use game_files::GameFiles;
 pub use mem::MemResolver;
 
 /// A trait abstracting where the game files are read from.

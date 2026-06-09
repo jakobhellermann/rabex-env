@@ -1,3 +1,4 @@
+//! Find and replace PPtr references in arbitrary objects
 use anyhow::Result;
 use byteorder::{BigEndian, ByteOrder, LittleEndian, ReadBytesExt};
 use rabex::files::serializedfile::Endianness;

@@ -1,3 +1,4 @@
+//! Utilities for efficient parallel data processing
 use anyhow::Result;
 use rayon::iter::{IntoParallelIterator, ParallelIterator as _};
 

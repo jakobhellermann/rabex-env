@@ -1,3 +1,4 @@
+//! Compute which objects are reachable from a starting point
 use anyhow::Result;
 use rabex::files::SerializedFile;
 use rabex::objects::PPtr;
@@ -8,6 +9,8 @@ use std::io::{Read, Seek};
 
 use crate::resolver::EnvResolver;
 use crate::{Environment, trace_pptr};
+
+pub mod prune;
 
 /// Returns all reachable local objects from the starting point,
 /// only going down the transform hierarchy.

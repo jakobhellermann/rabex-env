@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
     let manifest_id = 7921642076658611197;
 
     let game_files = steam_game_files(app_id, depot_id, manifest_id, "public").await?;
-    // let game_files = rabex_env::game_files::GameFiles::probe(
+    // let game_files = rabex_env::resolver::GameFiles::probe(
     //     "/home/jakob/.local/share/Steam/steamapps/common/Hollow Knight Silksong",
     // )?;
 

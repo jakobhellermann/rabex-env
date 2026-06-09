@@ -1,3 +1,4 @@
+//! Transform-hierarchy lookup acceleration structure
 use crate::unity::types::Transform;
 use anyhow::{Result, bail};
 use rabex::files::SerializedFile;

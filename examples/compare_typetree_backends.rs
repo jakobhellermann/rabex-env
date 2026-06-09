@@ -6,7 +6,7 @@ use anyhow::Result;
 use rabex::objects::ClassId;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use rabex_env::Environment;
-use rabex_env::game_files::GameFiles;
+use rabex_env::resolver::GameFiles;
 use typetree_generator_api::{GeneratorBackend, TypeTreeGenerator};
 
 mod utils;
