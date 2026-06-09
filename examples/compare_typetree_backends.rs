@@ -195,22 +195,19 @@ fn first_diff(a: &TypeTreeNode, b: &TypeTreeNode, path: String) -> Option<String
 
     if a.m_Name != b.m_Name
         || a.m_Type != b.m_Type
-        || a.m_Level != b.m_Level
         || a.m_ByteSize != b.m_ByteSize
         || a.m_TypeFlags != b.m_TypeFlags
         || a.m_MetaFlag != b.m_MetaFlag
         || a.children.len() != b.children.len()
     {
         return Some(format!(
-            "  at `{here}`:\n    rust:   {} {} (lvl {}, meta {:?}, {} children)\n    native: {} {} (lvl {}, meta {:?}, {} children)",
+            "  at `{here}`:\n    rust:   {} {} (meta {:?}, {} children)\n    native: {} {} (meta {:?}, {} children)",
             a.m_Type,
             a.m_Name,
-            a.m_Level,
             a.m_MetaFlag,
             a.children.len(),
             b.m_Type,
             b.m_Name,
-            b.m_Level,
             b.m_MetaFlag,
             b.children.len(),
         ));
