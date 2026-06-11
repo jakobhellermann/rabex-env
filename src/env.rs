@@ -427,8 +427,30 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         &self,
         bundle: impl AsRef<Path>,
     ) -> Result<SerializedFileHandle<'_, R, P>> {
+        let bundle = bundle.as_ref();
+
+        let archive_path = self
+            .addressables()?
+            .context("can't load addressables bundle content without addressables in the game")?
+            .bundle_main_archive_path(bundle)
+            .with_context(|| {
+                format!("'{}' is not a known addressables bundle", bundle.display())
+            })?;
+
+        if let Some(cached) = self
+            .serialized_files
+            .get(Path::new(&archive_path.to_string()))
+        {
+            return Ok(SerializedFileHandle::new(
+                self,
+                &cached.0,
+                cached.1.as_ref(),
+            ));
+        }
+
         let (archive_name, file, data) = self.load_addressables_bundle_content_leaf(bundle)?;
-        let archive_path = ArchivePath::same(&archive_name);
+        debug_assert_eq!(archive_path, ArchivePath::same(&archive_name));
+
         Ok(self.insert_cache(archive_path.to_string().into(), file, Data::InMemory(data)))
     }
 

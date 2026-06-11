@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 /// Path representing a file in a bundle, e.g. `archive:/CAB-asdf/CAB-asdf.sharedAssets`
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ArchivePath<'a> {
     pub bundle: &'a str,
     pub file: &'a str,
