@@ -142,6 +142,23 @@ impl ResourceLocationHeader {
     }
 }
 
+pub mod resource_providers {
+    pub const ASSET_BUNDLE: &str =
+        "UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider";
+    pub const ATLAS_SPRITE: &str =
+        "UnityEngine.ResourceManagement.ResourceProviders.AtlasSpriteProvider";
+    /// - `BinaryAssetProvider<TAdapter>`
+    pub const BINARY_DATA: &str =
+        "UnityEngine.ResourceManagement.ResourceProviders.BinaryDataProvider";
+    pub const BUNDLED_ASSET: &str =
+        "UnityEngine.ResourceManagement.ResourceProviders.BundledAssetProvider";
+    pub const CONTENT_CATALOG: &str =
+        "UnityEngine.ResourceManagement.ResourceProviders.ContentCatalogProvider";
+    pub const JSON_ASSET: &str =
+        "UnityEngine.ResourceManagement.ResourceProviders.JsonAssetProvider";
+    pub const TEXT_DATA: &str = "UnityEngine.ResourceManagement.ResourceProviders.TextDataProvider";
+}
+
 /// Descriptor of a catalog resource location
 ///
 /// `provider_id` is usually one of:
@@ -156,6 +173,10 @@ impl ResourceLocationHeader {
 ///   - `type_` varies
 #[derive(Debug, PartialEq)]
 pub struct ResourceLocation {
+    /// ID of the resource location
+    ///
+    /// - `AssetBundleProvider`: `{...RuntimePath}/OS/path/to/name.bundle`
+    /// - `BundledAssetProvider`: `Assets/Scenes/Name.unity`, Àssets/Audio/audio.asset`
     pub internal_id: Arc<String>,
     /// - `AssetBundleProvider`
     /// - `AtlasSpriteProvider`
