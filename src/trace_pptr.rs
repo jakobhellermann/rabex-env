@@ -25,7 +25,7 @@ pub fn trace_pptrs<B: ByteOrder>(
     reader: &mut (impl Read + Seek),
 ) -> Result<Vec<PPtr>> {
     let mut pptrs = Vec::new();
-    visit::<_, LittleEndian>(reader, tt, &mut |tt, reader| {
+    visit::<_, B>(reader, tt, &mut |tt, reader| {
         if tt.m_Type.starts_with("PPtr<") && tt.m_Name != "m_Father" {
             let file_id = reader.read_i32::<B>()?;
             let path_id = reader.read_i64::<B>()?;
@@ -62,7 +62,7 @@ pub fn replace_pptrs_inplace_endianed(
             replace_pptrs_inplace::<LittleEndian>(value, ty, path_id_remap, file_id_remap)
         }
         Endianness::Big => {
-            replace_pptrs_inplace::<LittleEndian>(value, ty, path_id_remap, file_id_remap)
+            replace_pptrs_inplace::<BigEndian>(value, ty, path_id_remap, file_id_remap)
         }
     }
 }
