@@ -2,35 +2,37 @@
 mod utils;
 
 use anyhow::{Context as _, Result};
+use indexmap::IndexMap;
 use rabex::objects::ClassId;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use rabex_env::Environment;
 use rustc_hash::FxHashSet;
+use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Write as _;
 use std::io::Write;
+use std::path::PathBuf;
+
+#[derive(Debug, Deserialize)]
+struct Config<'a> {
+    #[serde(borrow)]
+    field_ignores: Vec<&'a str>,
+    scripts: IndexMap<String, Vec<String>>,
+}
 
 fn main() -> Result<()> {
     let env = utils::find_game("silksong")?.unwrap();
+    let config = std::env::args()
+        .nth(1)
+        .map(PathBuf::from)
+        .unwrap_or("examples/unity2rust.toml".into());
+    let config = std::fs::read_to_string(&config).context("Failed to read config")?;
+    let config = toml::from_str::<Config>(&config)?;
 
     let settings = Settings {
         derives: Some("Debug, serde::Deserialize"),
-        field_ignores: &[
-            "audio",
-            "color",
-            "colour",
-            "font",
-            "icon",
-            "prefab",
-            "sound",
-            "sprite",
-            "tint",
-            // "ui",
-            "vibration",
-            "clipref",
-            "effect",
-        ],
+        field_ignores: &config.field_ignores,
         additional_fields: HashMap::from_iter([(
             "SavedItem",
             [("displayName", "Option<LocalisedString>")].as_slice(),
@@ -38,20 +40,11 @@ fn main() -> Result<()> {
     };
     let mut cx = Context::new(&env, settings);
 
-    for script in [
-        /*"CollectableItemRelicType",
-        "EnemyJournalRecord",
-        "IntReference",
-        "DamageTag",
-        "ShopItem",
-        "Quest",
-        "ToolItemBasic",*/
-    ] {
-        cx.generate_script("Assembly-CSharp", script)?;
+    for (assembly, scripts) in &config.scripts {
+        for script in scripts {
+            cx.generate_script(assembly, script)?;
+        }
     }
-    // cx.generate_script("PlayMaker", "PlayMakerFSM")?;
-    cx.generate_classid(ClassId::Shader)?;
-
     cx.finish(std::io::stdout().lock())?;
 
     Ok(())

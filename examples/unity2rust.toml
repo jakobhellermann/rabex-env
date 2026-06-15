@@ -1,0 +1,27 @@
+field_ignores = [
+  "audio",
+  "clipref",
+  "color",
+  "colour",
+  "effect",
+  "font",
+  "icon",
+  "prefab",
+  "sound",
+  "sprite",
+  "tint",
+  "vibration",
+  # "ui",
+]
+
+
+[scripts]
+"Assembly-CSharp.dll" = [
+  "CollectableItemRelicType",
+  "EnemyJournalRecord",
+  "IntReference",
+  "DamageTag",
+  "ShopItem",
+  "Quest",
+  "ToolItemBasic",
+]
