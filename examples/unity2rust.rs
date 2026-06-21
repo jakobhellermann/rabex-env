@@ -57,7 +57,11 @@ struct Context<'a> {
 
     generated: FxHashSet<String>,
     generated_code: Vec<String>,
-    queued: VecDeque<TypeTreeNode>,
+    queued: VecDeque<(String, TypeTreeNode)>,
+    /// assembly the type currently being generated belongs to
+    current_assembly: String,
+    /// all loaded assembly names, lazily populated
+    all_assemblies: Option<Vec<String>>,
 }
 
 struct Settings<'a> {
@@ -74,6 +78,8 @@ impl<'a> Context<'a> {
             generated: FxHashSet::default(),
             generated_code: Vec::new(),
             queued: VecDeque::new(),
+            current_assembly: String::new(),
+            all_assemblies: None,
         }
     }
     pub fn finish<W: Write>(&self, mut writer: W) -> Result<()> {
@@ -100,8 +106,8 @@ impl<'a> Context<'a> {
         }
         Ok(())
     }
-    pub fn generate(&mut self, tt: &TypeTreeNode) -> Result<()> {
-        self.queue(tt);
+    pub fn generate(&mut self, assembly: &str, tt: &TypeTreeNode) -> Result<()> {
+        self.queue(assembly, tt);
         self.handle_queue()
     }
     pub fn generate_classid(&mut self, class_id: ClassId) -> Result<()> {
@@ -110,32 +116,68 @@ impl<'a> Context<'a> {
             .tpk
             .get_typetree_node(class_id, self.env.unity_version()?)
             .context("typetree not found")?;
-        self.generate(&tt)
+        self.generate("Assembly-CSharp", &tt)
     }
     pub fn generate_script(&mut self, assembly: &str, script: &str) -> Result<()> {
         let tt = self
             .env
             .generate_typetree(assembly, script)?
             .with_context(|| format!("type tree not found for {script} ({assembly})"))?;
-        self.generate(tt)
+        self.generate(assembly, tt)
     }
 
-    fn queue(&mut self, tt: &TypeTreeNode) {
+    fn queue(&mut self, assembly: &str, tt: &TypeTreeNode) {
         if self.generated.contains(&tt.m_Type) {
             return;
         }
         assert!(self.generated.insert(tt.m_Type.clone()));
 
-        self.queued.push_back(tt.clone());
+        self.queued.push_back((assembly.to_owned(), tt.clone()));
     }
 
     fn handle_queue(&mut self) -> Result<()> {
-        while let Some(item) = self.queued.pop_front() {
+        while let Some((assembly, item)) = self.queued.pop_front() {
+            self.current_assembly = assembly;
             let code = self.generate_inner(&item)?;
             self.generated_code.push(code);
         }
 
         Ok(())
+    }
+
+    /// All loaded assembly names, lazily computed and cached.
+    fn assemblies(&mut self) -> Result<&[String]> {
+        if self.all_assemblies.is_none() {
+            let defs = self
+                .env
+                .typetree_generator
+                .backend(self.env)?
+                .monobehaviour_definitions()?;
+            self.all_assemblies = Some(defs.into_keys().collect());
+        }
+        Ok(self.all_assemblies.as_deref().unwrap())
+    }
+
+    /// Look up a MonoScript type by name, preferring the current assembly, then any other
+    /// loaded assembly. Returns the assembly it was found in and its type tree.
+    fn resolve_script_type(
+        &mut self,
+        full_name: &str,
+    ) -> Result<Option<(String, &'a TypeTreeNode)>> {
+        let current = self.current_assembly.clone();
+        if let Some(ty) = self.env.generate_typetree(&current, full_name)? {
+            return Ok(Some((current, ty)));
+        }
+        let assemblies = self.assemblies()?.to_vec();
+        for assembly in assemblies {
+            if assembly == current {
+                continue;
+            }
+            if let Some(ty) = self.env.generate_typetree(&assembly, full_name)? {
+                return Ok(Some((assembly, ty)));
+            }
+        }
+        Ok(None)
     }
 
     fn ignore_field(&self, field: &TypeTreeNode) -> bool {
@@ -186,10 +228,13 @@ impl<'a> Context<'a> {
             Classify::Primitive(ty) => ty.to_owned(),
             Classify::PPtr(pptr) => {
                 if let Some(asm_ty) = pptr.strip_prefix('$') {
-                    let ty = self.env.generate_typetree("Assembly-CSharp", asm_ty)?;
-                    match ty {
-                        Some(ty) if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") => {
-                            self.queue(ty);
+                    // resolve script types relative to the current assembly first, then any other
+                    let resolved = self.resolve_script_type(asm_ty)?;
+                    match resolved {
+                        Some((assembly, ty))
+                            if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") =>
+                        {
+                            self.queue(&assembly, ty);
                             format!("TypedPPtr<{}>", self.escape_typename(ty))
                         }
                         _ => format!("PPtr /* {asm_ty} */"),
@@ -200,7 +245,8 @@ impl<'a> Context<'a> {
                 }
             }
             Classify::Other(other) => {
-                self.queue(field);
+                let assembly = self.current_assembly.clone();
+                self.queue(&assembly, field);
                 self.escape_typename(other)
             }
             Classify::Array(item) => {
