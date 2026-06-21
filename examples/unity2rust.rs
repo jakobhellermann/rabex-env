@@ -17,6 +17,7 @@ use std::path::PathBuf;
 #[derive(Debug, Deserialize)]
 struct Config<'a> {
     #[serde(borrow)]
+    #[serde(default)]
     field_ignores: Vec<&'a str>,
     scripts: IndexMap<String, Vec<String>>,
 }
@@ -80,17 +81,22 @@ impl<'a> Context<'a> {
             writer,
             "#![allow(dead_code, unused_imports, non_snake_case, nonstandard_style)]"
         )?;
-        writeln!(writer, "use rabex_env::unity::types::*;")?;
         writeln!(
             writer,
             "use rabex_env::rabex::objects::{{PPtr, TypedPPtr}};"
         )?;
+        writeln!(writer, "use rabex_env::unity::types::*;")?;
         if self.generated_code.iter().any(|c| c.contains("HashMap<")) {
             writeln!(writer, "use std::collections::HashMap;")?;
         }
         writeln!(writer, "")?;
-        for code in &self.generated_code {
-            writeln!(writer, "{code}")?;
+        // each block already ends with a newline from generate_inner; separate blocks
+        // with a blank line but don't emit a trailing one (to match rustfmt)
+        for (i, code) in self.generated_code.iter().enumerate() {
+            if i > 0 {
+                writeln!(writer, "")?;
+            }
+            write!(writer, "{code}")?;
         }
         Ok(())
     }
@@ -152,11 +158,13 @@ impl<'a> Context<'a> {
                 continue;
             }
             let field_ty = self.field_type(field)?;
+            let (field_ty, comment) = split_trailing_comment(&field_ty);
             writeln!(
                 &mut f,
-                "    pub {}: {},",
+                "    pub {}: {},{}",
                 self.escape_identifier(&field.m_Name),
                 field_ty,
+                comment,
             )?;
         }
         if let Some(additional_fields) = self.settings.additional_fields.get(tt.m_Type.as_str()) {
@@ -254,6 +262,20 @@ impl<'a> Context<'a> {
         } else {
             Cow::Borrowed(identifier)
         }
+    }
+}
+
+/// Split a generated type string into its type and an optional trailing `/* ... */` comment,
+/// so the field comma can be placed before the comment instead of after it.
+fn split_trailing_comment(field_ty: &str) -> (&str, String) {
+    if let Some(rest) = field_ty.strip_suffix("*/")
+        && let Some(start) = rest.rfind("/*")
+    {
+        let ty = field_ty[..start].trim_end();
+        let comment = &field_ty[start..];
+        (ty, format!(" {comment}"))
+    } else {
+        (field_ty, String::new())
     }
 }
 
