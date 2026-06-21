@@ -1,3 +1,4 @@
+game_path = "~/.steamapps/Hollow Knight Silksong"
 field_ignores = [
   "audio",
   "clipref",

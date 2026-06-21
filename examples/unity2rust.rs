@@ -4,6 +4,8 @@ mod utils;
 use anyhow::{Context as _, Result};
 use indexmap::IndexMap;
 use rabex::objects::ClassId;
+use rabex::tpk::TpkTypeTreeBlob;
+use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use rabex_env::Environment;
 use rustc_hash::FxHashSet;
@@ -15,7 +17,9 @@ use std::io::Write;
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Config<'a> {
+    game_path: String,
     #[serde(borrow)]
     #[serde(default)]
     field_ignores: Vec<&'a str>,
@@ -23,13 +27,18 @@ struct Config<'a> {
 }
 
 fn main() -> Result<()> {
-    let env = utils::find_game("silksong")?.unwrap();
     let config = std::env::args()
         .nth(1)
         .map(PathBuf::from)
         .unwrap_or("examples/unity2rust.toml".into());
     let config = std::fs::read_to_string(&config).context("Failed to read config")?;
     let config = toml::from_str::<Config>(&config)?;
+
+    let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+    let game_path = config
+        .game_path
+        .replace("~", &std::env::home_dir().unwrap().to_str().unwrap());
+    let env = Environment::new_in(game_path, tpk)?;
 
     let settings = Settings {
         derives: Some("Debug, serde::Deserialize"),
@@ -181,10 +190,12 @@ impl<'a> Context<'a> {
     }
 
     fn ignore_field(&self, field: &TypeTreeNode) -> bool {
-        self.settings
-            .field_ignores
-            .iter()
-            .any(|ignore| field.m_Name.to_ascii_lowercase().contains(ignore))
+        self.settings.field_ignores.iter().any(|ignore| {
+            field
+                .m_Name
+                .to_ascii_lowercase()
+                .contains(&ignore.to_ascii_lowercase())
+        })
     }
 
     fn generate_inner(&mut self, tt: &TypeTreeNode) -> Result<String> {
