@@ -52,7 +52,7 @@ fn main() -> Result<()> {
                             // .strip_prefix(env.game_files.game_dir.join(aa.build_folder()))
                             // .unwrap()
                             .to_string_lossy()
-                            .to_owned()
+                            .into_owned()
                     )
                 })?;
             }

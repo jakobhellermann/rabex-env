@@ -129,7 +129,7 @@ fn find_referrers(
                 for pptr in object.reachable_one()? {
                     let referenced_file = match pptr.is_local() {
                         true => candidate.as_str(),
-                        false => pptr.file_identifier(&file.file).unwrap().pathName.as_str(),
+                        false => pptr.file_identifier(file.file).unwrap().pathName.as_str(),
                     };
                     if referenced_file == target_archive_path && pptr.m_PathID == target_path_id {
                         acc.push((candidate.clone(), object.path_id()));

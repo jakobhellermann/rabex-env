@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     let addressables = env.addressables()?;
     if let Some(addressables) = addressables {
         for bundle in addressables.bundle_paths().take(10) {
-            let file = env.load_addressables_bundle_content(&bundle)?;
+            let file = env.load_addressables_bundle_content(bundle)?;
             println!(
                 "{} contains {} objects",
                 bundle.display(),

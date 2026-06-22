@@ -39,10 +39,10 @@ fn main() -> Result<()> {
     })?;
 
     let db_path = "pptrs.db";
-    if let Err(e) = std::fs::remove_file(db_path) {
-        if e.kind() != std::io::ErrorKind::NotFound {
-            return Err(e.into());
-        }
+    if let Err(e) = std::fs::remove_file(db_path)
+        && e.kind() != std::io::ErrorKind::NotFound
+    {
+        return Err(e.into());
     }
     let mut db = rusqlite::Connection::open(db_path)?;
     db.pragma_update(None, "journal_mode", "off")?;
@@ -72,14 +72,11 @@ CREATE TABLE IF NOT EXISTS pptr_references (
         for (filename, id) in &global_file_map {
             let addressables = env.addressables()?.unwrap();
 
-            let bundle_name = match ArchivePath::try_parse(Path::new(filename))? {
-                Some(archive_path) => Some(
-                    addressables.cab_to_bundle[archive_path.bundle]
-                        .display()
-                        .to_string(),
-                ),
-                None => None,
-            };
+            let bundle_name = ArchivePath::try_parse(Path::new(filename))?.map(|archive_path| {
+                addressables.cab_to_bundle[archive_path.bundle]
+                    .display()
+                    .to_string()
+            });
 
             stmt.execute((id, filename, bundle_name.unwrap_or_default()))?;
         }
@@ -134,7 +131,7 @@ fn find_pptr_references(
             let global_file_id = match pptr.is_local() {
                 true => global_file_id,
                 false => {
-                    let external = &pptr.file_identifier(&file.file).unwrap();
+                    let external = &pptr.file_identifier(file.file).unwrap();
                     *global_file_map
                         .get(external.pathName.as_str())
                         .context(external.pathName.clone())

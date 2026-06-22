@@ -37,7 +37,7 @@ fn main() -> Result<()> {
     let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
     let game_path = config
         .game_path
-        .replace("~", &std::env::home_dir().unwrap().to_str().unwrap());
+        .replace("~", std::env::home_dir().unwrap().to_str().unwrap());
     let env = Environment::new_in(game_path, tpk)?;
 
     let settings = Settings {
@@ -104,12 +104,12 @@ impl<'a> Context<'a> {
         if self.generated_code.iter().any(|c| c.contains("HashMap<")) {
             writeln!(writer, "use std::collections::HashMap;")?;
         }
-        writeln!(writer, "")?;
+        writeln!(writer)?;
         // each block already ends with a newline from generate_inner; separate blocks
         // with a blank line but don't emit a trailing one (to match rustfmt)
         for (i, code) in self.generated_code.iter().enumerate() {
             if i > 0 {
-                writeln!(writer, "")?;
+                writeln!(writer)?;
             }
             write!(writer, "{code}")?;
         }

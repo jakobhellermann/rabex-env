@@ -32,7 +32,7 @@ fn search_transform(input: &str) -> String {
 }
 
 pub fn find_game(name_filter: &str) -> Result<Option<Environment>> {
-    let name_filter = search_transform(&name_filter);
+    let name_filter = search_transform(name_filter);
 
     let steam = steamlocate::SteamDir::locate()?;
 

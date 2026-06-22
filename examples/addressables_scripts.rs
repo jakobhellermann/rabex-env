@@ -30,7 +30,7 @@ fn main() -> Result<()> {
         let mut sorted: Vec<_> = counts.into_iter().collect();
         sorted.sort_by(|a, b| a.1.cmp(&b.1).reverse());
 
-        if sorted.len() > 0 {
+        if !sorted.is_empty() {
             results.insert(
                 name.to_owned(),
                 sorted.into_iter().collect::<IndexMap<_, _>>(),

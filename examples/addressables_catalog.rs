@@ -23,7 +23,7 @@ fn main() -> Result<()> {
                     let abro = loc.data.as_ref().unwrap();
                     let path = addressables.evaluate_string(&loc.internal_id);
                     let path = Path::new(&path)
-                        .strip_prefix(&addressables.build_folder())
+                        .strip_prefix(addressables.build_folder())
                         .unwrap();
                     bundle_names.insert((*abro.bundle_name).clone(), path.to_owned());
                 }

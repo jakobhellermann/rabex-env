@@ -19,7 +19,7 @@ fn main() -> Result<()> {
                 if file.ends_with(".resS") || file.ends_with(".resource") {
                     continue;
                 }
-                let data = bundle.read_at(&file)?.unwrap();
+                let data = bundle.read_at(file)?.unwrap();
                 // let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
                 *acc += data.len();
                 // acc.push((data, file));

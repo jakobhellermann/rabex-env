@@ -27,8 +27,8 @@ fn main() -> Result<()> {
         .list_under(&aa.join("scenes_scenes_scenes"))?;
     par_fold_reduce::<(), _>(scenes, |_, scene| {
         let scene = scene.strip_prefix(&aa).unwrap();
-        let file = env.load_addressables_bundle_content(&scene)?;
-        let lookup = SceneLookup::new(&file.file, &mut file.reader(), &env.tpk)?;
+        let file = env.load_addressables_bundle_content(scene)?;
+        let lookup = SceneLookup::new(file.file, &mut file.reader(), &env.tpk)?;
 
         let mut cx = Cx {
             lookup,
@@ -42,7 +42,7 @@ fn main() -> Result<()> {
             .collect();
         for &(path_id, ref transform) in &roots {
             cx.reachable.insert(path_id);
-            cx.visit(&transform)?;
+            cx.visit(transform)?;
         }
 
         let mut unreachable = BTreeMap::<_, usize>::default();
@@ -93,16 +93,13 @@ impl<'a, P> Cx<'a, P> {
             let component = component?;
             self.reachable.insert(component.info.m_PathID);
 
-            match component.info.m_ClassID {
-                ClassId::MeshFilter => {
-                    let data = component
-                        .cast::<MeshFilter>()
-                        .read(&mut self.file.reader())?;
-                    if data.m_Mesh.is_local() {
-                        self.reachable.insert(data.m_Mesh.m_PathID);
-                    }
+            if component.info.m_ClassID == ClassId::MeshFilter {
+                let data = component
+                    .cast::<MeshFilter>()
+                    .read(&mut self.file.reader())?;
+                if data.m_Mesh.is_local() {
+                    self.reachable.insert(data.m_Mesh.m_PathID);
                 }
-                _ => {}
             }
         }
 
