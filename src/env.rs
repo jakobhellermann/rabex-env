@@ -71,7 +71,7 @@ impl From<Vec<u8>> for Data {
 ///     for transform in level0.transforms() {
 ///         let transform = transform.read()?;
 ///         if transform.m_Father.is_null() {
-///             let game_object = level5.deref_read(transform.m_GameObject)?;
+///             let game_object = level0.deref_read(transform.m_GameObject)?;
 ///             println!("- {}", game_object.m_Name)
 ///         }
 ///     }
