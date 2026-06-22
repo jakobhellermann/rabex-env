@@ -8,6 +8,7 @@ use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use rabex_env::Environment;
+use rabex_env::typetree_merge::MergedTypeTree;
 use rustc_hash::FxHashSet;
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -19,7 +20,9 @@ use std::path::PathBuf;
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Config<'a> {
-    game_path: String,
+    /// One or more game installs to merge into a single definition. Fields that are not
+    /// present in every game are generated as `Option<_>` with `#[serde(default)]`.
+    game_paths: Vec<String>,
     #[serde(borrow)]
     #[serde(default)]
     field_ignores: Vec<&'a str>,
@@ -34,11 +37,31 @@ fn main() -> Result<()> {
     let config = std::fs::read_to_string(&config).context("Failed to read config")?;
     let config = toml::from_str::<Config>(&config)?;
 
-    let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
-    let game_path = config
-        .game_path
-        .replace("~", std::env::home_dir().unwrap().to_str().unwrap());
-    let env = Environment::new_in(game_path, tpk)?;
+    let home = std::env::home_dir().unwrap();
+    let envs = config
+        .game_paths
+        .iter()
+        .map(|game_path| {
+            let game_path = game_path.replace("~", home.to_str().unwrap());
+            let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+            Environment::new_in(game_path, tpk)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    anyhow::ensure!(!envs.is_empty(), "`game_paths` must list at least one game");
+
+    // human-readable source label per game (the install folder name), used to annotate
+    // fields that only exist in a subset of the games
+    let labels: Vec<String> = config
+        .game_paths
+        .iter()
+        .map(|p| {
+            std::path::Path::new(p)
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or(p)
+                .to_string()
+        })
+        .collect();
 
     let settings = Settings {
         derives: Some("Debug, serde::Deserialize"),
@@ -48,7 +71,7 @@ fn main() -> Result<()> {
             [("displayName", "Option<LocalisedString>")].as_slice(),
         )]),
     };
-    let mut cx = Context::new(&env, settings);
+    let mut cx = Context::new(&envs, &labels, settings);
 
     for (assembly, scripts) in &config.scripts {
         for script in scripts {
@@ -61,16 +84,19 @@ fn main() -> Result<()> {
 }
 
 struct Context<'a> {
-    env: &'a Environment,
+    /// the games to merge into one definition; non-shared fields become `Option<_>`
+    envs: &'a [Environment],
+    /// human-readable label per env (same order), for annotating subset-only fields
+    labels: &'a [String],
     settings: Settings<'a>,
 
     generated: FxHashSet<String>,
     generated_code: Vec<String>,
-    queued: VecDeque<(String, TypeTreeNode)>,
+    queued: VecDeque<(String, MergedTypeTree)>,
     /// assembly the type currently being generated belongs to
     current_assembly: String,
-    /// all loaded assembly names, lazily populated
-    all_assemblies: Option<Vec<String>>,
+    /// all loaded assembly names per env, lazily populated
+    all_assemblies: Vec<Option<Vec<String>>>,
 }
 
 struct Settings<'a> {
@@ -80,15 +106,16 @@ struct Settings<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn new(env: &'a Environment, settings: Settings<'a>) -> Self {
+    pub fn new(envs: &'a [Environment], labels: &'a [String], settings: Settings<'a>) -> Self {
         Context {
-            env,
+            envs,
+            labels,
             settings,
             generated: FxHashSet::default(),
             generated_code: Vec::new(),
             queued: VecDeque::new(),
             current_assembly: String::new(),
-            all_assemblies: None,
+            all_assemblies: vec![None; envs.len()],
         }
     }
     pub fn finish<W: Write>(&self, mut writer: W) -> Result<()> {
@@ -115,33 +142,46 @@ impl<'a> Context<'a> {
         }
         Ok(())
     }
-    pub fn generate(&mut self, assembly: &str, tt: &TypeTreeNode) -> Result<()> {
+    pub fn generate(&mut self, assembly: &str, tt: MergedTypeTree) -> Result<()> {
         self.queue(assembly, tt);
         self.handle_queue()
     }
     pub fn generate_classid(&mut self, class_id: ClassId) -> Result<()> {
-        let tt = self
-            .env
-            .tpk
-            .get_typetree_node(class_id, self.env.unity_version()?)
+        let mut nodes = Vec::new();
+        for env in self.envs {
+            if let Some(tt) = env.tpk.get_typetree_node(class_id, env.unity_version()?) {
+                nodes.push(tt);
+            }
+        }
+        let merged = MergedTypeTree::merge(nodes.iter().map(|tt| tt.as_ref()))?
             .context("typetree not found")?;
-        self.generate("Assembly-CSharp", &tt)
+        self.generate("Assembly-CSharp", merged)
     }
     pub fn generate_script(&mut self, assembly: &str, script: &str) -> Result<()> {
-        let tt = self
-            .env
-            .generate_typetree(assembly, script)?
+        let merged = self
+            .merged_typetree(assembly, script)?
             .with_context(|| format!("type tree not found for {script} ({assembly})"))?;
-        self.generate(assembly, tt)
+        self.generate(assembly, merged)
     }
 
-    fn queue(&mut self, assembly: &str, tt: &TypeTreeNode) {
+    /// Resolve `script` in `assembly` across every env and merge the results into one tree.
+    fn merged_typetree(&self, assembly: &str, script: &str) -> Result<Option<MergedTypeTree>> {
+        let mut nodes = Vec::new();
+        for env in self.envs {
+            if let Some(tt) = env.generate_typetree(assembly, script)? {
+                nodes.push(tt);
+            }
+        }
+        Ok(MergedTypeTree::merge(nodes)?)
+    }
+
+    fn queue(&mut self, assembly: &str, tt: MergedTypeTree) {
         if self.generated.contains(&tt.m_Type) {
             return;
         }
         assert!(self.generated.insert(tt.m_Type.clone()));
 
-        self.queued.push_back((assembly.to_owned(), tt.clone()));
+        self.queued.push_back((assembly.to_owned(), tt));
     }
 
     fn handle_queue(&mut self) -> Result<()> {
@@ -154,42 +194,63 @@ impl<'a> Context<'a> {
         Ok(())
     }
 
-    /// All loaded assembly names, lazily computed and cached.
-    fn assemblies(&mut self) -> Result<&[String]> {
-        if self.all_assemblies.is_none() {
-            let defs = self
-                .env
+    /// All loaded assembly names for env `env_index`, lazily computed and cached.
+    fn assemblies(&mut self, env_index: usize) -> Result<&[String]> {
+        if self.all_assemblies[env_index].is_none() {
+            let envs = self.envs;
+            let env = &envs[env_index];
+            let keys = env
                 .typetree_generator
-                .backend(self.env)?
-                .monobehaviour_definitions()?;
-            self.all_assemblies = Some(defs.into_keys().collect());
+                .backend(env)?
+                .monobehaviour_definitions()?
+                .into_keys()
+                .collect();
+            self.all_assemblies[env_index] = Some(keys);
         }
-        Ok(self.all_assemblies.as_deref().unwrap())
+        Ok(self.all_assemblies[env_index].as_deref().unwrap())
     }
 
-    /// Look up a MonoScript type by name, preferring the current assembly, then any other
-    /// loaded assembly. Returns the assembly it was found in and its type tree.
-    fn resolve_script_type(
-        &mut self,
-        full_name: &str,
-    ) -> Result<Option<(String, &'a TypeTreeNode)>> {
+    /// Look up a MonoScript type by name in every env (preferring the current assembly,
+    /// then any other loaded assembly) and merge the results. Returns the assembly it was
+    /// first found in and the merged type tree.
+    fn resolve_script_type(&mut self, full_name: &str) -> Result<Option<(String, MergedTypeTree)>> {
         let current = self.current_assembly.clone();
-        if let Some(ty) = self.env.generate_typetree(&current, full_name)? {
-            return Ok(Some((current, ty)));
-        }
-        let assemblies = self.assemblies()?.to_vec();
-        for assembly in assemblies {
-            if assembly == current {
-                continue;
+        let envs = self.envs;
+        let mut found_assembly: Option<String> = None;
+        let mut variants: Vec<&TypeTreeNode> = Vec::new();
+
+        for (i, env) in envs.iter().enumerate() {
+            let resolved = if let Some(ty) = env.generate_typetree(&current, full_name)? {
+                Some((current.clone(), ty))
+            } else {
+                let mut found = None;
+                for assembly in self.assemblies(i)?.to_vec() {
+                    if assembly == current {
+                        continue;
+                    }
+                    if let Some(ty) = env.generate_typetree(&assembly, full_name)? {
+                        found = Some((assembly, ty));
+                        break;
+                    }
+                }
+                found
+            };
+            if let Some((assembly, ty)) = resolved {
+                found_assembly.get_or_insert(assembly);
+                variants.push(ty);
             }
-            if let Some(ty) = self.env.generate_typetree(&assembly, full_name)? {
-                return Ok(Some((assembly, ty)));
-            }
         }
-        Ok(None)
+
+        match found_assembly {
+            Some(assembly) => {
+                let merged = MergedTypeTree::merge(variants)?.expect("variants is non-empty");
+                Ok(Some((assembly, merged)))
+            }
+            None => Ok(None),
+        }
     }
 
-    fn ignore_field(&self, field: &TypeTreeNode) -> bool {
+    fn ignore_field(&self, field: &MergedTypeTree) -> bool {
         self.settings.field_ignores.iter().any(|ignore| {
             field
                 .m_Name
@@ -198,20 +259,34 @@ impl<'a> Context<'a> {
         })
     }
 
-    fn generate_inner(&mut self, tt: &TypeTreeNode) -> Result<String> {
-        // eprintln!("Generating {} {}", tt.m_Type, tt.m_Name);
+    fn generate_inner(&mut self, tt: &MergedTypeTree) -> Result<String> {
+        // eprintln!("Generating {} {}", tt.type_name, tt.name);
         let mut f = String::new();
         if let Some(derives) = &self.settings.derives {
             writeln!(&mut f, "#[derive({})]", derives)?;
         }
         writeln!(&mut f, "pub struct {} {{", self.escape_typename(tt))?;
         for field in &tt.children {
-            // eprintln!("Field {} {}", field.m_Type, field.m_Name);
+            // eprintln!("Field {} {}", field.type_name, field.name);
             if self.ignore_field(field) {
                 continue;
             }
             let field_ty = self.field_type(field)?;
             let (field_ty, comment) = split_trailing_comment(&field_ty);
+            // a field missing from some game that has the parent struct becomes optional, so a
+            // single struct deserializes every version; annotate which games actually have it
+            let field_ty = if field.present_in.len() == tt.present_in.len() {
+                Cow::Borrowed(field_ty)
+            } else {
+                let games: Vec<&str> = field
+                    .present_in
+                    .iter()
+                    .map(|&i| self.labels[i].as_str())
+                    .collect();
+                writeln!(&mut f, "    // only in: {}", games.join(", "))?;
+                writeln!(&mut f, "    #[serde(default)]")?;
+                Cow::Owned(format!("Option<{field_ty}>"))
+            };
             writeln!(
                 &mut f,
                 "    pub {}: {},{}",
@@ -234,7 +309,7 @@ impl<'a> Context<'a> {
         Ok(f)
     }
 
-    fn field_type(&mut self, field: &TypeTreeNode) -> Result<String> {
+    fn field_type(&mut self, field: &MergedTypeTree) -> Result<String> {
         let field_ty = match self.classify(field) {
             Classify::Primitive(ty) => ty.to_owned(),
             Classify::PPtr(pptr) => {
@@ -245,8 +320,9 @@ impl<'a> Context<'a> {
                         Some((assembly, ty))
                             if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") =>
                         {
+                            let name = self.escape_typename(&ty);
                             self.queue(&assembly, ty);
-                            format!("TypedPPtr<{}>", self.escape_typename(ty))
+                            format!("TypedPPtr<{name}>")
                         }
                         _ => format!("PPtr /* {asm_ty} */"),
                     }
@@ -257,8 +333,9 @@ impl<'a> Context<'a> {
             }
             Classify::Other(other) => {
                 let assembly = self.current_assembly.clone();
-                self.queue(&assembly, field);
-                self.escape_typename(other)
+                let name = self.escape_typename(other);
+                self.queue(&assembly, other.clone());
+                name
             }
             Classify::Array(item) => {
                 format!("Vec<{}>", self.field_type(item)?)
@@ -274,7 +351,7 @@ impl<'a> Context<'a> {
         Ok(field_ty)
     }
 
-    fn classify<'tt>(&self, tt: &'tt TypeTreeNode) -> Classify<'tt> {
+    fn classify<'tt>(&self, tt: &'tt MergedTypeTree) -> Classify<'tt> {
         if let Some(rest) = tt.m_Type.strip_prefix("PPtr<")
             && let Some(pptr) = rest.strip_suffix('>')
         {
@@ -309,7 +386,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    fn escape_typename(&self, tt: &TypeTreeNode) -> String {
+    fn escape_typename(&self, tt: &MergedTypeTree) -> String {
         tt.m_Type.replace('`', "")
     }
 
@@ -340,10 +417,10 @@ fn split_trailing_comment(field_ty: &str) -> (&str, String) {
 enum Classify<'a> {
     Primitive(&'static str),
     PPtr(String),
-    Other(&'a TypeTreeNode),
-    Array(&'a TypeTreeNode),
+    Other(&'a MergedTypeTree),
+    Array(&'a MergedTypeTree),
     Map {
-        key: &'a TypeTreeNode,
-        value: &'a TypeTreeNode,
+        key: &'a MergedTypeTree,
+        value: &'a MergedTypeTree,
     },
 }
