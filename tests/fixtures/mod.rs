@@ -386,6 +386,52 @@ pub fn tree(script_class: &str) -> (Vec<u8>, Tree) {
     (sfb.write_vec().unwrap(), tree)
 }
 
+/// A serialized file holding a single named loose asset (a `MonoScript`, which has an `m_Name` but
+/// no GameObject — so it resolves to a name, not a path). Returns `(bytes, asset_path_id)`. Used as
+/// the *external* file in cross-file resolution tests.
+pub fn named_asset_file(name: &str) -> (Vec<u8>, PathId) {
+    let unity_version: UnityVersion = TEST_UNITY_VERSION.parse().unwrap();
+    let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+    let common = build_common_offset_map(&tpk.inner, &unity_version);
+    let mut sfb = SerializedFileBuilder::new(&unity_version, &tpk, &common, true);
+
+    let id = sfb.get_next_path_id();
+    let script = MonoScript {
+        m_Name: name.to_owned(),
+        m_ExecutionOrder: 0,
+        m_PropertiesHash: [0; 16],
+        m_ClassName: name.to_owned(),
+        m_Namespace: String::new(),
+        m_AssemblyName: "Assembly-CSharp.dll".to_owned(),
+    };
+    sfb.add_object_at(id, &script).unwrap();
+    (sfb.write_vec().unwrap(), id)
+}
+
+/// A minimal local file whose `m_Externals` references `external_path`. Returns `(bytes, file_id)`
+/// where `file_id` is the `m_FileID` to use in a `PPtr` pointing into that external file.
+pub fn file_referencing_external(external_path: &str) -> (Vec<u8>, FileId) {
+    let unity_version: UnityVersion = TEST_UNITY_VERSION.parse().unwrap();
+    let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+    let common = build_common_offset_map(&tpk.inner, &unity_version);
+    let mut sfb = SerializedFileBuilder::new(&unity_version, &tpk, &common, true);
+
+    let file_id = sfb.get_or_insert_external(external_path);
+
+    // one trivial GameObject so the file isn't degenerate
+    let go_id = sfb.get_next_path_id();
+    let go = GameObject {
+        m_Component: Vec::new(),
+        m_Layer: 0,
+        m_Name: "Root".to_owned(),
+        m_Tag: 0,
+        m_IsActive: true,
+    };
+    sfb.add_object_at(go_id, &go).unwrap();
+
+    (sfb.write_vec().unwrap(), file_id)
+}
+
 /// Wrap raw serialized-file bytes into a minimal uncompressed UnityFS bundle
 /// holding a single serialized entry named `entry_name`.
 pub fn bundle_with_serialized(entry_name: &str, serialized: &[u8]) -> Vec<u8> {

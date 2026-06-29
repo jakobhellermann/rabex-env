@@ -126,7 +126,12 @@ fn external_ctx<'a, R: EnvResolver, P: TypeTreeProvider>(
     local: &FileCtx<'a, R, P>,
     pptr: PPtr,
 ) -> Option<FileCtx<'a, R, P>> {
-    let handle = local.file.deref(pptr.typed::<()>()).ok()?.file;
+    // Load the external *file* itself, rather than deref-ing this pptr's specific object. Deref-ing
+    // the object would fail when it is a dangling reference (missing path id) — and since the result
+    // is memoised per `m_FileID`, that one bad pointer would poison the whole file, leaving every
+    // other valid object in it unresolved.
+    let external_path = pptr.m_FileID.get_external(local.file.file)?;
+    let handle = local.file.env.load_external_file(Path::new(external_path)).ok()?;
     Some(FileCtx::new(handle))
 }
 
