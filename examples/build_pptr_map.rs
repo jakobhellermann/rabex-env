@@ -1,6 +1,7 @@
 mod utils;
 
 use std::path::Path;
+use std::time::Instant;
 
 use anyhow::{Context as _, Result};
 use dashmap::DashMap;
@@ -20,24 +21,34 @@ struct GlobalPPtr {
 }
 
 fn main() -> Result<()> {
+    let t = Instant::now();
     let env = utils::find_game("silksong")?.unwrap();
+    eprintln!("load game: {:.2?}", t.elapsed());
+
+    let t = Instant::now();
     let files = env.load_all_serialized_files()?;
+    eprintln!("load_all_serialized_files: {:.2?}", t.elapsed());
 
     // let _profiler = dhat::Profiler::new_heap();
 
+    let t = Instant::now();
     let global_file_map: FxHashMap<_, _> = ["Library/unity default resources"]
         .into_iter()
         .chain(files.keys().map(AsRef::as_ref))
         .enumerate()
         .map(|(i, file)| (file, i as u32))
         .collect();
+    eprintln!("build global_file_map: {:.2?}", t.elapsed());
 
     let pptr_references = DashMap::<GlobalPPtr, Vec<GlobalPPtr>>::new();
 
+    let t = Instant::now();
     files.par_iter().try_for_each(|(path, file)| {
         find_pptr_references(&pptr_references, &global_file_map, file, path)
     })?;
+    eprintln!("find_pptr_references: {:.2?}", t.elapsed());
 
+    let t = Instant::now();
     let db_path = "pptrs.db";
     if let Err(e) = std::fs::remove_file(db_path)
         && e.kind() != std::io::ErrorKind::NotFound
@@ -83,6 +94,9 @@ CREATE TABLE IF NOT EXISTS pptr_references (
         stmt.finalize()?;
         tx.commit()?;
     }
+    eprintln!("write files table: {:.2?}", t.elapsed());
+
+    let t = Instant::now();
     {
         let tx = db.transaction()?;
         let mut stmt = tx.prepare(
@@ -105,6 +119,7 @@ CREATE TABLE IF NOT EXISTS pptr_references (
 
         tx.commit()?;
     }
+    eprintln!("write pptr_references table: {:.2?}", t.elapsed());
 
     std::mem::forget(env);
     Ok(())
