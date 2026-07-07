@@ -95,14 +95,14 @@ impl fmt::Display for ComponentPath {
     }
 }
 
-/// Serializes as its [`Display`] string (e.g. `"Root/Child@PlayMakerFSM:1"`).
+/// Serializes as its [`Display`](std::fmt::Display) string (e.g. `"Root/Child@PlayMakerFSM:1"`).
 impl serde::Serialize for ComponentPath {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.collect_str(self)
     }
 }
 
-/// Deserializes from the [`Display`] string via [`parse`], round-tripping with [`Serialize`].
+/// Deserializes from the [`Display`](std::fmt::Display) string via [`parse`], round-tripping with [`Serialize`](serde::Deserialize).
 impl<'de> serde::Deserialize<'de> for ComponentPath {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s = <std::borrow::Cow<'de, str>>::deserialize(deserializer)?;
