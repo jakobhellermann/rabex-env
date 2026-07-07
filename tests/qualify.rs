@@ -3,10 +3,6 @@
 //! Scenes are built in memory (see `fixtures`) and re-opened through a real `Environment`, so the
 //! resolver runs against a genuine `SerializedFileHandle`.
 
-use rabex_env_testkit::{
-    Flat, add_go, add_scripted_mb, add_transform, build_file, file_referencing_external,
-    named_asset_file, scene_with_script_component, with_handle,
-};
 use rabex_env::Environment;
 use rabex_env::qualify::Qualifier;
 use rabex_env::rabex::objects::PPtr;
@@ -14,6 +10,10 @@ use rabex_env::rabex::objects::pptr::PathId;
 use rabex_env::rabex::tpk::TpkTypeTreeBlob;
 use rabex_env::rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use rabex_env::resolver::MemResolver;
+use rabex_env_testkit::{
+    Flat, add_go, add_scripted_mb, add_transform, build_file, file_referencing_external,
+    named_asset_file, scene_with_script_component, with_handle,
+};
 
 fn path_of(bytes: Vec<u8>, id: PathId) -> Option<String> {
     with_handle("scene", bytes, |handle| {

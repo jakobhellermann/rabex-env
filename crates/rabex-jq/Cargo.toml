@@ -1,0 +1,18 @@
+[package]
+name = "rabex-jq"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Run jq queries over Unity serialized objects, with a native `deref` that follows PPtrs through the Environment."
+
+[dependencies]
+anyhow = "1.0"
+rabex-env = { git = "https://github.com/jakobhellermann/rabex-env" }
+
+jaq-core = "3.1"
+jaq-json = { version = "2.0", default-features = false, features = ["std", "serde", "sync"] }
+jaq-std = { version = "3.0", default-features = false, features = ["std", "math"] }
+
+[dev-dependencies]
+rabex-env-testkit = { path = "../rabex-env-testkit" }
+tempfile = "3.27"

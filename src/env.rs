@@ -320,7 +320,10 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         })
     }
 
-    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(level = "trace", skip_all))]
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(level = "trace", skip_all)
+    )]
     pub fn deref_read<'de, T>(
         &self,
         pptr: TypedPPtr<T>,

@@ -131,7 +131,11 @@ fn external_ctx<'a, R: EnvResolver, P: TypeTreeProvider>(
     // is memoised per `m_FileID`, that one bad pointer would poison the whole file, leaving every
     // other valid object in it unresolved.
     let external_path = pptr.m_FileID.get_external(local.file.file)?;
-    let handle = local.file.env.load_external_file(Path::new(external_path)).ok()?;
+    let handle = local
+        .file
+        .env
+        .load_external_file(Path::new(external_path))
+        .ok()?;
     Some(FileCtx::new(handle))
 }
 

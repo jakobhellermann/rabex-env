@@ -314,7 +314,10 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
         })
     }
 
-    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(level = "trace", skip_all))]
+    #[cfg_attr(
+        feature = "tracing-instrument",
+        tracing::instrument(level = "trace", skip_all)
+    )]
     pub fn mono_script(&self) -> Result<Option<MonoScript>> {
         let Some(script_type) = self.file.file.script_type(self.object.info) else {
             return Ok(None);
