@@ -3,11 +3,9 @@
 //! Scenes are built in memory (see `fixtures`) and re-opened through a real `Environment`, so the
 //! resolver runs against a genuine `SerializedFileHandle`.
 
-mod fixtures;
-
-use fixtures::{
-    Flat, file_referencing_external, named_asset_file, scene_with_script_component, tree,
-    with_handle,
+use rabex_env_testkit::{
+    Flat, add_go, add_scripted_mb, add_transform, build_file, file_referencing_external,
+    named_asset_file, scene_with_script_component, with_handle,
 };
 use rabex_env::Environment;
 use rabex_env::qualify::Qualifier;
@@ -23,6 +21,70 @@ fn path_of(bytes: Vec<u8>, id: PathId) -> Option<String> {
             .qualify_local(id)
             .map(|p| p.to_string())
     })
+}
+
+/// Path ids of the nodes built by [`tree`].
+struct Tree {
+    root: PathId,
+    leaf: PathId,
+    /// MonoBehaviour (`script_class`) attached to `leaf`
+    leaf_mb: PathId,
+    /// two sibling GameObjects both named "Dup" under `root`, for `:index` disambiguation
+    dup0: PathId,
+    dup1: PathId,
+    /// the MonoScript asset (no GameObject) — a loose object that resolves to no path
+    script: PathId,
+}
+
+/// A nested scene exercising hierarchy paths and `:index` disambiguation:
+/// ```text
+/// Root
+///  ├─ Child
+///  │   └─ Leaf      (+ a MonoBehaviour `script_class`)
+///  ├─ Dup
+///  └─ Dup
+/// ```
+fn tree(script_class: &str) -> (Vec<u8>, Tree) {
+    let mut t = Tree {
+        root: 0,
+        leaf: 0,
+        leaf_mb: 0,
+        dup0: 0,
+        dup1: 0,
+        script: 0,
+    };
+    let bytes = build_file(|sfb| {
+        // Reserve GameObject + Transform ids so transforms can cross-reference each other.
+        let (root_go, root_tf) = (sfb.get_next_path_id(), sfb.get_next_path_id());
+        let (child_go, child_tf) = (sfb.get_next_path_id(), sfb.get_next_path_id());
+        let (leaf_go, leaf_tf) = (sfb.get_next_path_id(), sfb.get_next_path_id());
+        let (dup0_go, dup0_tf) = (sfb.get_next_path_id(), sfb.get_next_path_id());
+        let (dup1_go, dup1_tf) = (sfb.get_next_path_id(), sfb.get_next_path_id());
+
+        let (leaf_mb, script_id) = add_scripted_mb(sfb, leaf_go, script_class);
+
+        add_go(sfb, root_go, "Root", &[root_tf]);
+        add_go(sfb, child_go, "Child", &[child_tf]);
+        add_go(sfb, leaf_go, "Leaf", &[leaf_tf, leaf_mb]);
+        add_go(sfb, dup0_go, "Dup", &[dup0_tf]);
+        add_go(sfb, dup1_go, "Dup", &[dup1_tf]);
+
+        add_transform(sfb, root_tf, root_go, None, &[child_tf, dup0_tf, dup1_tf]);
+        add_transform(sfb, child_tf, child_go, Some(root_tf), &[leaf_tf]);
+        add_transform(sfb, leaf_tf, leaf_go, Some(child_tf), &[]);
+        add_transform(sfb, dup0_tf, dup0_go, Some(root_tf), &[]);
+        add_transform(sfb, dup1_tf, dup1_go, Some(root_tf), &[]);
+
+        t = Tree {
+            root: root_go,
+            leaf: leaf_go,
+            leaf_mb,
+            dup0: dup0_go,
+            dup1: dup1_go,
+            script: script_id,
+        };
+    });
+    (bytes, t)
 }
 
 #[test]
