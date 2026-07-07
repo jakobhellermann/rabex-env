@@ -267,7 +267,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
 
     #[cfg_attr(
         feature = "tracing-instrument",
-        tracing::instrument(skip_all, fields(path = %path_name.display()))
+        tracing::instrument(level = "trace", skip_all, fields(path = %path_name.display()))
     )]
     pub(crate) fn load_external_file(
         &self,
@@ -320,7 +320,7 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         })
     }
 
-    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(level = "trace", skip_all))]
     pub fn deref_read<'de, T>(
         &self,
         pptr: TypedPPtr<T>,
