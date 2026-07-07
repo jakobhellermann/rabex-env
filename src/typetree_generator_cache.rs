@@ -1,7 +1,7 @@
 //! Provider and cache for generated typetrees from assemblies
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use anyhow::Result;
 use elsa::sync::FrozenMap;
@@ -17,6 +17,7 @@ pub struct AssemblyTypeTreeGenerator<'a, R, P> {
     generator: &'a unity_typetree_gen::AssemblyTypeTreeGenerator,
     base_node: &'a TypeTreeNode,
     cache: &'a FrozenMap<(String, String), Box<TypeTreeNode>>,
+    locks: &'a Mutex<HashMap<(String, String), Arc<Mutex<()>>>>,
 }
 
 impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P> {
@@ -26,6 +27,17 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P
         full_name: &str,
     ) -> Result<Option<&'a TypeTreeNode>> {
         let key = (assembly_name.to_owned(), full_name.to_owned());
+        if let Some(value) = self.cache.get(&key) {
+            return Ok(Some(value));
+        }
+        // Single-flight: only one thread generates a given (assembly, type); concurrent callers
+        // block on this per-key lock and hit the cache on the re-check below. This avoids a
+        // generation stampede when a parallel scan first reads objects of the same script class.
+        let key_lock = {
+            let mut locks = self.locks.lock().unwrap();
+            Arc::clone(locks.entry(key.clone()).or_default())
+        };
+        let _flight = key_lock.lock().unwrap();
         if let Some(value) = self.cache.get(&key) {
             return Ok(Some(value));
         }
@@ -81,6 +93,8 @@ struct Backend {
 pub struct TypeTreeGeneratorCache {
     backend: OnceLock<Backend>,
     cache: FrozenMap<(String, String), Box<TypeTreeNode>>,
+    /// Per-key locks for single-flight generation (see [`AssemblyTypeTreeGenerator::generate`]).
+    locks: Mutex<HashMap<(String, String), Arc<Mutex<()>>>>,
 }
 impl TypeTreeGeneratorCache {
     pub fn new(unity_version: UnityVersion, base_node: TypeTreeNode) -> Self {
@@ -92,18 +106,21 @@ impl TypeTreeGeneratorCache {
         TypeTreeGeneratorCache {
             backend,
             cache: FrozenMap::default(),
+            locks: Mutex::new(HashMap::new()),
         }
     }
     pub fn prefilled(cache: FrozenMap<(String, String), Box<TypeTreeNode>>) -> Self {
         TypeTreeGeneratorCache {
             backend: OnceLock::new(),
             cache,
+            locks: Mutex::new(HashMap::new()),
         }
     }
     pub fn empty() -> Self {
         TypeTreeGeneratorCache {
             backend: OnceLock::new(),
             cache: FrozenMap::default(),
+            locks: Mutex::new(HashMap::new()),
         }
     }
 
@@ -125,6 +142,7 @@ impl TypeTreeGeneratorCache {
             generator: &backend.generator,
             base_node: &backend.base_node,
             cache: &self.cache,
+            locks: &self.locks,
         })
     }
 
