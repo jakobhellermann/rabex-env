@@ -1,9 +1,8 @@
 //! Types for interacting with the [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@3.1/manual/index.html) unity package
 mod archive_path;
-pub mod binary_catalog;
+pub mod catalog;
 pub mod settings;
 
-use std::io::{Cursor, Read, Seek};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -14,7 +13,7 @@ use rabex::typetree::TypeTreeProvider;
 use rustc_hash::FxHashMap;
 
 use crate::Environment;
-use crate::addressables::binary_catalog::{BinaryCatalogReader, ResourceLocation};
+use crate::addressables::catalog::{AddressablesCatalog, ResourceLocation};
 use crate::addressables::settings::AddressablesSettings;
 use crate::resolver::EnvResolver;
 
@@ -52,10 +51,7 @@ impl AddressablesData {
         self.bundle_to_cab.keys().map(AsRef::as_ref)
     }
 
-    pub fn catalogs(
-        &self,
-        env: &impl EnvResolver,
-    ) -> Result<Vec<BinaryCatalogReader<impl Read + Seek>>, std::io::Error> {
+    pub fn catalogs(&self, env: &impl EnvResolver) -> Result<Vec<AddressablesCatalog>> {
         self.settings
             .m_CatalogLocations
             .iter()
@@ -70,7 +66,7 @@ impl AddressablesData {
 
                 Some((|| {
                     let data = env.read_path(Path::new(&path))?;
-                    BinaryCatalogReader::new(Cursor::new(data))
+                    catalog::parse(data.as_ref())
                 })())
             })
             .collect()
@@ -78,9 +74,7 @@ impl AddressablesData {
 
     pub fn resource_locations(&self, env: &impl EnvResolver) -> Result<Vec<Arc<ResourceLocation>>> {
         let mut all = Vec::new();
-        for mut catalog in self.catalogs(env)? {
-            let catalog = catalog.read()?;
-
+        for catalog in self.catalogs(env)? {
             for (_key, locations) in catalog.resources {
                 for loc in locations {
                     all.push(loc);

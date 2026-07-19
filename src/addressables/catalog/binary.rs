@@ -248,7 +248,7 @@ impl ResourceLocation {
     }
 }
 #[derive(Debug)]
-pub struct BinaryCatalog {
+pub struct AddressablesCatalog {
     pub locator_id: Arc<String>,
     pub build_result_hash: Arc<String>,
     pub instance_provider_data: ObjectInitializationData,
@@ -311,7 +311,7 @@ pub struct BinaryCatalogReader<R> {
     cache: Cache,
 }
 
-impl BinaryCatalog {
+impl AddressablesCatalog {
     pub fn from_reader<R: Read + Seek>(reader: R) -> Result<Self, std::io::Error> {
         BinaryCatalogReader::new(reader)?.read()
     }
@@ -416,7 +416,7 @@ impl<R: Read + Seek> BinaryCatalogReader<R> {
         Ok(resources)
     }
 
-    pub fn read(&mut self) -> Result<BinaryCatalog, std::io::Error> {
+    pub fn read(&mut self) -> Result<AddressablesCatalog, std::io::Error> {
         let locator_id = self.read_encoded_string(self.header.id_offset)?;
         let build_result_hash = self.read_encoded_string(self.header.build_result_hash_offset)?;
 
@@ -463,7 +463,7 @@ impl<R: Read + Seek> BinaryCatalogReader<R> {
             resources
         };
 
-        Ok(BinaryCatalog {
+        Ok(AddressablesCatalog {
             locator_id,
             build_result_hash,
             instance_provider_data,
@@ -636,6 +636,11 @@ fn read_offset_array<R: Read + Seek>(
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hash128(u32, u32, u32, u32);
+impl Hash128 {
+    pub fn from_u32s([a, b, c, d]: [u32; 4]) -> Self {
+        Hash128(a, b, c, d)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AssetBundleRequestOptions {

@@ -5,7 +5,7 @@ use std::ops::AddAssign;
 use std::path::Path;
 
 use anyhow::Result;
-use rabex_env::addressables::binary_catalog::resource_providers;
+use rabex_env::addressables::catalog::resource_providers;
 
 fn main() -> Result<()> {
     let env = utils::find_game("silksong")?.unwrap();
@@ -15,8 +15,7 @@ fn main() -> Result<()> {
     let mut bundle_names = BTreeMap::default();
     let mut bundled_asset_counts = BTreeMap::default();
 
-    for mut catalog in addressables.catalogs(&env.game_files)? {
-        let catalog = catalog.read()?;
+    for catalog in addressables.catalogs(&env.game_files)? {
         for loc in catalog.locations() {
             match loc.provider_id.as_str() {
                 resource_providers::ASSET_BUNDLE => {

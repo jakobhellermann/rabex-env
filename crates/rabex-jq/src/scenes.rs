@@ -7,7 +7,7 @@ use std::path::Path;
 use anyhow::Result;
 use rabex_env::Environment;
 use rabex_env::addressables::ArchivePath;
-use rabex_env::addressables::binary_catalog::resource_providers;
+use rabex_env::addressables::catalog::resource_providers;
 use rabex_env::rabex::typetree::TypeTreeProvider;
 use rabex_env::resolver::EnvResolver;
 
@@ -52,8 +52,7 @@ impl SceneIndex {
                 }
             }
 
-            for mut catalog in aa.catalogs(&env.game_files)? {
-                let catalog = catalog.read()?;
+            for catalog in aa.catalogs(&env.game_files)? {
                 for loc in catalog.locations() {
                     if loc.provider_id.as_str() != resource_providers::BUNDLED_ASSET
                         || loc.type_.m_ClassName.as_str() != SCENE_INSTANCE_CLASS
