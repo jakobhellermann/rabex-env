@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use rabex_env::resolver::EnvResolver;
-use steam_depot_vfs::FileKind;
+use steam_depot_vfs::FileType;
 use steam_depot_vfs::chunk_store::{ChunkStore, FsCacheStore};
 use steam_depot_vfs::fs::{DepotFileReader, DepotManifestStore};
 use tokio::runtime::Handle;
@@ -42,7 +42,7 @@ impl<C: ChunkStore> SteamDepotGameFiles<C> {
             let depot_path = format_depot_path(&data_dir)?;
             if matches!(
                 manifest_store.metadata(&depot_path),
-                Ok(meta) if matches!(meta.kind, FileKind::Directory)
+                Ok(meta) if matches!(meta.kind, FileType::Directory)
             ) {
                 return Ok(data_dir);
             }
