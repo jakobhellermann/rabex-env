@@ -1,0 +1,12 @@
+[package]
+name = "rabex-texture"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Decode Unity Texture2D pixel data into RGBA images. BC7 only."
+
+[dependencies]
+anyhow = "1.0"
+texture2ddecoder = "0.1"
+image = { version = "0.25", default-features = false, features = ["png"] }
+serde = { version = "1.0", features = ["derive"] }
