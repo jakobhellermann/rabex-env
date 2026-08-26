@@ -265,6 +265,11 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         SerializedFileHandle::new(self, &file.0, file.1.as_ref())
     }
 
+    /// Drops every cached serialized file; `&mut self` proves nothing still borrows one.
+    pub fn clear_cache(&mut self) {
+        self.serialized_files.as_mut().clear();
+    }
+
     #[cfg_attr(
         feature = "tracing-instrument",
         tracing::instrument(level = "trace", skip_all, fields(path = %path_name.display()))
