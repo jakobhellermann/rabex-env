@@ -1,5 +1,5 @@
 //! Decode Unity `Texture2D` pixel data into RGBA images. IO-free.
-//! Supported formats: Alpha8, RGB24, RGBA32, DXT1/BC1, DXT5/BC3, BC7.
+//! Supported formats: Alpha8, RGB24, RGBA32, ARGB4444, DXT1/BC1, DXT5/BC3, BC7.
 
 use anyhow::{Result, bail, ensure};
 use image::RgbaImage;
@@ -11,6 +11,7 @@ pub enum TextureFormat {
     Alpha8,
     RGB24,
     RGBA32,
+    Argb4444,
     Dxt1,
     Dxt5,
     Bc7,
@@ -21,6 +22,7 @@ impl TextureFormat {
     pub fn from_id(id: i32) -> Option<Self> {
         Some(match id {
             1 => Self::Alpha8,
+            2 => Self::Argb4444,
             3 => Self::RGB24,
             4 => Self::RGBA32,
             10 => Self::Dxt1,
@@ -74,6 +76,11 @@ pub fn decode(format: i32, width: u32, height: u32, data: &[u8]) -> Result<RgbaI
         TextureFormat::Alpha8 => uncompressed(width, height, data, 1, |p| [p[0], p[0], p[0], 255]),
         TextureFormat::RGB24 => uncompressed(width, height, data, 3, |p| [p[0], p[1], p[2], 255]),
         TextureFormat::RGBA32 => uncompressed(width, height, data, 4, |p| [p[0], p[1], p[2], p[3]]),
+        TextureFormat::Argb4444 => uncompressed(width, height, data, 2, |p| {
+            let v = u16::from_le_bytes([p[0], p[1]]);
+            let nibble = |shift: u32| (((v >> shift) & 0xF) * 0x11) as u8;
+            [nibble(8), nibble(4), nibble(0), nibble(12)]
+        }),
         TextureFormat::Dxt1 => block(width, height, data, texture2ddecoder::decode_bc1),
         TextureFormat::Dxt5 => block(width, height, data, texture2ddecoder::decode_bc3),
         TextureFormat::Bc7 => block(width, height, data, texture2ddecoder::decode_bc7),
@@ -136,4 +143,18 @@ fn block(
         }
     }
     Ok(img)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_argb4444_expands_nibbles_to_bytes() {
+        // Pixel 0: A=F R=F G=0 B=0 -> opaque red. Pixel 1: A=8 R=4 G=2 B=1.
+        let data = [0xFF00u16.to_le_bytes(), 0x8421u16.to_le_bytes()].concat();
+        let img = decode(2, 2, 1, &data).unwrap();
+        assert_eq!(img.get_pixel(0, 0).0, [255, 0, 0, 255]);
+        assert_eq!(img.get_pixel(1, 0).0, [68, 34, 17, 136]);
+    }
 }
