@@ -270,6 +270,15 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         self.serialized_files.as_mut().clear();
     }
 
+    /// Sum of the cached serialized files' raw byte sizes.
+    pub fn cached_bytes(&mut self) -> usize {
+        self.serialized_files
+            .as_mut()
+            .values()
+            .map(|entry| entry.1.as_ref().len())
+            .sum()
+    }
+
     #[cfg_attr(
         feature = "tracing-instrument",
         tracing::instrument(level = "trace", skip_all, fields(path = %path_name.display()))
