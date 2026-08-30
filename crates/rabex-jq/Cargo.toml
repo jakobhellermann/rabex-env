@@ -11,7 +11,7 @@ rabex-env = { git = "https://github.com/jakobhellermann/rabex-env" }
 
 jaq-core = "3.1"
 jaq-json = { version = "2.0", default-features = false, features = ["std", "serde", "sync"] }
-jaq-std = { version = "3.0", default-features = false, features = ["std", "math"] }
+jaq-std = { version = "3.0", default-features = false, features = ["std", "math", "format", "log", "regex", "time"] }
 
 [dev-dependencies]
 rabex-env-testkit = { path = "../rabex-env-testkit" }
