@@ -2,6 +2,7 @@
 name = "rabex-env-testkit"
 version = "0.1.0"
 edition = "2024"
+license.workspace = true
 
 [dependencies]
 rabex-env = { git = "https://github.com/jakobhellermann/rabex-env" }

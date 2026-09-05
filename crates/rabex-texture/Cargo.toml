@@ -2,7 +2,7 @@
 name = "rabex-texture"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
+license.workspace = true
 description = "Decode Unity Texture2D pixel data into RGBA images. BC7 only."
 
 [dependencies]

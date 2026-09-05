@@ -2,7 +2,7 @@
 name = "rabex-jq"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
+license.workspace = true
 description = "Run jq queries over Unity serialized objects, with a native `deref` that follows PPtrs through the Environment."
 
 [dependencies]

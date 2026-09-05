@@ -2,6 +2,7 @@
 name = "rabex-env-steam-depot-vfs"
 version = "0.1.0"
 edition = "2024"
+license.workspace = true
 
 [features]
 tracing-instrument = ["rabex-env/tracing-instrument"]
