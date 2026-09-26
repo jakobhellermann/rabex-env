@@ -110,8 +110,6 @@ struct Context<'a> {
     hash_key_types: FxHashSet<TypeName>,
     script_pptr_types: FxHashMap<(String, String), Option<TypeName>>,
     queued: VecDeque<(String, MergedTypeTree)>,
-    /// assembly the type currently being generated belongs to
-    current_assembly: String,
     /// all loaded assembly names per env, lazily populated
     all_assemblies: Vec<Option<Vec<String>>>,
 }
@@ -135,7 +133,6 @@ impl<'a> Context<'a> {
             hash_key_types: FxHashSet::default(),
             script_pptr_types: FxHashMap::default(),
             queued: VecDeque::new(),
-            current_assembly: String::new(),
             all_assemblies: vec![None; envs.len()],
         }
     }
@@ -222,7 +219,7 @@ impl<'a> Context<'a> {
         self.queued.push_back((assembly.to_owned(), tt));
     }
 
-    fn discover_type_dependencies(&mut self, tt: &MergedTypeTree) -> Result<()> {
+    fn discover_type_dependencies(&mut self, assembly: &str, tt: &MergedTypeTree) -> Result<()> {
         for field in &tt.children {
             if self.ignore_field(field) {
                 continue;
@@ -230,13 +227,14 @@ impl<'a> Context<'a> {
             let untyped_pptr = self.settings.untyped_pptr_fields.iter().any(|entry| {
                 entry.split_once('.') == Some((tt.m_Type.as_str(), field.m_Name.as_str()))
             });
-            self.discover_field_dependencies(field, untyped_pptr)?;
+            self.discover_field_dependencies(assembly, field, untyped_pptr)?;
         }
         Ok(())
     }
 
     fn discover_field_dependencies(
         &mut self,
+        assembly: &str,
         field: &MergedTypeTree,
         untyped_pptr: bool,
     ) -> Result<()> {
@@ -245,9 +243,9 @@ impl<'a> Context<'a> {
             Classify::PPtr(_) if untyped_pptr => {}
             Classify::PPtr(pptr) => {
                 if let Some(asm_ty) = pptr.strip_prefix('$') {
-                    let key = (self.current_assembly.clone(), asm_ty.to_owned());
+                    let key = (assembly.to_owned(), asm_ty.to_owned());
                     if !self.script_pptr_types.contains_key(&key) {
-                        let resolved = self.resolve_script_type(asm_ty)?;
+                        let resolved = self.resolve_script_type(assembly, asm_ty)?;
                         let type_name = match resolved {
                             Some((assembly, ty))
                                 if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") =>
@@ -263,18 +261,17 @@ impl<'a> Context<'a> {
                 }
             }
             Classify::Other(other) => {
-                let assembly = self.current_assembly.clone();
-                self.queue(&assembly, other.clone());
+                self.queue(assembly, other.clone());
             }
             Classify::Array(item) => {
-                self.discover_field_dependencies(item, untyped_pptr)?;
+                self.discover_field_dependencies(assembly, item, untyped_pptr)?;
             }
             Classify::Map { key, value } => {
                 let mut key_types = FxHashSet::default();
                 self.collect_hash_key_dependencies(key, &mut key_types);
                 self.hash_key_types.extend(key_types);
-                self.discover_field_dependencies(key, untyped_pptr)?;
-                self.discover_field_dependencies(value, untyped_pptr)?;
+                self.discover_field_dependencies(assembly, key, untyped_pptr)?;
+                self.discover_field_dependencies(assembly, value, untyped_pptr)?;
             }
         }
         Ok(())
@@ -323,16 +320,14 @@ impl<'a> Context<'a> {
     fn handle_queue(&mut self) -> Result<()> {
         let mut discovered = Vec::new();
         while let Some((assembly, item)) = self.queued.pop_front() {
-            self.current_assembly = assembly.clone();
-            self.discover_type_dependencies(&item)?;
+            self.discover_type_dependencies(&assembly, &item)?;
             discovered.push((assembly, item));
         }
 
         self.propagate_hash_key_derives(&discovered);
 
         for (assembly, item) in discovered {
-            self.current_assembly = assembly;
-            let code = self.generate_inner(&item)?;
+            let code = self.generate_inner(&assembly, &item)?;
             let type_name = self.escape_typename(&item);
             self.generated_code.push((type_name, code));
         }
@@ -359,19 +354,22 @@ impl<'a> Context<'a> {
     /// Look up a MonoScript type by name in every env (preferring the current assembly,
     /// then any other loaded assembly) and merge the results. Returns the assembly it was
     /// first found in and the merged type tree.
-    fn resolve_script_type(&mut self, full_name: &str) -> Result<Option<(String, MergedTypeTree)>> {
-        let current = self.current_assembly.clone();
+    fn resolve_script_type(
+        &mut self,
+        preferred_assembly: &str,
+        full_name: &str,
+    ) -> Result<Option<(String, MergedTypeTree)>> {
         let envs = self.envs;
         let mut found_assembly: Option<String> = None;
         let mut variants: Vec<&TypeTreeNode> = Vec::new();
 
         for (i, env) in envs.iter().enumerate() {
-            let resolved = if let Some(ty) = env.generate_typetree(&current, full_name)? {
-                Some((current.clone(), ty))
+            let resolved = if let Some(ty) = env.generate_typetree(preferred_assembly, full_name)? {
+                Some((preferred_assembly.to_owned(), ty))
             } else {
                 let mut found = None;
                 for assembly in self.assemblies(i)?.to_vec() {
-                    if assembly == current {
+                    if assembly == preferred_assembly {
                         continue;
                     }
                     if let Some(ty) = env.generate_typetree(&assembly, full_name)? {
@@ -405,7 +403,7 @@ impl<'a> Context<'a> {
         })
     }
 
-    fn generate_inner(&mut self, tt: &MergedTypeTree) -> Result<RustCode> {
+    fn generate_inner(&self, assembly: &str, tt: &MergedTypeTree) -> Result<RustCode> {
         // eprintln!("Generating {} {}", tt.type_name, tt.name);
         let mut f = String::new();
         let type_name = self.escape_typename(tt);
@@ -422,7 +420,7 @@ impl<'a> Context<'a> {
             let untyped_pptr = self.settings.untyped_pptr_fields.iter().any(|entry| {
                 entry.split_once('.') == Some((tt.m_Type.as_str(), field.m_Name.as_str()))
             });
-            let field_ty = self.field_type(field, untyped_pptr)?;
+            let field_ty = self.field_type(assembly, field, untyped_pptr)?;
             let (field_ty, comment) = split_trailing_comment(&field_ty);
             let field_name = self.escape_identifier(&field.m_Name);
             if field_name.as_ref() != field.m_Name.as_str()
@@ -464,14 +462,19 @@ impl<'a> Context<'a> {
         Ok(f)
     }
 
-    fn field_type(&mut self, field: &MergedTypeTree, untyped_pptr: bool) -> Result<String> {
+    fn field_type(
+        &self,
+        assembly: &str,
+        field: &MergedTypeTree,
+        untyped_pptr: bool,
+    ) -> Result<String> {
         let field_ty = match self.classify(field) {
             Classify::Primitive(ty) => ty.to_owned(),
             Classify::PPtr(pptr) => {
                 if untyped_pptr {
                     "PPtr".to_owned()
                 } else if let Some(asm_ty) = pptr.strip_prefix('$') {
-                    let key = (self.current_assembly.clone(), asm_ty.to_owned());
+                    let key = (assembly.to_owned(), asm_ty.to_owned());
                     match self
                         .script_pptr_types
                         .get(&key)
@@ -486,13 +489,13 @@ impl<'a> Context<'a> {
             }
             Classify::Other(other) => self.escape_typename(other),
             Classify::Array(item) => {
-                format!("Vec<{}>", self.field_type(item, untyped_pptr)?)
+                format!("Vec<{}>", self.field_type(assembly, item, untyped_pptr)?)
             }
             Classify::Map { key, value } => {
                 format!(
                     "HashMap<{}, {}>",
-                    self.field_type(key, untyped_pptr)?,
-                    self.field_type(value, untyped_pptr)?
+                    self.field_type(assembly, key, untyped_pptr)?,
+                    self.field_type(assembly, value, untyped_pptr)?
                 )
             }
         };
