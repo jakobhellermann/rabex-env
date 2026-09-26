@@ -2,8 +2,9 @@
 //! Supported formats: Alpha8, RGB24, RGBA32, ARGB4444, DXT1/BC1, DXT5/BC3, BC7.
 
 use anyhow::{Result, bail, ensure};
-use image::RgbaImage;
 use serde::Deserialize;
+
+pub use image::RgbaImage;
 
 /// `Texture2D.m_TextureFormat` values this crate can decode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
