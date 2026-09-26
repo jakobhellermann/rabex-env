@@ -13,6 +13,7 @@
 //! ```
 
 use std::fmt;
+use std::str::FromStr;
 
 use rabex::objects::ClassId;
 use rabex::objects::pptr::PathId;
@@ -31,6 +32,14 @@ pub struct ComponentPath {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PathSegment {
     pub name: String,
+    pub index: Option<usize>,
+}
+
+/// A component selector, with an optional index disambiguating equal-typed components on the same
+/// GameObject.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Component {
+    pub id: ComponentId,
     pub index: Option<usize>,
 }
 
@@ -53,14 +62,6 @@ impl ComponentId {
             ComponentId::Script(name) => name.clone(),
         }
     }
-}
-
-/// A component selector, with an optional index disambiguating equal-typed components on the same
-/// GameObject.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Component {
-    pub id: ComponentId,
-    pub index: Option<usize>,
 }
 
 /// How an object is addressed: by raw path id, or by a hierarchy/component path.
@@ -228,6 +229,14 @@ fn unescape(s: &str) -> String {
         }
     }
     out
+}
+
+impl FromStr for ComponentPath {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse(s)
+    }
 }
 
 #[cfg(test)]
