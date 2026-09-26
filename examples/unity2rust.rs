@@ -281,6 +281,16 @@ impl<'a> Context<'a> {
             }
             let field_ty = self.field_type(field)?;
             let (field_ty, comment) = split_trailing_comment(&field_ty);
+            let field_name = self.escape_identifier(&field.m_Name);
+            if field_name.as_ref() != field.m_Name.as_str()
+                && self.settings.derives.is_some_and(|derives| {
+                    derives.contains("serde::")
+                        || derives.contains("Deserialize")
+                        || derives.contains("Serialize")
+                })
+            {
+                writeln!(&mut f, "    #[serde(rename = {:?})]", field.m_Name)?;
+            }
             // a field missing from some game that has the parent struct becomes optional, so a
             // single struct deserializes every version; annotate which games actually have it
             let field_ty = if field.present_in.len() == tt.present_in.len() {
@@ -295,13 +305,7 @@ impl<'a> Context<'a> {
                 writeln!(&mut f, "    #[serde(default)]")?;
                 Cow::Owned(format!("Option<{field_ty}>"))
             };
-            writeln!(
-                &mut f,
-                "    pub {}: {},{}",
-                self.escape_identifier(&field.m_Name),
-                field_ty,
-                comment,
-            )?;
+            writeln!(&mut f, "    pub {}: {},{}", field_name, field_ty, comment,)?;
         }
         if let Some(additional_fields) = self.settings.additional_fields.get(tt.m_Type.as_str()) {
             for (field_name, field_ty) in *additional_fields {
@@ -401,6 +405,14 @@ impl<'a> Context<'a> {
     fn escape_identifier<'tt>(&self, identifier: &'tt str) -> Cow<'tt, str> {
         if ["type"].contains(&identifier) {
             Cow::Owned(format!("r#{identifier}"))
+        } else if identifier.contains(|c| matches!(c, '[' | ' ')) {
+            // Unity type trees can use array element names such as `data[0]`
+            Cow::Owned(
+                identifier
+                    .replace(']', "")
+                    .replace(|c| matches!(c, '[' | ' '), "_")
+                    .replace("__", "_"),
+            )
         } else {
             Cow::Borrowed(identifier)
         }

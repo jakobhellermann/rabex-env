@@ -16,7 +16,7 @@ field_ignores = [
 ]
 
 class_ids = [
-    "MonoBehaviour"
+    "Shader"
 ]
 
 [scripts]
