@@ -12,11 +12,14 @@ use rabex_env::typetree_merge::MergedTypeTree;
 use rustc_hash::FxHashSet;
 use serde::Deserialize;
 use std::borrow::Cow;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt::Write as _;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
+
+type TypeName = String;
+type RustCode = String;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -102,7 +105,8 @@ struct Context<'a> {
     settings: Settings<'a>,
 
     generated: FxHashSet<String>,
-    generated_code: Vec<String>,
+    generated_code: Vec<(TypeName, RustCode)>,
+    class_id_types: BTreeMap<TypeName, ClassId>,
     queued: VecDeque<(String, MergedTypeTree)>,
     /// assembly the type currently being generated belongs to
     current_assembly: String,
@@ -125,6 +129,7 @@ impl<'a> Context<'a> {
             settings,
             generated: FxHashSet::default(),
             generated_code: Vec::new(),
+            class_id_types: BTreeMap::new(),
             queued: VecDeque::new(),
             current_assembly: String::new(),
             all_assemblies: vec![None; envs.len()],
@@ -137,20 +142,34 @@ impl<'a> Context<'a> {
         )?;
         writeln!(
             writer,
-            "use rabex_env::rabex::objects::{{PPtr, TypedPPtr}};"
+            "use rabex_env::rabex::objects::{{ClassId, ClassIdType, PPtr, TypedPPtr}};"
         )?;
         writeln!(writer, "use rabex_env::unity::types::*;")?;
-        if self.generated_code.iter().any(|c| c.contains("HashMap<")) {
+        if self
+            .generated_code
+            .iter()
+            .any(|(_, code)| code.contains("HashMap<"))
+        {
             writeln!(writer, "use std::collections::HashMap;")?;
         }
         writeln!(writer)?;
         // each block already ends with a newline from generate_inner; separate blocks
         // with a blank line but don't emit a trailing one (to match rustfmt)
-        for (i, code) in self.generated_code.iter().enumerate() {
+        for (i, (type_name, code)) in self.generated_code.iter().enumerate() {
             if i > 0 {
                 writeln!(writer)?;
             }
             write!(writer, "{code}")?;
+            if let Some(class_id) = self.class_id_types.get(type_name) {
+                let class_id_name = class_id.name().context("class ID has no name")?;
+                writeln!(writer)?;
+                writeln!(writer, "impl ClassIdType for {type_name} {{")?;
+                writeln!(
+                    writer,
+                    "    const CLASS_ID: ClassId = ClassId::{class_id_name};"
+                )?;
+                writeln!(writer, "}}")?;
+            }
         }
         Ok(())
     }
@@ -167,6 +186,8 @@ impl<'a> Context<'a> {
         }
         let merged = MergedTypeTree::merge(nodes.iter().map(|tt| tt.as_ref()))?
             .context("typetree not found")?;
+        let type_name = self.escape_typename(&merged);
+        self.class_id_types.insert(type_name, class_id);
         self.generate("Assembly-CSharp", merged)
     }
     pub fn generate_script(&mut self, assembly: &str, script: &str) -> Result<()> {
@@ -200,7 +221,8 @@ impl<'a> Context<'a> {
         while let Some((assembly, item)) = self.queued.pop_front() {
             self.current_assembly = assembly;
             let code = self.generate_inner(&item)?;
-            self.generated_code.push(code);
+            let type_name = self.escape_typename(&item);
+            self.generated_code.push((type_name, code));
         }
 
         Ok(())
@@ -271,7 +293,7 @@ impl<'a> Context<'a> {
         })
     }
 
-    fn generate_inner(&mut self, tt: &MergedTypeTree) -> Result<String> {
+    fn generate_inner(&mut self, tt: &MergedTypeTree) -> Result<RustCode> {
         // eprintln!("Generating {} {}", tt.type_name, tt.name);
         let mut f = String::new();
         if let Some(derives) = &self.settings.derives {
