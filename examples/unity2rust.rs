@@ -31,6 +31,8 @@ struct Config<'a> {
 
     #[serde(default)]
     class_ids: Vec<&'a str>,
+    #[serde(default)]
+    untyped_pptr_fields: Vec<String>,
 }
 
 fn main() -> Result<()> {
@@ -70,6 +72,7 @@ fn main() -> Result<()> {
     let settings = Settings {
         derives: Some("Debug, serde::Deserialize"),
         field_ignores: &config.field_ignores,
+        untyped_pptr_fields: &config.untyped_pptr_fields,
         additional_fields: HashMap::from_iter([(
             "SavedItem",
             [("displayName", "Option<LocalisedString>")].as_slice(),
@@ -110,6 +113,7 @@ struct Context<'a> {
 struct Settings<'a> {
     derives: Option<&'a str>,
     field_ignores: &'a [&'a str],
+    untyped_pptr_fields: &'a [String],
     additional_fields: HashMap<&'a str, &'a [(&'a str, &'a str)]>,
 }
 
@@ -279,7 +283,10 @@ impl<'a> Context<'a> {
             if self.ignore_field(field) {
                 continue;
             }
-            let field_ty = self.field_type(field)?;
+            let untyped_pptr = self.settings.untyped_pptr_fields.iter().any(|entry| {
+                entry.split_once('.') == Some((tt.m_Type.as_str(), field.m_Name.as_str()))
+            });
+            let field_ty = self.field_type(field, untyped_pptr)?;
             let (field_ty, comment) = split_trailing_comment(&field_ty);
             let field_name = self.escape_identifier(&field.m_Name);
             if field_name.as_ref() != field.m_Name.as_str()
@@ -321,11 +328,13 @@ impl<'a> Context<'a> {
         Ok(f)
     }
 
-    fn field_type(&mut self, field: &MergedTypeTree) -> Result<String> {
+    fn field_type(&mut self, field: &MergedTypeTree, untyped_pptr: bool) -> Result<String> {
         let field_ty = match self.classify(field) {
             Classify::Primitive(ty) => ty.to_owned(),
             Classify::PPtr(pptr) => {
-                if let Some(asm_ty) = pptr.strip_prefix('$') {
+                if untyped_pptr {
+                    "PPtr".to_owned()
+                } else if let Some(asm_ty) = pptr.strip_prefix('$') {
                     // resolve script types relative to the current assembly first, then any other
                     let resolved = self.resolve_script_type(asm_ty)?;
                     match resolved {
@@ -340,7 +349,6 @@ impl<'a> Context<'a> {
                     }
                 } else {
                     format!("TypedPPtr<{}>", pptr)
-                    // format!("PPtr /* {} */", pptr)
                 }
             }
             Classify::Other(other) => {
@@ -350,13 +358,13 @@ impl<'a> Context<'a> {
                 name
             }
             Classify::Array(item) => {
-                format!("Vec<{}>", self.field_type(item)?)
+                format!("Vec<{}>", self.field_type(item, untyped_pptr)?)
             }
             Classify::Map { key, value } => {
                 format!(
                     "HashMap<{}, {}>",
-                    self.field_type(key)?,
-                    self.field_type(value)?
+                    self.field_type(key, untyped_pptr)?,
+                    self.field_type(value, untyped_pptr)?
                 )
             }
         };

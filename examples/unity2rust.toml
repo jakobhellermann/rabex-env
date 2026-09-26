@@ -15,8 +15,14 @@ field_ignores = [
   # "ui",
 ]
 
+untyped_pptr_fields = [
+  "Shader.m_NonModifiableTextures", # either Texture2D or Texture3D : Texture
+]
+
 class_ids = [
-    "Shader"
+    "Shader",
+    "Texture2D",
+    "Texture3D"
 ]
 
 [scripts]
