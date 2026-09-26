@@ -9,7 +9,7 @@ use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use rabex_env::Environment;
 use rabex_env::typetree_merge::MergedTypeTree;
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, VecDeque};
@@ -107,6 +107,8 @@ struct Context<'a> {
     generated: FxHashSet<String>,
     generated_code: Vec<(TypeName, RustCode)>,
     class_id_types: BTreeMap<TypeName, ClassId>,
+    hash_key_types: FxHashSet<TypeName>,
+    script_pptr_types: FxHashMap<(String, String), Option<TypeName>>,
     queued: VecDeque<(String, MergedTypeTree)>,
     /// assembly the type currently being generated belongs to
     current_assembly: String,
@@ -130,12 +132,15 @@ impl<'a> Context<'a> {
             generated: FxHashSet::default(),
             generated_code: Vec::new(),
             class_id_types: BTreeMap::new(),
+            hash_key_types: FxHashSet::default(),
+            script_pptr_types: FxHashMap::default(),
             queued: VecDeque::new(),
             current_assembly: String::new(),
             all_assemblies: vec![None; envs.len()],
         }
     }
-    pub fn finish<W: Write>(&self, mut writer: W) -> Result<()> {
+    pub fn finish<W: Write>(&mut self, mut writer: W) -> Result<()> {
+        self.handle_queue()?;
         writeln!(
             writer,
             "#![allow(dead_code, unused_imports, non_snake_case, nonstandard_style)]"
@@ -175,7 +180,7 @@ impl<'a> Context<'a> {
     }
     pub fn generate(&mut self, assembly: &str, tt: MergedTypeTree) -> Result<()> {
         self.queue(assembly, tt);
-        self.handle_queue()
+        Ok(())
     }
     pub fn generate_classid(&mut self, class_id: ClassId) -> Result<()> {
         let mut nodes = Vec::new();
@@ -217,8 +222,115 @@ impl<'a> Context<'a> {
         self.queued.push_back((assembly.to_owned(), tt));
     }
 
+    fn discover_type_dependencies(&mut self, tt: &MergedTypeTree) -> Result<()> {
+        for field in &tt.children {
+            if self.ignore_field(field) {
+                continue;
+            }
+            let untyped_pptr = self.settings.untyped_pptr_fields.iter().any(|entry| {
+                entry.split_once('.') == Some((tt.m_Type.as_str(), field.m_Name.as_str()))
+            });
+            self.discover_field_dependencies(field, untyped_pptr)?;
+        }
+        Ok(())
+    }
+
+    fn discover_field_dependencies(
+        &mut self,
+        field: &MergedTypeTree,
+        untyped_pptr: bool,
+    ) -> Result<()> {
+        match self.classify(field) {
+            Classify::Primitive(_) => {}
+            Classify::PPtr(_) if untyped_pptr => {}
+            Classify::PPtr(pptr) => {
+                if let Some(asm_ty) = pptr.strip_prefix('$') {
+                    let key = (self.current_assembly.clone(), asm_ty.to_owned());
+                    if !self.script_pptr_types.contains_key(&key) {
+                        let resolved = self.resolve_script_type(asm_ty)?;
+                        let type_name = match resolved {
+                            Some((assembly, ty))
+                                if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") =>
+                            {
+                                let type_name = self.escape_typename(&ty);
+                                self.queue(&assembly, ty);
+                                Some(type_name)
+                            }
+                            _ => None,
+                        };
+                        self.script_pptr_types.insert(key, type_name);
+                    }
+                }
+            }
+            Classify::Other(other) => {
+                let assembly = self.current_assembly.clone();
+                self.queue(&assembly, other.clone());
+            }
+            Classify::Array(item) => {
+                self.discover_field_dependencies(item, untyped_pptr)?;
+            }
+            Classify::Map { key, value } => {
+                let mut key_types = FxHashSet::default();
+                self.collect_hash_key_dependencies(key, &mut key_types);
+                self.hash_key_types.extend(key_types);
+                self.discover_field_dependencies(key, untyped_pptr)?;
+                self.discover_field_dependencies(value, untyped_pptr)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn collect_hash_key_dependencies(
+        &self,
+        field: &MergedTypeTree,
+        dependencies: &mut FxHashSet<TypeName>,
+    ) {
+        match self.classify(field) {
+            Classify::Other(other) => {
+                dependencies.insert(other.m_Type.clone());
+            }
+            Classify::Array(item) => self.collect_hash_key_dependencies(item, dependencies),
+            Classify::Map { key, value } => {
+                self.collect_hash_key_dependencies(key, dependencies);
+                self.collect_hash_key_dependencies(value, dependencies);
+            }
+            Classify::Primitive(_) | Classify::PPtr(_) => {}
+        }
+    }
+
+    fn propagate_hash_key_derives(&mut self, discovered: &[(String, MergedTypeTree)]) {
+        loop {
+            let mut dependencies = FxHashSet::default();
+            for (_, tt) in discovered {
+                if !self.hash_key_types.contains(&tt.m_Type) {
+                    continue;
+                }
+                for field in &tt.children {
+                    if !self.ignore_field(field) {
+                        self.collect_hash_key_dependencies(field, &mut dependencies);
+                    }
+                }
+            }
+
+            let old_len = self.hash_key_types.len();
+            self.hash_key_types.extend(dependencies);
+            if self.hash_key_types.len() == old_len {
+                break;
+            }
+        }
+    }
+
     fn handle_queue(&mut self) -> Result<()> {
+        let mut discovered = Vec::new();
         while let Some((assembly, item)) = self.queued.pop_front() {
+            self.current_assembly = assembly.clone();
+            self.discover_type_dependencies(&item)?;
+            discovered.push((assembly, item));
+        }
+
+        self.propagate_hash_key_derives(&discovered);
+
+        for (assembly, item) in discovered {
             self.current_assembly = assembly;
             let code = self.generate_inner(&item)?;
             let type_name = self.escape_typename(&item);
@@ -296,10 +408,12 @@ impl<'a> Context<'a> {
     fn generate_inner(&mut self, tt: &MergedTypeTree) -> Result<RustCode> {
         // eprintln!("Generating {} {}", tt.type_name, tt.name);
         let mut f = String::new();
-        if let Some(derives) = &self.settings.derives {
-            writeln!(&mut f, "#[derive({})]", derives)?;
+        let type_name = self.escape_typename(tt);
+        let derives = self.derives_for_type(&tt.m_Type);
+        if !derives.is_empty() {
+            writeln!(&mut f, "#[derive({derives})]")?;
         }
-        writeln!(&mut f, "pub struct {} {{", self.escape_typename(tt))?;
+        writeln!(&mut f, "pub struct {type_name} {{")?;
         for field in &tt.children {
             // eprintln!("Field {} {}", field.type_name, field.name);
             if self.ignore_field(field) {
@@ -357,28 +471,20 @@ impl<'a> Context<'a> {
                 if untyped_pptr {
                     "PPtr".to_owned()
                 } else if let Some(asm_ty) = pptr.strip_prefix('$') {
-                    // resolve script types relative to the current assembly first, then any other
-                    let resolved = self.resolve_script_type(asm_ty)?;
-                    match resolved {
-                        Some((assembly, ty))
-                            if !(ty.m_Name == "Base" && ty.m_Type == "MonoBehaviour") =>
-                        {
-                            let name = self.escape_typename(&ty);
-                            self.queue(&assembly, ty);
-                            format!("TypedPPtr<{name}>")
-                        }
-                        _ => format!("PPtr /* {asm_ty} */"),
+                    let key = (self.current_assembly.clone(), asm_ty.to_owned());
+                    match self
+                        .script_pptr_types
+                        .get(&key)
+                        .expect("script pointer dependencies were discovered")
+                    {
+                        Some(name) => format!("TypedPPtr<{name}>"),
+                        None => format!("PPtr /* {asm_ty} */"),
                     }
                 } else {
                     format!("TypedPPtr<{}>", pptr)
                 }
             }
-            Classify::Other(other) => {
-                let assembly = self.current_assembly.clone();
-                let name = self.escape_typename(other);
-                self.queue(&assembly, other.clone());
-                name
-            }
+            Classify::Other(other) => self.escape_typename(other),
             Classify::Array(item) => {
                 format!("Vec<{}>", self.field_type(item, untyped_pptr)?)
             }
@@ -430,6 +536,28 @@ impl<'a> Context<'a> {
 
     fn escape_typename(&self, tt: &MergedTypeTree) -> String {
         tt.m_Type.replace('`', "")
+    }
+
+    fn derives_for_type(&self, source_type_name: &str) -> String {
+        let mut derives = self.settings.derives.unwrap_or_default().to_owned();
+        if self.hash_key_types.contains(source_type_name) {
+            for (derive, short_name) in [
+                ("PartialEq", "PartialEq"),
+                ("Eq", "Eq"),
+                ("std::hash::Hash", "Hash"),
+            ] {
+                let already_present = derives.split(',').map(str::trim).any(|existing| {
+                    existing == derive || existing.rsplit("::").next() == Some(short_name)
+                });
+                if !already_present {
+                    if !derives.is_empty() {
+                        derives.push_str(", ");
+                    }
+                    derives.push_str(derive);
+                }
+            }
+        }
+        derives
     }
 
     fn escape_identifier<'tt>(&self, identifier: &'tt str) -> Cow<'tt, str> {
