@@ -1,28 +1,31 @@
 game_paths = ["~/.steamapps/Hollow Knight Silksong"]
 field_ignores = [
-  "audio",
-  "clipref",
-  "color",
-  "colour",
-  "effect",
-  "font",
-  "icon",
-  "prefab",
-  "sound",
-  "sprite",
-  "tint",
-  "vibration",
+  # "audio",
+  # "clipref",
+  # "color",
+  # "colour",
+  # "effect",
+  # "font",
+  # "icon",
+  # "prefab",
+  # "sound",
+  # "sprite",
+  # "tint",
+  # "vibration",
   # "ui",
 ]
 
+class_ids = [
+    "MonoBehaviour"
+]
 
 [scripts]
 "Assembly-CSharp.dll" = [
-  "CollectableItemRelicType",
-  "EnemyJournalRecord",
-  "IntReference",
-  "DamageTag",
-  "ShopItem",
-  "Quest",
-  "ToolItemBasic",
+  # "CollectableItemRelicType",
+  # "EnemyJournalRecord",
+  # "IntReference",
+  # "DamageTag",
+  # "ShopItem",
+  # "Quest",
+  # "ToolItemBasic",
 ]

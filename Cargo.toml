@@ -58,7 +58,9 @@ harness = false
 [lib]
 bench = false
 
-# [patch.crates-io]
+[patch.crates-io]
+rabex = { path = "../RustyAssetBundleEXtractor" }
+
 # [patch."https://github.com/jakobhellermann/typetree2ksy"]
 # typetree2ksy = { path = "../typetree2ksy" }
 # [patch."https://github.com/jakobhellermann/steam-depot-vfs"]

@@ -3,3 +3,5 @@
 /Cargo.lock
 /.env
 /*.db
+
+/examples/test_unity2rust.rs

@@ -16,6 +16,7 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::Write as _;
 use std::io::Write;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -27,6 +28,9 @@ struct Config<'a> {
     #[serde(default)]
     field_ignores: Vec<&'a str>,
     scripts: IndexMap<String, Vec<String>>,
+
+    #[serde(default)]
+    class_ids: Vec<&'a str>,
 }
 
 fn main() -> Result<()> {
@@ -73,6 +77,10 @@ fn main() -> Result<()> {
     };
     let mut cx = Context::new(&envs, &labels, settings);
 
+    for class_id in config.class_ids {
+        let class_id = ClassId::from_str(class_id)?;
+        cx.generate_classid(class_id)?;
+    }
     for (assembly, scripts) in &config.scripts {
         for script in scripts {
             cx.generate_script(assembly, script)?;
