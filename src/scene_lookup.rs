@@ -1,4 +1,5 @@
 //! Transform-hierarchy lookup acceleration structure
+use crate::handle::SerializedFileHandle;
 use crate::unity::types::Transform;
 use anyhow::{Result, bail};
 use rabex::files::SerializedFile;
@@ -19,6 +20,12 @@ pub struct SceneLookup<'a, P> {
     pub roots_lookup: HashMap<String, RootLookup>,
     file: &'a SerializedFile,
     tpk: P,
+}
+
+impl<'a, P: TypeTreeProvider> SceneLookup<'a, &'a P> {
+    pub fn from_handle<R>(file: &SerializedFileHandle<'a, R, P>) -> Result<Self> {
+        Self::new(file.file, &mut file.reader(), &file.env.tpk)
+    }
 }
 
 impl<'a, P: TypeTreeProvider> SceneLookup<'a, P> {
