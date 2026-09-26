@@ -8,6 +8,7 @@ use rabex::objects::pptr::PathId;
 use rabex::objects::{ClassId, ClassIdType, PPtr};
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 
+use crate::handle::{ObjectHandle, ObjectRefHandle};
 use crate::unity::types::{AssetInfo, GameObject, Transform};
 
 impl GameObject {
@@ -128,6 +129,19 @@ impl Transform {
             next: self.m_Father.optional().map(|father| father.m_PathID),
             transform_typetree,
         })
+    }
+}
+
+impl<'a, R, P: TypeTreeProvider> ObjectHandle<'a, GameObject, R, P> {
+    pub fn component<T: ClassIdType>(&'a self) -> Result<Option<ObjectRefHandle<'a, T, R, P>>> {
+        let component = self
+            .object
+            .component::<T>(self.file.file, &self.file.env.tpk)?;
+        let Some(component) = component else {
+            return Ok(None);
+        };
+
+        Ok(Some(ObjectRefHandle::new(component, self.file.reborrow())))
     }
 }
 

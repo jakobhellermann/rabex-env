@@ -178,6 +178,14 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
         self.deref(pptr)?.read()
     }
 
+    pub fn deref_read_handle<T>(&'a self, pptr: TypedPPtr<T>) -> Result<ObjectHandle<'a, T, R, P>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        let data = self.deref(pptr)?.read()?;
+        Ok(ObjectHandle::new(data, self.reborrow()))
+    }
+
     pub fn deref_optional<T>(
         &self,
         pptr: TypedPPtr<T>,
@@ -251,6 +259,14 @@ impl<'a, T, R: EnvResolver, P: TypeTreeProvider> ObjectRefHandle<'a, T, R, P> {
 
         let data = self.object.read(&mut self.file.reader())?;
         Ok(data)
+    }
+
+    pub fn read_handle(&'a self) -> Result<ObjectHandle<'a, T, R, P>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        let data = self.read()?;
+        Ok(ObjectHandle::new(data, self.file.reborrow()))
     }
 
     pub fn typetree(&self) -> Result<&TypeTreeNode, serializedfile::Error> {
@@ -374,5 +390,20 @@ pub mod script_filter {
         fn matches(&self, script: &MonoScript) -> bool {
             script.m_ClassName.contains(self.0)
         }
+    }
+}
+
+pub struct ObjectHandle<'a, T, R = GameFiles, P = TypeTreeCache<TpkTypeTreeBlob>> {
+    pub object: T,
+    pub file: SerializedFileHandle<'a, R, P>,
+}
+
+impl<'a, T, R, P> ObjectHandle<'a, T, R, P> {
+    pub fn new(object: T, file: SerializedFileHandle<'a, R, P>) -> Self {
+        ObjectHandle { object, file }
+    }
+
+    pub fn into_object(self) -> T {
+        self.object
     }
 }
