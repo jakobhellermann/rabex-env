@@ -22,7 +22,7 @@ pub struct MergedTypeTree {
 }
 
 /// Typetrees could not be cleanly merged.
-
+///
 /// Two sources give a node with the same field name a different Unity type, so they can't be
 /// merged into one definition.
 #[derive(Debug, Clone)]

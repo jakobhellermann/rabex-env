@@ -12,12 +12,15 @@ use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use crate::Environment;
 use crate::resolver::EnvResolver;
 
+// Assembly name, Full type name
+type AssemblyLocation = (String, String);
+
 pub struct AssemblyTypeTreeGenerator<'a, R, P> {
     env: &'a Environment<R, P>,
     generator: &'a unity_typetree_gen::AssemblyTypeTreeGenerator,
     base_node: &'a TypeTreeNode,
-    cache: &'a FrozenMap<(String, String), Box<TypeTreeNode>>,
-    locks: &'a Mutex<HashMap<(String, String), Arc<Mutex<()>>>>,
+    cache: &'a FrozenMap<AssemblyLocation, Box<TypeTreeNode>>,
+    locks: &'a Mutex<HashMap<AssemblyLocation, Arc<Mutex<()>>>>,
 }
 
 impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P> {
@@ -92,9 +95,9 @@ struct Backend {
 
 pub struct TypeTreeGeneratorCache {
     backend: OnceLock<Backend>,
-    cache: FrozenMap<(String, String), Box<TypeTreeNode>>,
+    cache: FrozenMap<AssemblyLocation, Box<TypeTreeNode>>,
     /// Per-key locks for single-flight generation (see [`AssemblyTypeTreeGenerator::generate`]).
-    locks: Mutex<HashMap<(String, String), Arc<Mutex<()>>>>,
+    locks: Mutex<HashMap<AssemblyLocation, Arc<Mutex<()>>>>,
 }
 impl TypeTreeGeneratorCache {
     pub fn new(unity_version: UnityVersion, base_node: TypeTreeNode) -> Self {
@@ -109,7 +112,7 @@ impl TypeTreeGeneratorCache {
             locks: Mutex::new(HashMap::new()),
         }
     }
-    pub fn prefilled(cache: FrozenMap<(String, String), Box<TypeTreeNode>>) -> Self {
+    pub fn prefilled(cache: FrozenMap<AssemblyLocation, Box<TypeTreeNode>>) -> Self {
         TypeTreeGeneratorCache {
             backend: OnceLock::new(),
             cache,

@@ -118,7 +118,11 @@ fn uncompressed(
     for y in 0..h {
         for x in 0..w {
             let i = (y * w + x) * bpp;
-            img.put_pixel(x as u32, flip_y(h, y), image::Rgba(to_rgba(&data[i..i + bpp])));
+            img.put_pixel(
+                x as u32,
+                flip_y(h, y),
+                image::Rgba(to_rgba(&data[i..i + bpp])),
+            );
         }
     }
     Ok(img)

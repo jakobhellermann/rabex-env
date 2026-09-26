@@ -436,7 +436,9 @@ fn read_ascii(data: &[u8], off: usize, len: usize) -> Result<String> {
 fn read_utf16(data: &[u8], off: usize, byte_len: usize) -> Result<String> {
     let bytes = slice(data, off, byte_len)?;
     let units: Vec<u16> = bytes
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|c| u16::from_le_bytes([c[0], c[1]]))
         .collect();
     Ok(String::from_utf16_lossy(&units))
