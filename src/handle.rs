@@ -103,7 +103,8 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
         &self,
         filter: impl ScriptFilter,
     ) -> Result<impl Iterator<Item = ObjectRefHandle<'a, T, R, P>>> {
-        let mut script = None;
+        // A file can list the same script more than once in m_ScriptTypes.
+        let mut scripts = Vec::new();
         for &script_type in self.file.m_ScriptTypes.as_deref().unwrap_or_default() {
             let script_data = self.env.deref_read(
                 PPtr::from(script_type).typed::<MonoScript>(),
@@ -111,36 +112,37 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> SerializedFileHandle<'a, R, P> {
                 &mut self.reader(),
             )?;
             if filter.matches(&script_data) {
-                script = Some(PPtr::from(script_type));
+                scripts.push(PPtr::from(script_type));
             }
         }
-        let script = match script {
-            Some(script) => script,
-            None => {
-                let found = self
-                    .file
-                    .m_ScriptTypes
-                    .as_deref()
-                    .unwrap_or_default()
-                    .iter()
-                    .map(|&script_type| -> Result<_> {
-                        let script_data = self.env.deref_read(
-                            PPtr::from(script_type).typed::<MonoScript>(),
-                            self.file,
-                            &mut self.reader(),
-                        )?;
-                        Ok(script_data.m_ClassName)
-                    })
-                    .collect::<Result<Vec<_>>>()?
-                    .join(", ");
+        if scripts.is_empty() {
+            let found = self
+                .file
+                .m_ScriptTypes
+                .as_deref()
+                .unwrap_or_default()
+                .iter()
+                .map(|&script_type| -> Result<_> {
+                    let script_data = self.env.deref_read(
+                        PPtr::from(script_type).typed::<MonoScript>(),
+                        self.file,
+                        &mut self.reader(),
+                    )?;
+                    Ok(script_data.m_ClassName)
+                })
+                .collect::<Result<Vec<_>>>()?
+                .join(", ");
 
-                bail!("Script {filter} was not found in serialized file.\nFound {found}",)
-            }
-        };
+            bail!("Script {filter} was not found in serialized file.\nFound {found}",)
+        }
 
         Ok(self
             .objects_of::<MonoBehaviour>()
-            .filter(move |mb| self.file.script_type(mb.object.info) == Some(script))
+            .filter(move |mb| {
+                self.file
+                    .script_type(mb.object.info)
+                    .is_some_and(|script| scripts.contains(&script))
+            })
             .map(|mb| mb.cast_owned::<T>()))
     }
 
