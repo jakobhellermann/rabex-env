@@ -186,6 +186,8 @@ impl ClassIdType for GameObject {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ComponentPair {
+    // Unity < 5.5 stores `pair<int classID, PPtr>` here.
+    #[serde(alias = "second")]
     pub component: PPtr,
 }
 
