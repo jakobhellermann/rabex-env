@@ -203,14 +203,12 @@ pub fn render_sprite(
     let paste_y = (rect.height - offset_y - trimmed.height() as f32).round() as i64;
     image::imageops::replace(&mut full, &trimmed, paste_x, paste_y);
 
-    // A tightly packed textureRect also covers parts of atlas neighbours; the mesh is exactly the
-    // area that belongs to the sprite.
-    if settings.tight {
-        let mask = mesh_mask(sprite)?;
-        for (pixel, inside) in full.pixels_mut().zip(mask) {
-            if !inside {
-                pixel.0[3] = 0;
-            }
+    // Unity draws exactly the mesh; with tight packing, the textureRect also covers parts of atlas
+    // neighbours.
+    let mask = mesh_mask(sprite)?;
+    for (pixel, inside) in full.pixels_mut().zip(mask) {
+        if !inside {
+            pixel.0 = [0; 4];
         }
     }
     Ok(full)
@@ -218,12 +216,22 @@ pub fn render_sprite(
 
 /// Which pixels of the sprite's full rect (top-down, row-major) its mesh covers.
 fn mesh_mask(sprite: &Sprite) -> Result<Vec<bool>> {
+    let (w, h) = (
+        sprite.m_Rect.width.round() as usize,
+        sprite.m_Rect.height.round() as usize,
+    );
+    let mut mask = vec![false; w * h];
+    for [a, b, c] in mesh_triangles(sprite)? {
+        fill_triangle(&mut mask, w, h, a, b, c);
+    }
+    Ok(mask)
+}
+
+/// The triangles of the sprite's mesh, in pixels of its full rect, top-down.
+pub fn mesh_triangles(sprite: &Sprite) -> Result<Vec<[(f64, f64); 3]>> {
     let rd = &sprite.m_RD;
     let vd = &rd.m_VertexData;
-    ensure!(
-        !rd.m_SubMeshes.is_empty(),
-        "tightly packed sprite without a mesh"
-    );
+    ensure!(!rd.m_SubMeshes.is_empty(), "sprite without a mesh");
     let position = vd
         .m_Channels
         .first()
@@ -280,8 +288,7 @@ fn mesh_mask(sprite: &Sprite) -> Result<Vec<bool>> {
         ))
     };
 
-    let (mask_w, mask_h) = (w.round() as usize, h.round() as usize);
-    let mut mask = vec![false; mask_w * mask_h];
+    let mut triangles = Vec::new();
     for sub in &rd.m_SubMeshes {
         ensure!(
             sub.topology == 0,
@@ -300,11 +307,10 @@ fn mesh_mask(sprite: &Sprite) -> Result<Vec<bool>> {
             .map(|&bytes| u16::from_le_bytes(bytes) as usize)
             .collect();
         for &[i, j, k] in indices.as_chunks::<3>().0 {
-            let [a, b, c] = [vertex(i)?, vertex(j)?, vertex(k)?];
-            fill_triangle(&mut mask, mask_w, mask_h, a, b, c);
+            triangles.push([vertex(i)?, vertex(j)?, vertex(k)?]);
         }
     }
-    Ok(mask)
+    Ok(triangles)
 }
 
 /// Marks the pixels whose center lies inside (or on the edge of) the triangle.
@@ -369,9 +375,35 @@ mod tests {
             textureRectOffset: (0.0, 1.0),
             // packed, rectangle packing
             settingsRaw: 1 | 2 | (rotation << 2),
-            m_SubMeshes: Vec::new(),
-            m_IndexBuffer: Vec::new(),
-            m_VertexData: VertexData::default(),
+            m_SubMeshes: vec![SubMesh {
+                firstByte: 0,
+                indexCount: 6,
+                topology: 0,
+            }],
+            m_IndexBuffer: [0u16, 1, 2, 2, 1, 3]
+                .iter()
+                .flat_map(|i| i.to_le_bytes())
+                .collect(),
+            // a quad over the full 3x3 rect, in units around its center pivot
+            m_VertexData: VertexData {
+                m_VertexCount: 4,
+                m_Channels: vec![ChannelInfo {
+                    stream: 0,
+                    offset: 0,
+                    format: 0,
+                    dimension: 3,
+                }],
+                m_DataSize: [
+                    [-0.015f32, -0.015, 0.0],
+                    [0.015, -0.015, 0.0],
+                    [-0.015, 0.015, 0.0],
+                    [0.015, 0.015, 0.0],
+                ]
+                .iter()
+                .flatten()
+                .flat_map(|f| f.to_le_bytes())
+                .collect(),
+            },
         };
         let sprite = Sprite {
             m_Name: String::new(),
