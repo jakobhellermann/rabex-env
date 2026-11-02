@@ -125,14 +125,11 @@ fn diff(actual: &RgbaImage, expected: &RgbaImage) -> (usize, [u8; 4]) {
 /// What decoding a texture of this (actual) format is expected to yield.
 enum Expect {
     Exact,
-    /// Alpha off by at most this much: texture2ddecoder truncates interpolated BC3 alpha, Unity rounds.
-    AlphaWithin(u8),
     Unsupported,
 }
 
 fn expectation(format: &str) -> Expect {
     match format {
-        "DXT5" => Expect::AlphaWithin(1),
         "DXT1Crunched" => Expect::Unsupported,
         _ => Expect::Exact,
     }
@@ -160,7 +157,6 @@ fn check(
     let (differing, max) = diff(&img, &expected()?);
     let ok = match expect {
         Expect::Exact => differing == 0,
-        Expect::AlphaWithin(tolerance) => max[..3] == [0; 3] && max[3] <= tolerance,
         Expect::Unsupported => unreachable!(),
     };
     Ok(match ok {
