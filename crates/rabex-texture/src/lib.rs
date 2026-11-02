@@ -1,5 +1,7 @@
-//! Decode Unity `Texture2D` pixel data into RGBA images. IO-free.
+//! Decode Unity `Texture2D` pixel data into RGBA images, and render `Sprite`s from them. IO-free.
 //! Supported formats: Alpha8, RGB24, RGBA32, ARGB4444, DXT1/BC1, DXT5/BC3, BC7.
+
+pub mod sprite;
 
 use anyhow::{Result, bail, ensure};
 use serde::Deserialize;
