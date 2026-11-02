@@ -1,5 +1,5 @@
 //! Decode Unity `Texture2D` pixel data into RGBA images, and render `Sprite`s from them. IO-free.
-//! Supported formats: Alpha8, RGB24, RGBA32, ARGB4444, DXT1/BC1, DXT5/BC3, BC7.
+//! Supported formats: Alpha8, RGB24, RGBA32, ARGB4444, DXT1/BC1, DXT5/BC3, BC7, DXT1Crunched.
 
 pub mod sprite;
 
@@ -20,6 +20,7 @@ pub enum TextureFormat {
     Dxt1,
     Dxt5,
     Bc7,
+    Dxt1Crunched,
 }
 
 impl TextureFormat {
@@ -33,6 +34,7 @@ impl TextureFormat {
             10 => Self::Dxt1,
             12 => Self::Dxt5,
             25 => Self::Bc7,
+            28 => Self::Dxt1Crunched,
             _ => return None,
         })
     }
@@ -115,6 +117,9 @@ pub fn decode(format: i32, width: u32, height: u32, data: &[u8]) -> Result<RgbaI
         TextureFormat::Dxt1 => block(width, height, data, texture2ddecoder::decode_bc1),
         TextureFormat::Dxt5 => block(width, height, data, texture2ddecoder::decode_bc3),
         TextureFormat::Bc7 => block(width, height, data, texture2ddecoder::decode_bc7),
+        TextureFormat::Dxt1Crunched => {
+            block(width, height, data, texture2ddecoder::decode_unity_crunch)
+        }
     }
 }
 

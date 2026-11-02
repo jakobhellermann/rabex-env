@@ -122,49 +122,6 @@ fn diff(actual: &RgbaImage, expected: &RgbaImage) -> (usize, [u8; 4]) {
     (differing, max)
 }
 
-/// What decoding a texture of this (actual) format is expected to yield.
-enum Expect {
-    Exact,
-    Unsupported,
-}
-
-fn expectation(format: &str) -> Expect {
-    match format {
-        "DXT1Crunched" => Expect::Unsupported,
-        _ => Expect::Exact,
-    }
-}
-
-/// `Ok(Err(..))` describes how `decoded` misses the expectation for the entry's format.
-fn check(
-    entry: &TextureEntry,
-    decoded: Result<RgbaImage>,
-    expected: impl FnOnce() -> Result<RgbaImage>,
-) -> Result<Result<(), String>> {
-    let expect = expectation(&entry.format);
-    let img = match (&expect, decoded) {
-        (Expect::Unsupported, Err(e)) => {
-            let message = format!("unsupported Texture2D format {}", entry.format_id);
-            return Ok(match e.to_string() == message {
-                true => Ok(()),
-                false => Err(format!("unexpected error: {e}")),
-            });
-        }
-        (Expect::Unsupported, Ok(_)) => return Ok(Err("expected to be unsupported".into())),
-        (_, Err(e)) => return Ok(Err(e.to_string())),
-        (_, Ok(img)) => img,
-    };
-    let (differing, max) = diff(&img, &expected()?);
-    let ok = match expect {
-        Expect::Exact => differing == 0,
-        Expect::Unsupported => unreachable!(),
-    };
-    Ok(match ok {
-        true => Ok(()),
-        false => Err(format!("{differing} px differ, max per channel {max:?}")),
-    })
-}
-
 #[test]
 fn decoded_textures_match_unity() -> Result<()> {
     let mut failures = Vec::new();
@@ -197,9 +154,17 @@ fn decoded_textures_match_unity() -> Result<()> {
                 );
             }
 
-            if let Err(failure) = check(entry, texture.decode(&pixels), || fixture.expected(entry))?
-            {
-                failures.push(format!("{version} {}: {failure}", entry.name));
+            match texture.decode(&pixels) {
+                Err(e) => failures.push(format!("{version} {}: {e}", entry.name)),
+                Ok(img) => {
+                    let (differing, max) = diff(&img, &fixture.expected(entry)?);
+                    if differing > 0 {
+                        failures.push(format!(
+                            "{version} {}: {differing} px differ, max per channel {max:?}",
+                            entry.name
+                        ));
+                    }
+                }
             }
         }
     }
