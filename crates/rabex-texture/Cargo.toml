@@ -11,3 +11,7 @@ rabex = { version = "0.2", default-features = false }
 texture2ddecoder = "0.1"
 image = { version = "0.25", default-features = false, features = ["png"] }
 serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+rabex = { version = "0.2", default-features = false, features = ["compression-lz4"] }
+serde_json = "1.0"
