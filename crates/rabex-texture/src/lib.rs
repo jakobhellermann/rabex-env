@@ -104,7 +104,7 @@ pub fn decode(format: i32, width: u32, height: u32, data: &[u8]) -> Result<RgbaI
         bail!("unsupported Texture2D format {format}");
     };
     match format {
-        TextureFormat::Alpha8 => uncompressed(width, height, data, 1, |p| [p[0], p[0], p[0], 255]),
+        TextureFormat::Alpha8 => uncompressed(width, height, data, 1, |p| [0, 0, 0, p[0]]),
         TextureFormat::RGB24 => uncompressed(width, height, data, 3, |p| [p[0], p[1], p[2], 255]),
         TextureFormat::RGBA32 => uncompressed(width, height, data, 4, |p| [p[0], p[1], p[2], p[3]]),
         TextureFormat::Argb4444 => uncompressed(width, height, data, 2, |p| {
