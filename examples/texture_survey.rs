@@ -317,6 +317,10 @@ fn sprite_features(s: &Sprite) -> Vec<String> {
             frac(s.m_Rect.x) || frac(s.m_Rect.y) || frac(s.m_Rect.width) || frac(s.m_Rect.height)
         ),
         format!(
+            "sprite.rect_origin_nonzero(own texture)={}",
+            s.m_RD.texture.m_PathID != 0 && (s.m_Rect.x != 0.0 || s.m_Rect.y != 0.0)
+        ),
+        format!(
             "sprite.offset_nonzero={}",
             s.m_Offset.x != 0.0 || s.m_Offset.y != 0.0
         ),
