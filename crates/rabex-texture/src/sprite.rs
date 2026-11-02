@@ -22,7 +22,7 @@ pub struct Sprite {
 
 /// Where a sprite's pixels live. Atlas-packed sprites leave `texture` empty in their own render
 /// data; their [`SpriteAtlas`] holds the real one under the sprite's render data key.
-#[derive(Debug, Deserialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(non_snake_case)]
 pub struct SpriteRenderData {
     pub texture: TypedPPtr<Texture2D>,
@@ -31,6 +31,37 @@ pub struct SpriteRenderData {
     /// Position of that trimmed part within the sprite's full rect, y-up.
     pub textureRectOffset: (f32, f32),
     pub settingsRaw: u32,
+    /// The sprite's mesh. Atlas entries leave it empty; the sprite's own render data has it.
+    #[serde(default)]
+    pub m_SubMeshes: Vec<SubMesh>,
+    #[serde(default)]
+    pub m_IndexBuffer: Vec<u8>,
+    #[serde(default)]
+    pub m_VertexData: VertexData,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[allow(non_snake_case)]
+pub struct SubMesh {
+    pub firstByte: u32,
+    pub indexCount: u32,
+    pub topology: i32,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+#[allow(non_snake_case)]
+pub struct VertexData {
+    pub m_VertexCount: u32,
+    pub m_Channels: Vec<ChannelInfo>,
+    pub m_DataSize: Vec<u8>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ChannelInfo {
+    pub stream: u8,
+    pub offset: u8,
+    pub format: u8,
+    pub dimension: u8,
 }
 
 impl SpriteRenderData {
@@ -171,7 +202,142 @@ pub fn render_sprite(
     let paste_x = offset_x.round() as i64;
     let paste_y = (rect.height - offset_y - trimmed.height() as f32).round() as i64;
     image::imageops::replace(&mut full, &trimmed, paste_x, paste_y);
+
+    // A tightly packed textureRect also covers parts of atlas neighbours; the mesh is exactly the
+    // area that belongs to the sprite.
+    if settings.tight {
+        let mask = mesh_mask(sprite)?;
+        for (pixel, inside) in full.pixels_mut().zip(mask) {
+            if !inside {
+                pixel.0[3] = 0;
+            }
+        }
+    }
     Ok(full)
+}
+
+/// Which pixels of the sprite's full rect (top-down, row-major) its mesh covers.
+fn mesh_mask(sprite: &Sprite) -> Result<Vec<bool>> {
+    let rd = &sprite.m_RD;
+    let vd = &rd.m_VertexData;
+    ensure!(
+        !rd.m_SubMeshes.is_empty(),
+        "tightly packed sprite without a mesh"
+    );
+    let position = vd
+        .m_Channels
+        .first()
+        .context("mesh without vertex channels")?;
+    ensure!(
+        position.format == 0,
+        "vertex positions in format {}, expected float32",
+        position.format
+    );
+    ensure!(
+        position.stream == 0,
+        "vertex positions in stream {}",
+        position.stream
+    );
+    let format_size = |format: u8| -> Result<usize> {
+        Ok(match format {
+            0 | 10 | 11 => 4,       // Float32, UInt32, SInt32
+            1 | 4 | 5 | 8 | 9 => 2, // Float16, UNorm16, SNorm16, UInt16, SInt16
+            2 | 3 | 6 | 7 => 1,     // UNorm8, SNorm8, UInt8, SInt8
+            other => bail!("unknown vertex format {other}"),
+        })
+    };
+    // A stream's channels are interleaved per vertex.
+    let mut stride = 0;
+    for channel in vd
+        .m_Channels
+        .iter()
+        .filter(|c| c.stream == 0 && c.dimension & 0xf > 0)
+    {
+        stride += format_size(channel.format)? * (channel.dimension & 0xf) as usize;
+    }
+
+    let (w, h) = (sprite.m_Rect.width as f64, sprite.m_Rect.height as f64);
+    let ppu = sprite.m_PixelsToUnits as f64;
+    let (pivot_x, pivot_y) = (sprite.m_Pivot.0 as f64, sprite.m_Pivot.1 as f64);
+    let vertex = |i: usize| -> Result<(f64, f64)> {
+        ensure!(
+            i < vd.m_VertexCount as usize,
+            "index {i} beyond {} vertices",
+            vd.m_VertexCount
+        );
+        let at = i * stride + position.offset as usize;
+        let float = |o: usize| -> Result<f64> {
+            let bytes = vd
+                .m_DataSize
+                .get(at + o..at + o + 4)
+                .context("vertex data too short")?;
+            Ok(f32::from_le_bytes(bytes.try_into().expect("4 bytes")) as f64)
+        };
+        // Pivot-relative units to pixels of the full rect, flipped to top-down.
+        Ok((
+            float(0)? * ppu + w * pivot_x,
+            h - (float(4)? * ppu + h * pivot_y),
+        ))
+    };
+
+    let (mask_w, mask_h) = (w.round() as usize, h.round() as usize);
+    let mut mask = vec![false; mask_w * mask_h];
+    for sub in &rd.m_SubMeshes {
+        ensure!(
+            sub.topology == 0,
+            "submesh topology {}, expected triangles",
+            sub.topology
+        );
+        let start = sub.firstByte as usize;
+        let indices = rd
+            .m_IndexBuffer
+            .get(start..start + sub.indexCount as usize * 2)
+            .context("index buffer too short")?;
+        let indices: Vec<usize> = indices
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|&bytes| u16::from_le_bytes(bytes) as usize)
+            .collect();
+        for &[i, j, k] in indices.as_chunks::<3>().0 {
+            let [a, b, c] = [vertex(i)?, vertex(j)?, vertex(k)?];
+            fill_triangle(&mut mask, mask_w, mask_h, a, b, c);
+        }
+    }
+    Ok(mask)
+}
+
+/// Marks the pixels whose center lies inside (or on the edge of) the triangle.
+fn fill_triangle(
+    mask: &mut [bool],
+    w: usize,
+    h: usize,
+    a: (f64, f64),
+    b: (f64, f64),
+    c: (f64, f64),
+) {
+    let edge = |p: (f64, f64), q: (f64, f64), r: (f64, f64)| {
+        (q.0 - p.0) * (r.1 - p.1) - (q.1 - p.1) * (r.0 - p.0)
+    };
+    let area = edge(a, b, c);
+    if area == 0.0 {
+        return;
+    }
+    let x0 = a.0.min(b.0).min(c.0).floor().max(0.0) as usize;
+    let x1 = (a.0.max(b.0).max(c.0).ceil() as usize).min(w);
+    let y0 = a.1.min(b.1).min(c.1).floor().max(0.0) as usize;
+    let y1 = (a.1.max(b.1).max(c.1).ceil() as usize).min(h);
+    for y in y0..y1 {
+        for x in x0..x1 {
+            let p = (x as f64 + 0.5, y as f64 + 0.5);
+            let inside = [edge(a, b, p), edge(b, c, p), edge(c, a, p)]
+                .into_iter()
+                .all(|e| e / area >= -1e-9);
+            if inside {
+                mask[y * w + x] = true;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -201,7 +367,11 @@ mod tests {
             },
             // placed at the top-left of a 3x3 sprite (y-up offset from the bottom)
             textureRectOffset: (0.0, 1.0),
-            settingsRaw: 1 | (rotation << 2),
+            // packed, rectangle packing
+            settingsRaw: 1 | 2 | (rotation << 2),
+            m_SubMeshes: Vec::new(),
+            m_IndexBuffer: Vec::new(),
+            m_VertexData: VertexData::default(),
         };
         let sprite = Sprite {
             m_Name: String::new(),
@@ -213,7 +383,7 @@ mod tests {
             },
             m_Pivot: (0.5, 0.5),
             m_PixelsToUnits: 100.0,
-            m_RD: rd,
+            m_RD: rd.clone(),
             m_SpriteAtlas: PPtr::null().typed(),
             m_RenderDataKey: (
                 Guid {
@@ -286,12 +456,92 @@ mod tests {
         );
         sprite.m_RenderDataKey = key;
         let atlas = SpriteAtlas {
-            m_RenderDataMap: vec![(key, rd)],
+            m_RenderDataMap: vec![(key, rd.clone())],
         };
         assert_eq!(
             sprite.render_data(Some(&atlas)).unwrap().textureRect,
             rd.textureRect
         );
         assert!(sprite.render_data(None).is_err());
+    }
+}
+
+#[cfg(test)]
+mod mesh_tests {
+    use rabex::objects::PPtr;
+
+    use super::*;
+
+    #[test]
+    fn tight_packing_masks_pixels_outside_the_mesh() {
+        // A 2x2 sprite (1 px per unit, pivot at its center) whose mesh is the triangle over its
+        // top-left half: y-up (-1, -1), (-1, 1), (1, 1).
+        let positions: Vec<u8> = [[-1.0f32, -1.0, 0.0], [-1.0, 1.0, 0.0], [1.0, 1.0, 0.0]]
+            .iter()
+            .flatten()
+            .flat_map(|f| f.to_le_bytes())
+            .collect();
+        let rd = SpriteRenderData {
+            texture: PPtr {
+                m_FileID: 0.into(),
+                m_PathID: 1,
+            }
+            .typed(),
+            textureRect: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 2.0,
+                height: 2.0,
+            },
+            textureRectOffset: (0.0, 0.0),
+            // packed, tight packing
+            settingsRaw: 1,
+            m_SubMeshes: vec![SubMesh {
+                firstByte: 0,
+                indexCount: 3,
+                topology: 0,
+            }],
+            m_IndexBuffer: [0u16, 1, 2].iter().flat_map(|i| i.to_le_bytes()).collect(),
+            m_VertexData: VertexData {
+                m_VertexCount: 3,
+                m_Channels: vec![ChannelInfo {
+                    stream: 0,
+                    offset: 0,
+                    format: 0,
+                    dimension: 3,
+                }],
+                m_DataSize: positions,
+            },
+        };
+        let sprite = Sprite {
+            m_Name: String::new(),
+            m_Rect: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 2.0,
+                height: 2.0,
+            },
+            m_Pivot: (0.5, 0.5),
+            m_PixelsToUnits: 1.0,
+            m_RD: rd.clone(),
+            m_SpriteAtlas: PPtr::null().typed(),
+            m_RenderDataKey: (
+                Guid {
+                    a: 0,
+                    b: 0,
+                    c: 0,
+                    d: 0,
+                },
+                0,
+            ),
+        };
+        let texture = RgbaImage::from_pixel(2, 2, image::Rgba([9, 9, 9, 255]));
+        let alpha: Vec<u8> = render_sprite(&sprite, &rd, &texture)
+            .unwrap()
+            .pixels()
+            .map(|p| p.0[3])
+            .collect();
+        // top-down: top-left, top-right, bottom-left are inside, bottom-right is not
+        assert_eq!(alpha, [255, 255, 255, 0]);
     }
 }
