@@ -504,6 +504,44 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         Ok(self.addressables()?.map(|x| &x.settings))
     }
 
+    /// Read `size` bytes at `offset` of a streamed resource like a texture's `m_StreamData`.
+    ///
+    /// An `archive:/CAB-…/CAB-….resS` path is read from the addressables bundle containing that CAB,
+    /// which need not be the bundle of the object referencing it. Any other path is read as a game
+    /// file, relative to the data directory.
+    pub fn read_stream(&self, path: &str, offset: u64, size: u32) -> Result<Vec<u8>> {
+        let data = match ArchivePath::try_parse(Path::new(path))? {
+            Some(archive) => {
+                let addressables = self.addressables()?.with_context(|| {
+                    format!("stream {path} is in a bundle, but the game has no addressables")
+                })?;
+                let bundle = addressables
+                    .cab_to_bundle
+                    .get(archive.bundle)
+                    .with_context(|| {
+                        format!("no addressables bundle contains {}", archive.bundle)
+                    })?;
+                self.load_addressables_bundle(bundle)?
+                    .read_at(archive.file)?
+                    .with_context(|| {
+                        format!("{} not in bundle {}", archive.file, bundle.display())
+                    })?
+            }
+            None => self
+                .game_files
+                .read_path(Path::new(path))?
+                .as_ref()
+                .to_vec(),
+        };
+        let range = offset as usize..offset as usize + size as usize;
+        data.get(range).map(<[u8]>::to_vec).with_context(|| {
+            format!(
+                "stream {path} shorter than {offset}+{size} ({} bytes)",
+                data.len()
+            )
+        })
+    }
+
     /// All `.bundle` files living under, and relative to the addressables build folder.
     /// Can be passsed to [`Self::load_addressables_bundle`]).
     pub fn addressables_bundles(&self) -> Result<Vec<PathBuf>> {
