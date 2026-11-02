@@ -3,6 +3,8 @@
 
 pub mod sprite;
 
+use std::borrow::Cow;
+
 use anyhow::{Result, bail, ensure};
 use serde::Deserialize;
 
@@ -59,6 +61,32 @@ pub struct StreamingInfo {
 }
 
 impl Texture2D {
+    /// The texture's pixel data: inline, or fetched by `read_stream`, which must return exactly the
+    /// `size` bytes at `offset` of the stream's `path`.
+    pub fn pixels(
+        &self,
+        read_stream: impl FnOnce(&StreamingInfo) -> Result<Vec<u8>>,
+    ) -> Result<Cow<'_, [u8]>> {
+        if !self.image_data.is_empty() {
+            return Ok(Cow::Borrowed(&self.image_data));
+        }
+        let stream = &self.m_StreamData;
+        ensure!(
+            !stream.path.is_empty(),
+            "texture {} has no pixel data",
+            self.m_Name
+        );
+        let data = read_stream(stream)?;
+        ensure!(
+            data.len() == stream.size as usize,
+            "stream of texture {} returned {} bytes, expected {}",
+            self.m_Name,
+            data.len(),
+            stream.size
+        );
+        Ok(Cow::Owned(data))
+    }
+
     /// Decode `pixels` into a top-down RGBA image.
     pub fn decode(&self, pixels: &[u8]) -> Result<RgbaImage> {
         decode(
@@ -155,6 +183,49 @@ fn block(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn texture(image_data: Vec<u8>, path: &str, size: u32) -> Texture2D {
+        Texture2D {
+            m_Name: "t".into(),
+            m_Width: 1,
+            m_Height: 1,
+            m_TextureFormat: 4,
+            image_data,
+            m_StreamData: StreamingInfo {
+                offset: 8,
+                size,
+                path: path.into(),
+            },
+        }
+    }
+
+    #[test]
+    fn pixels_are_inline_or_streamed() {
+        let inline = texture(vec![1, 2, 3, 4], "", 0);
+        let pixels = inline
+            .pixels(|_| panic!("inline pixels must not be streamed"))
+            .unwrap();
+        assert!(matches!(pixels, Cow::Borrowed([1, 2, 3, 4])));
+
+        let streamed = texture(Vec::new(), "archive:/CAB-a/CAB-a.resS", 4);
+        let pixels = streamed
+            .pixels(|stream| {
+                assert_eq!(
+                    (stream.path.as_str(), stream.offset, stream.size),
+                    ("archive:/CAB-a/CAB-a.resS", 8, 4)
+                );
+                Ok(vec![5, 6, 7, 8])
+            })
+            .unwrap();
+        assert_eq!(pixels.as_ref(), [5, 6, 7, 8]);
+
+        assert!(
+            texture(Vec::new(), "", 0)
+                .pixels(|_| Ok(Vec::new()))
+                .is_err()
+        );
+        assert!(streamed.pixels(|_| Ok(vec![0; 3])).is_err());
+    }
 
     #[test]
     fn decode_argb4444_expands_nibbles_to_bytes() {
