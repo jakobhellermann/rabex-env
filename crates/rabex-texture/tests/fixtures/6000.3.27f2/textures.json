@@ -11,7 +11,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/Alpha8_64x64_inline.png",
+            "expected": "expected/textures/Alpha8_64x64_inline.png",
             "rawDataLength": 4096
         },
         {
@@ -23,7 +23,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/Alpha8_64x64_inline.png",
+            "expected": "expected/textures/Alpha8_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -35,7 +35,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/Alpha8_60x36_inline.png",
+            "expected": "expected/textures/Alpha8_60x36_inline.png",
             "rawDataLength": 2160
         },
         {
@@ -47,7 +47,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/Alpha8_60x36_inline.png",
+            "expected": "expected/textures/Alpha8_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -59,7 +59,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/Alpha8_61x37_inline.png",
+            "expected": "expected/textures/Alpha8_61x37_inline.png",
             "rawDataLength": 2257
         },
         {
@@ -71,7 +71,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/Alpha8_61x37_inline.png",
+            "expected": "expected/textures/Alpha8_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -83,7 +83,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/Alpha8_64x64_mips.png",
+            "expected": "expected/textures/Alpha8_64x64_mips.png",
             "rawDataLength": 5461
         },
         {
@@ -95,7 +95,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/ARGB16_64x64_inline.png",
+            "expected": "expected/textures/ARGB16_64x64_inline.png",
             "rawDataLength": 8192
         },
         {
@@ -107,7 +107,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/ARGB16_64x64_inline.png",
+            "expected": "expected/textures/ARGB16_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -119,7 +119,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/ARGB16_60x36_inline.png",
+            "expected": "expected/textures/ARGB16_60x36_inline.png",
             "rawDataLength": 4320
         },
         {
@@ -131,7 +131,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/ARGB16_60x36_inline.png",
+            "expected": "expected/textures/ARGB16_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -143,7 +143,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/ARGB16_61x37_inline.png",
+            "expected": "expected/textures/ARGB16_61x37_inline.png",
             "rawDataLength": 4514
         },
         {
@@ -155,7 +155,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/ARGB16_61x37_inline.png",
+            "expected": "expected/textures/ARGB16_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -167,7 +167,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/ARGB16_64x64_mips.png",
+            "expected": "expected/textures/ARGB16_64x64_mips.png",
             "rawDataLength": 10922
         },
         {
@@ -179,7 +179,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/RGB24_64x64_inline.png",
+            "expected": "expected/textures/RGB24_64x64_inline.png",
             "rawDataLength": 12288
         },
         {
@@ -191,7 +191,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/RGB24_64x64_inline.png",
+            "expected": "expected/textures/RGB24_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -203,7 +203,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/RGB24_60x36_inline.png",
+            "expected": "expected/textures/RGB24_60x36_inline.png",
             "rawDataLength": 6480
         },
         {
@@ -215,7 +215,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/RGB24_60x36_inline.png",
+            "expected": "expected/textures/RGB24_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -227,7 +227,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/RGB24_61x37_inline.png",
+            "expected": "expected/textures/RGB24_61x37_inline.png",
             "rawDataLength": 6771
         },
         {
@@ -239,7 +239,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/RGB24_61x37_inline.png",
+            "expected": "expected/textures/RGB24_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -251,7 +251,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/RGB24_64x64_mips.png",
+            "expected": "expected/textures/RGB24_64x64_mips.png",
             "rawDataLength": 16383
         },
         {
@@ -263,7 +263,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/RGBA32_64x64_inline.png",
+            "expected": "expected/textures/RGBA32_64x64_inline.png",
             "rawDataLength": 16384
         },
         {
@@ -275,7 +275,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/RGBA32_64x64_inline.png",
+            "expected": "expected/textures/RGBA32_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -287,7 +287,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/RGBA32_60x36_inline.png",
+            "expected": "expected/textures/RGBA32_60x36_inline.png",
             "rawDataLength": 8640
         },
         {
@@ -299,7 +299,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/RGBA32_60x36_inline.png",
+            "expected": "expected/textures/RGBA32_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -311,7 +311,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/RGBA32_61x37_inline.png",
+            "expected": "expected/textures/RGBA32_61x37_inline.png",
             "rawDataLength": 9028
         },
         {
@@ -323,7 +323,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/RGBA32_61x37_inline.png",
+            "expected": "expected/textures/RGBA32_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -335,7 +335,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/RGBA32_64x64_mips.png",
+            "expected": "expected/textures/RGBA32_64x64_mips.png",
             "rawDataLength": 21844
         },
         {
@@ -347,7 +347,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT1_64x64_inline.png",
+            "expected": "expected/textures/DXT1_64x64_inline.png",
             "rawDataLength": 2048
         },
         {
@@ -359,7 +359,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT1_64x64_inline.png",
+            "expected": "expected/textures/DXT1_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -371,7 +371,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT1_60x36_inline.png",
+            "expected": "expected/textures/DXT1_60x36_inline.png",
             "rawDataLength": 1080
         },
         {
@@ -383,7 +383,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT1_60x36_inline.png",
+            "expected": "expected/textures/DXT1_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -395,7 +395,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT1_61x37_inline.png",
+            "expected": "expected/textures/DXT1_61x37_inline.png",
             "rawDataLength": 6771
         },
         {
@@ -407,7 +407,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT1_61x37_inline.png",
+            "expected": "expected/textures/DXT1_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -419,7 +419,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/DXT1_64x64_mips.png",
+            "expected": "expected/textures/DXT1_64x64_mips.png",
             "rawDataLength": 2744
         },
         {
@@ -431,7 +431,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT5_64x64_inline.png",
+            "expected": "expected/textures/DXT5_64x64_inline.png",
             "rawDataLength": 4096
         },
         {
@@ -443,7 +443,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT5_64x64_inline.png",
+            "expected": "expected/textures/DXT5_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -455,7 +455,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT5_60x36_inline.png",
+            "expected": "expected/textures/DXT5_60x36_inline.png",
             "rawDataLength": 2160
         },
         {
@@ -467,7 +467,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT5_60x36_inline.png",
+            "expected": "expected/textures/DXT5_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -479,7 +479,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT5_61x37_inline.png",
+            "expected": "expected/textures/DXT5_61x37_inline.png",
             "rawDataLength": 9028
         },
         {
@@ -491,7 +491,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT5_61x37_inline.png",
+            "expected": "expected/textures/DXT5_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -503,7 +503,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/DXT5_64x64_mips.png",
+            "expected": "expected/textures/DXT5_64x64_mips.png",
             "rawDataLength": 5488
         },
         {
@@ -515,7 +515,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/BC7_64x64_inline.png",
+            "expected": "expected/textures/BC7_64x64_inline.png",
             "rawDataLength": 4096
         },
         {
@@ -527,7 +527,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/BC7_64x64_inline.png",
+            "expected": "expected/textures/BC7_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -539,7 +539,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/BC7_60x36_inline.png",
+            "expected": "expected/textures/BC7_60x36_inline.png",
             "rawDataLength": 2160
         },
         {
@@ -551,7 +551,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/BC7_60x36_inline.png",
+            "expected": "expected/textures/BC7_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -563,7 +563,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/BC7_61x37_inline.png",
+            "expected": "expected/textures/BC7_61x37_inline.png",
             "rawDataLength": 9028
         },
         {
@@ -575,7 +575,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/BC7_61x37_inline.png",
+            "expected": "expected/textures/BC7_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -587,7 +587,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/BC7_64x64_mips.png",
+            "expected": "expected/textures/BC7_64x64_mips.png",
             "rawDataLength": 5488
         },
         {
@@ -599,7 +599,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT1Crunched_64x64_inline.png",
+            "expected": "expected/textures/DXT1Crunched_64x64_inline.png",
             "rawDataLength": 767
         },
         {
@@ -611,7 +611,7 @@
             "height": 64,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT1Crunched_64x64_inline.png",
+            "expected": "expected/textures/DXT1Crunched_64x64_inline.png",
             "rawDataLength": 0
         },
         {
@@ -623,7 +623,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT1Crunched_60x36_inline.png",
+            "expected": "expected/textures/DXT1Crunched_60x36_inline.png",
             "rawDataLength": 536
         },
         {
@@ -635,7 +635,7 @@
             "height": 36,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT1Crunched_60x36_inline.png",
+            "expected": "expected/textures/DXT1Crunched_60x36_inline.png",
             "rawDataLength": 0
         },
         {
@@ -647,7 +647,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": true,
-            "expected": "expected/DXT1Crunched_61x37_inline.png",
+            "expected": "expected/textures/DXT1Crunched_61x37_inline.png",
             "rawDataLength": 6771
         },
         {
@@ -659,7 +659,7 @@
             "height": 37,
             "mipCount": 1,
             "readable": false,
-            "expected": "expected/DXT1Crunched_61x37_inline.png",
+            "expected": "expected/textures/DXT1Crunched_61x37_inline.png",
             "rawDataLength": 0
         },
         {
@@ -671,7 +671,7 @@
             "height": 64,
             "mipCount": 7,
             "readable": true,
-            "expected": "expected/DXT1Crunched_64x64_mips.png",
+            "expected": "expected/textures/DXT1Crunched_64x64_mips.png",
             "rawDataLength": 1011
         }
     ]
