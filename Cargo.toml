@@ -16,6 +16,7 @@ base64 = "0.22"
 elsa = "1.11"
 indexmap = { version = "2.11", features = ["serde"] }
 memmap2 = "0.9"
+parking_lot = "0.12"
 rabex = { version = "0.2", default-features = false, features = ["embed-tpk"] }
 rustc-hash = "2.1"
 serde = { version = "1.0", default-features = false }

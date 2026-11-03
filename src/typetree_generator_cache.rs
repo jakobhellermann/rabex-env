@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use anyhow::Result;
 use elsa::sync::FrozenMap;
+use parking_lot::ReentrantMutex;
 use rabex::UnityVersion;
 use rabex::objects::ClassId;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
@@ -20,7 +21,26 @@ pub struct AssemblyTypeTreeGenerator<'a, R, P> {
     generator: &'a unity_typetree_gen::AssemblyTypeTreeGenerator,
     base_node: &'a TypeTreeNode,
     cache: &'a FrozenMap<AssemblyLocation, Box<TypeTreeNode>>,
-    locks: &'a Mutex<HashMap<AssemblyLocation, Arc<Mutex<()>>>>,
+    flights: &'a SingleFlight<AssemblyLocation>,
+}
+
+struct SingleFlight<K> {
+    // reentrant because typetree generation uses rayon internally
+    locks: Mutex<HashMap<K, Arc<ReentrantMutex<()>>>>,
+}
+
+impl<K: Eq + std::hash::Hash + Clone> SingleFlight<K> {
+    fn new() -> Self {
+        SingleFlight {
+            locks: Mutex::new(HashMap::new()),
+        }
+    }
+
+    fn run<T>(&self, key: &K, f: impl FnOnce() -> T) -> T {
+        let lock = Arc::clone(self.locks.lock().unwrap().entry(key.clone()).or_default());
+        let _flight = lock.lock();
+        f()
+    }
 }
 
 impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P> {
@@ -34,16 +54,21 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P
             return Ok(Some(value));
         }
         // Single-flight: only one thread generates a given (assembly, type); concurrent callers
-        // block on this per-key lock and hit the cache on the re-check below. This avoids a
-        // generation stampede when a parallel scan first reads objects of the same script class.
-        let key_lock = {
-            let mut locks = self.locks.lock().unwrap();
-            Arc::clone(locks.entry(key.clone()).or_default())
-        };
-        let _flight = key_lock.lock().unwrap();
+        // wait and then hit the cache. This avoids a generation stampede when a parallel scan
+        // first reads objects of the same script class.
+        self.flights
+            .run(&key, || self.generate_uncached(key.clone(), full_name))
+    }
+
+    fn generate_uncached(
+        &self,
+        key: AssemblyLocation,
+        full_name: &str,
+    ) -> Result<Option<&'a TypeTreeNode>> {
         if let Some(value) = self.cache.get(&key) {
             return Ok(Some(value));
         }
+        let assembly_name = key.0.as_str();
 
         let (namespace, type_name) = full_name.rsplit_once('.').unwrap_or(("", full_name));
         let value = self
@@ -59,8 +84,6 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P
                 node.children.splice(0..0, self.base_node.children.clone());
                 node
             });
-        let key = (assembly_name.to_owned(), full_name.to_owned());
-
         Ok(value.map(|value| self.cache.insert(key, Box::new(value))))
     }
 
@@ -96,8 +119,7 @@ struct Backend {
 pub struct TypeTreeGeneratorCache {
     backend: OnceLock<Backend>,
     cache: FrozenMap<AssemblyLocation, Box<TypeTreeNode>>,
-    /// Per-key locks for single-flight generation (see [`AssemblyTypeTreeGenerator::generate`]).
-    locks: Mutex<HashMap<AssemblyLocation, Arc<Mutex<()>>>>,
+    flights: SingleFlight<AssemblyLocation>,
 }
 impl TypeTreeGeneratorCache {
     pub fn new(unity_version: UnityVersion, base_node: TypeTreeNode) -> Self {
@@ -109,21 +131,21 @@ impl TypeTreeGeneratorCache {
         TypeTreeGeneratorCache {
             backend,
             cache: FrozenMap::default(),
-            locks: Mutex::new(HashMap::new()),
+            flights: SingleFlight::new(),
         }
     }
     pub fn prefilled(cache: FrozenMap<AssemblyLocation, Box<TypeTreeNode>>) -> Self {
         TypeTreeGeneratorCache {
             backend: OnceLock::new(),
             cache,
-            locks: Mutex::new(HashMap::new()),
+            flights: SingleFlight::new(),
         }
     }
     pub fn empty() -> Self {
         TypeTreeGeneratorCache {
             backend: OnceLock::new(),
             cache: FrozenMap::default(),
-            locks: Mutex::new(HashMap::new()),
+            flights: SingleFlight::new(),
         }
     }
 
@@ -145,7 +167,7 @@ impl TypeTreeGeneratorCache {
             generator: &backend.generator,
             base_node: &backend.base_node,
             cache: &self.cache,
-            locks: &self.locks,
+            flights: &self.flights,
         })
     }
 
@@ -173,5 +195,34 @@ impl TypeTreeGeneratorCache {
             generator,
             base_node,
         }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    use super::SingleFlight;
+
+    #[test]
+    fn single_flight_allows_nested_rayon_work_on_the_same_key() {
+        let (done, finished) = mpsc::channel();
+        std::thread::spawn(move || {
+            let flights = SingleFlight::new();
+            // one thread: `join` runs its first closure inline, under the outer flight
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(1)
+                .build()
+                .unwrap();
+            pool.install(|| {
+                flights.run(&"key", || rayon::join(|| flights.run(&"key", || ()), || ()))
+            });
+            done.send(()).unwrap();
+        });
+        assert!(
+            finished.recv_timeout(Duration::from_secs(5)).is_ok(),
+            "nested flight on the same thread deadlocked"
+        );
     }
 }
