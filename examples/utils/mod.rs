@@ -28,7 +28,11 @@ pub fn for_each_steam_game(mut f: impl FnMut(Environment) -> Result<()>) -> Resu
 }
 
 fn search_transform(input: &str) -> String {
-    input.to_ascii_lowercase().replace(char::is_whitespace, "")
+    input
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
 }
 
 pub fn find_game(name_filter: &str) -> Result<Option<Environment>> {
