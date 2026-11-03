@@ -253,7 +253,10 @@ fn render_data_features(prefix: &str, rd: &RenderData) -> Vec<String> {
         ),
         format!("{prefix}.settings.high_bits={:#x}", s >> 7),
         format!("{prefix}.texture_null={}", rd.texture.m_PathID == 0),
-        format!("{prefix}.texture_external={}", rd.texture.m_FileID != rabex::objects::pptr::FileId::LOCAL),
+        format!(
+            "{prefix}.texture_external={}",
+            rd.texture.m_FileID != rabex::objects::pptr::FileId::LOCAL
+        ),
         format!("{prefix}.alpha_texture={}", rd.alphaTexture.m_PathID != 0),
         format!(
             "{prefix}.secondary_textures={}",
@@ -302,10 +305,7 @@ fn render_data_features(prefix: &str, rd: &RenderData) -> Vec<String> {
             })
             .collect();
         f.push(format!("{prefix}.vertex_layout={}", layout.join(" ")));
-        f.push(format!(
-            "{prefix}.has_vertices={}",
-            vd.m_VertexCount > 0
-        ));
+        f.push(format!("{prefix}.has_vertices={}", vd.m_VertexCount > 0));
     }
     f
 }
@@ -316,10 +316,16 @@ fn sprite_features(s: &Sprite) -> Vec<String> {
             "sprite.rect_fractional={}",
             frac(s.m_Rect.x) || frac(s.m_Rect.y) || frac(s.m_Rect.width) || frac(s.m_Rect.height)
         ),
-        format!("sprite.offset_nonzero={}", s.m_Offset.x != 0.0 || s.m_Offset.y != 0.0),
+        format!(
+            "sprite.offset_nonzero={}",
+            s.m_Offset.x != 0.0 || s.m_Offset.y != 0.0
+        ),
         format!(
             "sprite.border={}",
-            s.m_Border.x != 0.0 || s.m_Border.y != 0.0 || s.m_Border.z != 0.0 || s.m_Border.w != 0.0
+            s.m_Border.x != 0.0
+                || s.m_Border.y != 0.0
+                || s.m_Border.z != 0.0
+                || s.m_Border.w != 0.0
         ),
         format!("sprite.pixels_to_units={}", s.m_PixelsToUnits),
         format!(
@@ -369,12 +375,16 @@ fn main() -> Result<()> {
     for name in ["globalgamemanagers.assets", "resources.assets"]
         .into_iter()
         .map(str::to_owned)
-        .chain((0..).map(|i| format!("sharedassets{i}.assets")).take_while(|n| {
-            env.load_serialized(n).is_ok()
-        }))
-        .chain((0..).map(|i| format!("level{i}")).take_while(|n| {
-            env.load_serialized(n).is_ok()
-        }))
+        .chain(
+            (0..)
+                .map(|i| format!("sharedassets{i}.assets"))
+                .take_while(|n| env.load_serialized(n).is_ok()),
+        )
+        .chain(
+            (0..)
+                .map(|i| format!("level{i}"))
+                .take_while(|n| env.load_serialized(n).is_ok()),
+        )
     {
         files.insert(name.clone(), env.load_serialized(&name)?);
     }
@@ -382,40 +392,45 @@ fn main() -> Result<()> {
 
     let survey = Survey::default();
     let errors = Survey::default();
-    files.par_iter().try_for_each(|(path, file)| -> Result<()> {
-        let class_counts = file.file.objects().fold(BTreeMap::<_, usize>::new(), |mut m, o| {
-            *m.entry(o.m_ClassID).or_default() += 1;
-            m
-        });
-        for (class, n) in class_counts {
-            let name = format!("{class:?}");
-            if name.contains("Texture") || name.contains("Sprite") || name.contains("Cubemap") {
-                for _ in 0..n {
-                    survey.add(format!("class={name}"), || path.clone());
-                }
-            }
-        }
-
-        macro_rules! scan {
-            ($ty:ty, $features:expr) => {
-                for obj in file.objects_of::<$ty>() {
-                    let example = || format!("{path} @ {}", obj.path_id());
-                    match obj.read() {
-                        Ok(value) => {
-                            for feature in $features(&value) {
-                                survey.add(feature, example);
-                            }
-                        }
-                        Err(e) => errors.add(format!("{}: {e}", stringify!($ty)), example),
+    files
+        .par_iter()
+        .try_for_each(|(path, file)| -> Result<()> {
+            let class_counts = file
+                .file
+                .objects()
+                .fold(BTreeMap::<_, usize>::new(), |mut m, o| {
+                    *m.entry(o.m_ClassID).or_default() += 1;
+                    m
+                });
+            for (class, n) in class_counts {
+                let name = format!("{class:?}");
+                if name.contains("Texture") || name.contains("Sprite") || name.contains("Cubemap") {
+                    for _ in 0..n {
+                        survey.add(format!("class={name}"), || path.clone());
                     }
                 }
-            };
-        }
-        scan!(Texture2D, texture_features);
-        scan!(Sprite, sprite_features);
-        scan!(SpriteAtlas, atlas_features);
-        Ok(())
-    })?;
+            }
+
+            macro_rules! scan {
+                ($ty:ty, $features:expr) => {
+                    for obj in file.objects_of::<$ty>() {
+                        let example = || format!("{path} @ {}", obj.path_id());
+                        match obj.read() {
+                            Ok(value) => {
+                                for feature in $features(&value) {
+                                    survey.add(feature, example);
+                                }
+                            }
+                            Err(e) => errors.add(format!("{}: {e}", stringify!($ty)), example),
+                        }
+                    }
+                };
+            }
+            scan!(Texture2D, texture_features);
+            scan!(Sprite, sprite_features);
+            scan!(SpriteAtlas, atlas_features);
+            Ok(())
+        })?;
 
     for (feature, (count, example)) in survey.0.into_inner().unwrap() {
         println!("{count:>8}  {feature:<70}  {example}");
