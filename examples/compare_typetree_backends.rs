@@ -73,10 +73,16 @@ fn main() -> Result<()> {
 
         eprintln!(">>> {name} ({})", env.game_files.game_dir.display());
         match compare_game(env, &mut totals) {
-            Ok(Some((scripts, ok, mm, ro, no, bf))) => {
+            Ok(Some(comparison)) => {
                 println!(
-                    "[{name}] {scripts} scripts: {ok} ok, {mm} mismatch, \
-                     {ro} rust-only, {no} native-only, {bf} both-failed"
+                    "[{name}] {} scripts: {} ok, {} mismatch, \
+                     {} rust-only, {} native-only, {} both-failed",
+                    comparison.seen,
+                    comparison.both_ok,
+                    comparison.mismatches,
+                    comparison.rust_only,
+                    comparison.native_only,
+                    comparison.both_failed,
                 );
                 totals.games += 1;
             }
@@ -108,11 +114,19 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Returns per-game counts, or `None` if the game has no comparable scripts.
+struct Comparison {
+    seen: usize,
+    both_ok: usize,
+    mismatches: usize,
+    rust_only: usize,
+    native_only: usize,
+    both_failed: usize,
+}
+
 fn compare_game<P: TypeTreeProvider>(
     env: Environment<GameFiles, P>,
     totals: &mut Totals,
-) -> Result<Option<(usize, usize, usize, usize, usize, usize)>> {
+) -> Result<Option<Comparison>> {
     let scripts = match env.mono_scripts() {
         Ok(s) if !s.is_empty() => s,
         _ => return Ok(None),
@@ -174,14 +188,14 @@ fn compare_game<P: TypeTreeProvider>(
     totals.native_only += native_only;
     totals.both_failed += both_failed;
 
-    Ok(Some((
-        seen.len(),
+    Ok(Some(Comparison {
+        seen: seen.len(),
         both_ok,
         mismatches,
         rust_only,
         native_only,
         both_failed,
-    )))
+    }))
 }
 
 /// Walks both trees in lockstep and returns a description of the first node

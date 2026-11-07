@@ -112,7 +112,7 @@ fn parse(c: &mut Criterion) {
                     for obj in file.objects() {
                         let mut reader = Cursor::new(data.as_slice());
                         match file
-                            .read::<serde_json::Value>(&obj, &env.tpk, &mut reader)
+                            .read::<serde_json::Value>(obj, &env.tpk, &mut reader)
                             .context(obj.m_PathID)
                         {
                             Ok(value) => {

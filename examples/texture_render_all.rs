@@ -104,8 +104,8 @@ fn main() -> Result<()> {
     // Group sprites by the texture holding their pixels, so each texture is decoded once.
     let mut t = Timings::default();
     let start = Instant::now();
-    let mut by_texture: BTreeMap<(usize, i64), Vec<(&String, &SerializedFileHandle, i64)>> =
-        BTreeMap::new();
+    type Sprites<'a> = Vec<(&'a String, &'a SerializedFileHandle<'a>, i64)>;
+    let mut by_texture: BTreeMap<(usize, i64), Sprites> = BTreeMap::new();
     let mut atlases: BTreeMap<(usize, i64), SpriteAtlas> = BTreeMap::new();
     for (path, file) in &files {
         for info in file
@@ -125,9 +125,9 @@ fn main() -> Result<()> {
                 }
                 let atlas_ref = file.deref(sprite.m_SpriteAtlas)?;
                 let key = (file_key(&atlas_ref.file), atlas_ref.path_id());
-                if !atlases.contains_key(&key) {
+                if let std::collections::btree_map::Entry::Vacant(e) = atlases.entry(key) {
                     let atlas = timed(&mut t.read, || atlas_ref.read())?;
-                    atlases.insert(key, atlas);
+                    e.insert(atlas);
                 }
                 let rd = sprite.render_data(Some(&atlases[&key]))?;
                 let texture = &rd.texture;

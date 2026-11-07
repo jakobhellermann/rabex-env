@@ -164,14 +164,12 @@ fn uncompressed(
     Ok(img)
 }
 
+/// A block decoder: input blocks, image size in blocks, output pixels.
+type BlockDecoder = fn(&[u8], usize, usize, &mut [u32]) -> Result<(), &'static str>;
+
 /// Block-compressed layouts decoded via `texture2ddecoder`, whose output
 /// is little-endian BGRA.
-fn block(
-    width: u32,
-    height: u32,
-    data: &[u8],
-    decoder: fn(&[u8], usize, usize, &mut [u32]) -> Result<(), &'static str>,
-) -> Result<RgbaImage> {
+fn block(width: u32, height: u32, data: &[u8], decoder: BlockDecoder) -> Result<RgbaImage> {
     let (w, h) = (width as usize, height as usize);
     let mut buf = vec![0u32; w * h];
     decoder(data, w, h, &mut buf).map_err(anyhow::Error::msg)?;
