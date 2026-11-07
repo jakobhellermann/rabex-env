@@ -1,0 +1,76 @@
+ManifestFileVersion: 0
+UnityVersion: 6000.3.27f2
+CRC: 1356596405
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: c3354ed3dcf62333a2b7be8a90889164
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 4caec809ea790faab4d7e02cb15a3432
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 337401c8899276eed74c191512908a63
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 687078895
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Generated/sprites/atlas_rect_ring.png
+- Assets/Generated/sprites/atlas_tight_rot_steps.png
+- Assets/Generated/sprites/atlas_tight_rot_corner_FullRect.png
+- Assets/Generated/sprites/atlas_tight_lshape.png
+- Assets/Generated/sprites/atlas_tight_rot_blade.png
+- Assets/Generated/sprites/atlas_rect_rot_tri.png
+- Assets/Generated/sprites/rect_Tight.png
+- Assets/Generated/sprites/atlas_tight_tri.png
+- Assets/Generated/sprites/atlas_tight_rot_corner.png
+- Assets/Generated/sprites/atlas_tight_rot_steps_down.png
+- Assets/Generated/sprites/atlas_tight_rot_diag.png
+- Assets/Generated/sprites/lshape_Tight.png
+- Assets/Generated/sprites/atlas_tight_diag.png
+- Assets/Generated/sprites/atlas_tight_ring.png
+- Assets/Generated/sprites/atlas_rect_corner.png
+- Assets/Generated/sprites/ring_Tight.png
+- Assets/Generated/sprites/atlas_rect_rot.spriteatlasv2
+- Assets/Generated/sprites/tri_Tight.png
+- Assets/Generated/sprites/atlas_tight_rot_tri.png
+- Assets/Generated/sprites/atlas_tight_rot_antidiag.png
+- Assets/Generated/sprites/atlas_tight_rot.spriteatlasv2
+- Assets/Generated/sprites/atlas_rect_rot_diag.png
+- Assets/Generated/sprites/atlas_tight_rot_hook.png
+- Assets/Generated/sprites/lshape_FullRect.png
+- Assets/Generated/sprites/atlas_rect_diag.png
+- Assets/Generated/sprites/atlas_rect_lshape.png
+- Assets/Generated/sprites/rect_FullRect.png
+- Assets/Generated/sprites/diag_Tight.png
+- Assets/Generated/sprites/atlas_rect_rot_ring.png
+- Assets/Generated/sprites/atlas_tight_corner.png
+- Assets/Generated/sprites/atlas_rect_rot_corner.png
+- Assets/Generated/sprites/atlas_rect_tri.png
+- Assets/Generated/sprites/atlas_tight_rect.png
+- Assets/Generated/sprites/atlas_tight_rot_rect.png
+- Assets/Generated/sprites/tri_FullRect.png
+- Assets/Generated/sprites/atlas_rect_rot_rect.png
+- Assets/Generated/sprites/atlas_tight_rot_ring.png
+- Assets/Generated/sprites/atlas_rect_rect.png
+- Assets/Generated/sprites/atlas_tight_rot_flag.png
+- Assets/Generated/sprites/atlas_tight_rot_wedge_down.png
+- Assets/Generated/sprites/ring_FullRect.png
+- Assets/Generated/sprites/atlas_rect.spriteatlasv2
+- Assets/Generated/sprites/atlas_rect_rot_lshape.png
+- Assets/Generated/sprites/corner_Tight.png
+- Assets/Generated/sprites/atlas_tight_rot_wedge.png
+- Assets/Generated/sprites/atlas_tight_corner_FullRect.png
+- Assets/Generated/sprites/atlas_tight_rot_lshape.png
+- Assets/Generated/sprites/atlas_rect_corner_FullRect.png
+- Assets/Generated/sprites/diag_FullRect.png
+- Assets/Generated/sprites/atlas_rect_rot_corner_FullRect.png
+- Assets/Generated/sprites/atlas_tight.spriteatlasv2
+- Assets/Generated/sprites/corner_FullRect.png
+Dependencies: []

@@ -1,0 +1,75 @@
+ManifestFileVersion: 0
+CRC: 420615615
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: fdca9b63dfd69750352712b58598ac09
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 2612ac43db082a73502ee80f2eceb73f
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: fdca9b63dfd69750352712b58598ac09
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Generated/textures/DXT5_64x64_inline.png
+- Assets/Generated/textures/DXT1_61x37_inline.png
+- Assets/Generated/textures/DXT1Crunched_60x36_inline.png
+- Assets/Generated/textures/RGB24_61x37_inline.png
+- Assets/Generated/textures/RGB24_64x64_mips.png
+- Assets/Generated/textures/BC7_60x36_stream.png
+- Assets/Generated/textures/Alpha8_61x37_inline.png
+- Assets/Generated/textures/DXT1Crunched_60x36_stream.png
+- Assets/Generated/textures/ARGB16_61x37_inline.png
+- Assets/Generated/textures/BC7_64x64_inline.png
+- Assets/Generated/textures/DXT1Crunched_64x64_stream.png
+- Assets/Generated/textures/Alpha8_60x36_stream.png
+- Assets/Generated/textures/RGB24_60x36_inline.png
+- Assets/Generated/textures/DXT5_64x64_stream.png
+- Assets/Generated/textures/BC7_61x37_inline.png
+- Assets/Generated/textures/BC7_64x64_mips.png
+- Assets/Generated/textures/RGBA32_61x37_stream.png
+- Assets/Generated/textures/ARGB16_64x64_stream.png
+- Assets/Generated/textures/RGB24_64x64_inline.png
+- Assets/Generated/textures/ARGB16_60x36_inline.png
+- Assets/Generated/textures/DXT5_61x37_inline.png
+- Assets/Generated/textures/ARGB16_64x64_inline.png
+- Assets/Generated/textures/BC7_61x37_stream.png
+- Assets/Generated/textures/RGBA32_64x64_stream.png
+- Assets/Generated/textures/DXT1_61x37_stream.png
+- Assets/Generated/textures/Alpha8_61x37_stream.png
+- Assets/Generated/textures/DXT1Crunched_61x37_inline.png
+- Assets/Generated/textures/RGBA32_64x64_inline.png
+- Assets/Generated/textures/DXT5_60x36_stream.png
+- Assets/Generated/textures/BC7_60x36_inline.png
+- Assets/Generated/textures/ARGB16_61x37_stream.png
+- Assets/Generated/textures/RGBA32_64x64_mips.png
+- Assets/Generated/textures/RGB24_64x64_stream.png
+- Assets/Generated/textures/ARGB16_60x36_stream.png
+- Assets/Generated/textures/Alpha8_64x64_stream.png
+- Assets/Generated/textures/DXT1_64x64_stream.png
+- Assets/Generated/textures/DXT1_64x64_inline.png
+- Assets/Generated/textures/DXT5_60x36_inline.png
+- Assets/Generated/textures/ARGB16_64x64_mips.png
+- Assets/Generated/textures/DXT5_61x37_stream.png
+- Assets/Generated/textures/RGBA32_60x36_inline.png
+- Assets/Generated/textures/DXT1Crunched_64x64_mips.png
+- Assets/Generated/textures/RGB24_60x36_stream.png
+- Assets/Generated/textures/RGBA32_60x36_stream.png
+- Assets/Generated/textures/DXT1_60x36_inline.png
+- Assets/Generated/textures/Alpha8_60x36_inline.png
+- Assets/Generated/textures/RGB24_61x37_stream.png
+- Assets/Generated/textures/RGBA32_61x37_inline.png
+- Assets/Generated/textures/BC7_64x64_stream.png
+- Assets/Generated/textures/DXT1Crunched_64x64_inline.png
+- Assets/Generated/textures/DXT1_64x64_mips.png
+- Assets/Generated/textures/DXT1Crunched_61x37_stream.png
+- Assets/Generated/textures/Alpha8_64x64_inline.png
+- Assets/Generated/textures/Alpha8_64x64_mips.png
+- Assets/Generated/textures/DXT5_64x64_mips.png
+- Assets/Generated/textures/DXT1_60x36_stream.png
+Dependencies: []

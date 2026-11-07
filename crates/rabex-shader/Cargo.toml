@@ -1,0 +1,21 @@
+[package]
+name = "rabex-shader"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+description = "Read the compiled programs of Unity Shader objects."
+
+[dependencies]
+anyhow = "1.0"
+indexmap = { version = "2.11", features = ["serde"] }
+rabex = { version = "0.2", default-features = false }
+lz4_flex = { version = "0.13", default-features = false, features = ["safe-decode", "std"] }
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+# the game sweep reads shaders out of builds that ship no type trees
+rabex = { version = "0.2", default-features = false, features = [
+  "compression-lz4",
+  "embed-tpk",
+] }
+serde_json = "1.0"

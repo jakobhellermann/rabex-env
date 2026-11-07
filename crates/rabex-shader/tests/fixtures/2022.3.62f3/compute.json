@@ -1,0 +1,39 @@
+{
+    "unityVersion": "2022.3.62f3",
+    "shaders": [
+        {
+            "name": "Basic",
+            "keywords": [],
+            "kernels": [
+                "Fill",
+                "Copy"
+            ]
+        },
+        {
+            "name": "Lut3D",
+            "keywords": [],
+            "kernels": [
+                "KGenLut3D_A",
+                "KGenLut3D_B"
+            ]
+        },
+        {
+            "name": "Keywords",
+            "keywords": [
+                "RABEX_COMPUTE_NEGATE",
+                "RABEX_COMPUTE_SQUARE"
+            ],
+            "kernels": [
+                "Reduce"
+            ]
+        },
+        {
+            "name": "Histogram",
+            "keywords": [],
+            "kernels": [
+                "KHistogramGather",
+                "KHistogramClear"
+            ]
+        }
+    ]
+}

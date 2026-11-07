@@ -1,0 +1,4659 @@
+{
+    "unityVersion": "2022.3.62f3",
+    "bundles": [
+        {
+            "target": "StandaloneLinux64",
+            "bundle": "shaders",
+            "platforms": [
+                "Vulkan",
+                "OpenGLCore"
+            ]
+        },
+        {
+            "target": "StandaloneWindows64",
+            "bundle": "StandaloneWindows64/shaders",
+            "platforms": [
+                "D3D"
+            ]
+        }
+    ],
+    "shaders": [
+        {
+            "name": "Rabex/Unlit",
+            "variants": [
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Unlit",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Unlit.0.0.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals2840191130",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Color",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals2840191130",
+                            "size": 144,
+                            "fields": [
+                                {
+                                    "name": "_MainTex_ST",
+                                    "index": 128,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 64,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_ObjectToWorld",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_MainTex",
+                            "index": 134217728,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Unlit",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Unlit.0.0.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Color",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_MainTex_ST",
+                                    "index": 128,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 64,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_MainTex",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Unlit",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Unlit.0.0.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 160,
+                            "fields": [
+                                {
+                                    "name": "_MainTex_ST",
+                                    "index": 128,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_ObjectToWorld",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 64,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Unlit",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Unlit.0.0.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Unlit",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Unlit.0.0.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Unlit",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Unlit.0.0.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 160,
+                            "fields": [
+                                {
+                                    "name": "_Color",
+                                    "index": 144,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_MainTex",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Rabex/Keywords",
+            "variants": [
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals1287511481",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals1287511481",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_A"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.Vulkan.RABEX_A.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals1216077707",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals1216077707",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_B"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.Vulkan.RABEX_B.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "VGlobals2404958697",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.Vulkan.RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals2149674533",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals2149674533",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_A",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.Vulkan.RABEX_A+RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals1374495833",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals1374495833",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_B",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.Vulkan.RABEX_B+RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "VGlobals819038163",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_A"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.OpenGLCore.RABEX_A.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_B"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.OpenGLCore.RABEX_B.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.OpenGLCore.RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_A",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.OpenGLCore.RABEX_A+RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_B",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.OpenGLCore.RABEX_B+RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_A"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.D3D.RABEX_A.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_B"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.D3D.RABEX_B.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.D3D.RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_A",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.D3D.RABEX_A+RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_B",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Vertex.D3D.RABEX_B+RABEX_LOCAL.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_A"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.Vulkan.RABEX_A.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_B"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.Vulkan.RABEX_B.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.Vulkan.RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_A",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.Vulkan.RABEX_A+RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_B",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.Vulkan.RABEX_B+RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_A"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.OpenGLCore.RABEX_A.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_B"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.OpenGLCore.RABEX_B.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.OpenGLCore.RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_A",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.OpenGLCore.RABEX_A+RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_B",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.OpenGLCore.RABEX_B+RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_A"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.D3D.RABEX_A.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_B"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.D3D.RABEX_B.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.D3D.RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_A",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.D3D.RABEX_A+RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Keywords",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_B",
+                        "RABEX_LOCAL"
+                    ],
+                    "code": "expected/shaders/Keywords.0.0.Fragment.D3D.RABEX_B+RABEX_LOCAL.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                }
+            ]
+        },
+        {
+            "name": "Rabex/Layout",
+            "variants": [
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Resources",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.0.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position",
+                        "Normal",
+                        "Tangent",
+                        "Color",
+                        "TexCoord0",
+                        "TexCoord1"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals3011980423",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Global",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexCustom",
+                            "size": 160,
+                            "fields": [
+                                {
+                                    "name": "_Arr",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 3,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Int",
+                                    "index": 116,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Scalar",
+                                    "index": 112,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Mat",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals3011980423",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Cube",
+                            "index": 134217730,
+                            "samplerIndex": 134217738,
+                            "dim": "Cube",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Inline",
+                            "index": 134217733,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_NoSampler",
+                            "index": 134217732,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_TexA",
+                            "index": 134217728,
+                            "samplerIndex": 134217736,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_TexArr",
+                            "index": 134217731,
+                            "samplerIndex": 134217739,
+                            "dim": "Tex2DArray",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Vol",
+                            "index": 134217729,
+                            "samplerIndex": 134217737,
+                            "dim": "Tex3D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Resources",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.0.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position",
+                        "Normal",
+                        "Tangent",
+                        "Color",
+                        "TexCoord0",
+                        "TexCoord1"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Global",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexCustom",
+                            "size": 144,
+                            "fields": [
+                                {
+                                    "name": "_Arr",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 3,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Scalar",
+                                    "index": 112,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Int",
+                                    "index": 116,
+                                    "constantType": "Vector",
+                                    "dataType": "UInt",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Mat",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_TexA",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Vol",
+                            "index": 1,
+                            "samplerIndex": 1,
+                            "dim": "Tex3D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Cube",
+                            "index": 2,
+                            "samplerIndex": 2,
+                            "dim": "Cube",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_TexArr",
+                            "index": 3,
+                            "samplerIndex": 3,
+                            "dim": "Tex2DArray",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_NoSampler",
+                            "index": 4,
+                            "samplerIndex": 4,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Inline",
+                            "index": 5,
+                            "samplerIndex": 5,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Resources",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.0.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position",
+                        "Normal",
+                        "Tangent",
+                        "Color",
+                        "TexCoord0",
+                        "TexCoord1"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexCustom",
+                            "size": 160,
+                            "fields": [
+                                {
+                                    "name": "_Mat",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Resources",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.0.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Resources",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.0.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Resources",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.0.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Global",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexCustom",
+                            "size": 160,
+                            "fields": [
+                                {
+                                    "name": "_Arr",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 3,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Scalar",
+                                    "index": 112,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Int",
+                                    "index": 116,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_TexA",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Vol",
+                            "index": 1,
+                            "samplerIndex": 1,
+                            "dim": "Tex3D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Cube",
+                            "index": 2,
+                            "samplerIndex": 2,
+                            "dim": "Cube",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_TexArr",
+                            "index": 3,
+                            "samplerIndex": 3,
+                            "dim": "Tex2DArray",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_NoSampler",
+                            "index": 4,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Inline",
+                            "index": 5,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "GGlobals3332839786",
+                            "size": 68,
+                            "fields": [
+                                {
+                                    "name": "_Extrude",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 68,
+                            "fields": [
+                                {
+                                    "name": "_Extrude",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Geometry",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Geometry.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Geometry",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Geometry.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 1,
+                    "passName": "Geometry",
+                    "stage": "Geometry",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.1.Geometry.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Extrude",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 2,
+                    "passName": "Writable",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.2.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "UnityInstancing_RabexProps",
+                            "size": 192,
+                            "fields": [
+                                {
+                                    "name": "_Instances",
+                                    "index": 0,
+                                    "constantType": "Struct",
+                                    "dataType": "Float",
+                                    "rows": 0,
+                                    "columns": 0,
+                                    "arraySize": 2,
+                                    "structSize": 96,
+                                    "structFields": [
+                                        {
+                                            "name": "color",
+                                            "index": 0,
+                                            "constantType": "Vector",
+                                            "dataType": "Float",
+                                            "rows": 1,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "flags",
+                                            "index": 80,
+                                            "constantType": "Vector",
+                                            "dataType": "Int",
+                                            "rows": 1,
+                                            "columns": 1,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "transform",
+                                            "index": 16,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals1324858343",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_MS",
+                            "index": 134217728,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": true,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 2,
+                    "passName": "Writable",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.2.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityInstancing_RabexProps",
+                            "size": 192,
+                            "fields": [
+                                {
+                                    "name": "_Instances",
+                                    "index": 0,
+                                    "constantType": "Struct",
+                                    "dataType": "Float",
+                                    "rows": 0,
+                                    "columns": 0,
+                                    "arraySize": 2,
+                                    "structSize": 96,
+                                    "structFields": [
+                                        {
+                                            "name": "color",
+                                            "index": 0,
+                                            "constantType": "Vector",
+                                            "dataType": "Float",
+                                            "rows": 1,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "flags",
+                                            "index": 80,
+                                            "constantType": "Vector",
+                                            "dataType": "UInt",
+                                            "rows": 1,
+                                            "columns": 1,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "transform",
+                                            "index": 16,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_MS",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": true,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 2,
+                    "passName": "Writable",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.2.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityInstancing_RabexProps",
+                            "size": 192,
+                            "fields": [
+                                {
+                                    "name": "_Instances",
+                                    "index": 0,
+                                    "constantType": "Struct",
+                                    "dataType": "Float",
+                                    "rows": 0,
+                                    "columns": 0,
+                                    "arraySize": 2,
+                                    "structSize": 96,
+                                    "structFields": [
+                                        {
+                                            "name": "color",
+                                            "index": 0,
+                                            "constantType": "Vector",
+                                            "dataType": "Float",
+                                            "rows": 1,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "flags",
+                                            "index": 80,
+                                            "constantType": "Vector",
+                                            "dataType": "Int",
+                                            "rows": 1,
+                                            "columns": 1,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "transform",
+                                            "index": 16,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 2,
+                    "passName": "Writable",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.2.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 2,
+                    "passName": "Writable",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.2.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 2,
+                    "passName": "Writable",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Layout.0.2.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "UnityInstancing_RabexProps",
+                            "size": 192,
+                            "fields": [
+                                {
+                                    "name": "_Instances",
+                                    "index": 0,
+                                    "constantType": "Struct",
+                                    "dataType": "Float",
+                                    "rows": 0,
+                                    "columns": 0,
+                                    "arraySize": 2,
+                                    "structSize": 96,
+                                    "structFields": [
+                                        {
+                                            "name": "color",
+                                            "index": 0,
+                                            "constantType": "Vector",
+                                            "dataType": "Float",
+                                            "rows": 1,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "flags",
+                                            "index": 80,
+                                            "constantType": "Vector",
+                                            "dataType": "Int",
+                                            "rows": 1,
+                                            "columns": 1,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "transform",
+                                            "index": 16,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_MS",
+                            "index": 0,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": true,
+                            "arraySize": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Rabex/Features",
+            "variants": [
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Features.0.0.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "VGlobals2923846347",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Point",
+                            "index": 134217729,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Shadow",
+                            "index": 134217728,
+                            "samplerIndex": 134217730,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.Vulkan.RABEX_VERTEX_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "VGlobals2022074479",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Point",
+                            "index": 134217729,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Shadow",
+                            "index": 134217728,
+                            "samplerIndex": 134217730,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.Vulkan.RABEX_FRAGMENT_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals3074775083",
+                            "size": 4,
+                            "fields": [
+                                {
+                                    "name": "_Cutoff",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals3074775083",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Point",
+                            "index": 134217729,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Shadow",
+                            "index": 134217728,
+                            "samplerIndex": 134217730,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY",
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.Vulkan.RABEX_FRAGMENT_ONLY+RABEX_VERTEX_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals2034736538",
+                            "size": 4,
+                            "fields": [
+                                {
+                                    "name": "_Cutoff",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals2034736538",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Point",
+                            "index": 134217729,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Shadow",
+                            "index": 134217728,
+                            "samplerIndex": 134217730,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Features.0.0.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 2,
+                            "samplerIndex": 2,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.OpenGLCore.RABEX_VERTEX_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 2,
+                            "samplerIndex": 2,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.OpenGLCore.RABEX_FRAGMENT_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 4,
+                            "fields": [
+                                {
+                                    "name": "_Cutoff",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 2,
+                            "samplerIndex": 2,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY",
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.OpenGLCore.RABEX_FRAGMENT_ONLY+RABEX_VERTEX_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 4,
+                            "fields": [
+                                {
+                                    "name": "_Cutoff",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 2,
+                            "samplerIndex": 2,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Features.0.0.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.D3D.RABEX_VERTEX_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.D3D.RABEX_FRAGMENT_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY",
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Vertex.D3D.RABEX_FRAGMENT_ONLY+RABEX_VERTEX_ONLY.bin",
+                    "attributes": [
+                        "Position",
+                        "TexCoord0"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Features.0.0.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.Vulkan.RABEX_VERTEX_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.Vulkan.RABEX_FRAGMENT_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY",
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.Vulkan.RABEX_FRAGMENT_ONLY+RABEX_VERTEX_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Features.0.0.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.OpenGLCore.RABEX_VERTEX_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.OpenGLCore.RABEX_FRAGMENT_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY",
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.OpenGLCore.RABEX_FRAGMENT_ONLY+RABEX_VERTEX_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Features.0.0.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 1,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.D3D.RABEX_VERTEX_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 1,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.D3D.RABEX_FRAGMENT_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Cutoff",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 1,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Features",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "RABEX_FRAGMENT_ONLY",
+                        "RABEX_VERTEX_ONLY"
+                    ],
+                    "code": "expected/shaders/Features.0.0.Fragment.D3D.RABEX_FRAGMENT_ONLY+RABEX_VERTEX_ONLY.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Cutoff",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": [
+                        {
+                            "name": "_Shadow",
+                            "index": 0,
+                            "samplerIndex": 0,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        },
+                        {
+                            "name": "_Point",
+                            "index": 1,
+                            "samplerIndex": -1,
+                            "dim": "Tex2D",
+                            "multisampled": false,
+                            "arraySize": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Rabex/Packing",
+            "variants": [
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Packing",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Packing.0.0.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "RabexPacked",
+                            "size": 28,
+                            "fields": [
+                                {
+                                    "name": "_Single",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Triple",
+                                    "index": 16,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 3,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexPacking",
+                            "size": 72,
+                            "fields": [
+                                {
+                                    "name": "_ColorA",
+                                    "index": 16,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ColorB",
+                                    "index": 32,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_FragmentOnly",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Mode",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Offset",
+                                    "index": 56,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Scale",
+                                    "index": 48,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ScaleSpace",
+                                    "index": 52,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Shared",
+                                    "index": 60,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Tail",
+                                    "index": 68,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_VertexOnly",
+                                    "index": 4,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals3904530168",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Packing",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Packing.0.0.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexPacked",
+                            "size": 28,
+                            "fields": [
+                                {
+                                    "name": "_Single",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Triple",
+                                    "index": 16,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 3,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexPacking",
+                            "size": 72,
+                            "fields": [
+                                {
+                                    "name": "_Mode",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "UInt",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_VertexOnly",
+                                    "index": 4,
+                                    "constantType": "Vector",
+                                    "dataType": "UInt",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ColorA",
+                                    "index": 16,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ColorB",
+                                    "index": 32,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Scale",
+                                    "index": 48,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ScaleSpace",
+                                    "index": 52,
+                                    "constantType": "Vector",
+                                    "dataType": "UInt",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Offset",
+                                    "index": 56,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Shared",
+                                    "index": 60,
+                                    "constantType": "Vector",
+                                    "dataType": "UInt",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_FragmentOnly",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "UInt",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Tail",
+                                    "index": 68,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Packing",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Packing.0.0.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexPacking",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Mode",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_VertexOnly",
+                                    "index": 4,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Scale",
+                                    "index": 48,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ScaleSpace",
+                                    "index": 52,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Offset",
+                                    "index": 56,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Shared",
+                                    "index": 60,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexPacked",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Single",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Triple",
+                                    "index": 4,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 3,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Packing",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Packing.0.0.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Packing",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Packing.0.0.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Packing",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Packing.0.0.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "RabexPacking",
+                            "size": 80,
+                            "fields": [
+                                {
+                                    "name": "_Mode",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ColorA",
+                                    "index": 16,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_ColorB",
+                                    "index": 32,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Shared",
+                                    "index": 60,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_FragmentOnly",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Tail",
+                                    "index": 68,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RabexPacked",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Single",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "_Triple",
+                                    "index": 4,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 3,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                }
+            ]
+        },
+        {
+            "name": "Rabex/Instancing",
+            "variants": [
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Instancing.0.0.Vertex.Vulkan.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals3151897101",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals3151897101",
+                            "size": 128,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 64,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_ObjectToWorld",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Vertex",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "INSTANCING_ON"
+                    ],
+                    "code": "expected/shaders/Instancing.0.0.Vertex.Vulkan.INSTANCING_ON.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "PGlobals3528014349",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityDrawCallInfo",
+                            "size": 8,
+                            "fields": [
+                                {
+                                    "name": "unity_BaseInstanceID",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityInstancing_PerDraw0",
+                            "size": 256,
+                            "fields": [
+                                {
+                                    "name": "unity_Builtins0Array",
+                                    "index": 0,
+                                    "constantType": "Struct",
+                                    "dataType": "Float",
+                                    "rows": 0,
+                                    "columns": 0,
+                                    "arraySize": 2,
+                                    "structSize": 128,
+                                    "structFields": [
+                                        {
+                                            "name": "unity_ObjectToWorldArray",
+                                            "index": 0,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "unity_WorldToObjectArray",
+                                            "index": 64,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VGlobals3528014349",
+                            "size": 64,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Instancing.0.0.Vertex.OpenGLCore.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 64,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Vertex",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "INSTANCING_ON"
+                    ],
+                    "code": "expected/shaders/Instancing.0.0.Vertex.OpenGLCore.INSTANCING_ON.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                },
+                                {
+                                    "name": "unity_BaseInstanceID",
+                                    "index": 64,
+                                    "constantType": "Vector",
+                                    "dataType": "UInt",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityInstancing_PerDraw0",
+                            "size": 256,
+                            "fields": [
+                                {
+                                    "name": "unity_Builtins0Array",
+                                    "index": 0,
+                                    "constantType": "Struct",
+                                    "dataType": "Float",
+                                    "rows": 0,
+                                    "columns": 0,
+                                    "arraySize": 2,
+                                    "structSize": 128,
+                                    "structFields": [
+                                        {
+                                            "name": "unity_ObjectToWorldArray",
+                                            "index": 0,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "unity_WorldToObjectArray",
+                                            "index": 64,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Instancing.0.0.Vertex.D3D.none.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "UnityPerDraw",
+                            "size": 176,
+                            "fields": [
+                                {
+                                    "name": "unity_ObjectToWorld",
+                                    "index": 0,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityPerFrame",
+                            "size": 368,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 272,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Vertex",
+                    "platform": "D3D",
+                    "keywords": [
+                        "INSTANCING_ON"
+                    ],
+                    "code": "expected/shaders/Instancing.0.0.Vertex.D3D.INSTANCING_ON.bin",
+                    "attributes": [
+                        "Position"
+                    ],
+                    "constantBuffers": [
+                        {
+                            "name": "UnityPerFrame",
+                            "size": 368,
+                            "fields": [
+                                {
+                                    "name": "unity_MatrixVP",
+                                    "index": 272,
+                                    "constantType": "Matrix",
+                                    "dataType": "Float",
+                                    "rows": 4,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityDrawCallInfo",
+                            "size": 16,
+                            "fields": [
+                                {
+                                    "name": "unity_BaseInstanceID",
+                                    "index": 0,
+                                    "constantType": "Vector",
+                                    "dataType": "Int",
+                                    "rows": 1,
+                                    "columns": 1,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UnityInstancing_PerDraw0",
+                            "size": 256,
+                            "fields": [
+                                {
+                                    "name": "unity_Builtins0Array",
+                                    "index": 0,
+                                    "constantType": "Struct",
+                                    "dataType": "Float",
+                                    "rows": 0,
+                                    "columns": 0,
+                                    "arraySize": 2,
+                                    "structSize": 128,
+                                    "structFields": [
+                                        {
+                                            "name": "unity_ObjectToWorldArray",
+                                            "index": 0,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        },
+                                        {
+                                            "name": "unity_WorldToObjectArray",
+                                            "index": 64,
+                                            "constantType": "Matrix",
+                                            "dataType": "Float",
+                                            "rows": 4,
+                                            "columns": 4,
+                                            "arraySize": 0
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [],
+                    "code": "expected/shaders/Instancing.0.0.Fragment.Vulkan.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Fragment",
+                    "platform": "Vulkan",
+                    "keywords": [
+                        "INSTANCING_ON"
+                    ],
+                    "code": "expected/shaders/Instancing.0.0.Fragment.Vulkan.INSTANCING_ON.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [],
+                    "code": "expected/shaders/Instancing.0.0.Fragment.OpenGLCore.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Fragment",
+                    "platform": "OpenGLCore",
+                    "keywords": [
+                        "INSTANCING_ON"
+                    ],
+                    "code": "expected/shaders/Instancing.0.0.Fragment.OpenGLCore.INSTANCING_ON.bin",
+                    "attributes": [],
+                    "constantBuffers": [],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [],
+                    "code": "expected/shaders/Instancing.0.0.Fragment.D3D.none.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 48,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 32,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                },
+                {
+                    "subShader": 0,
+                    "pass": 0,
+                    "passName": "Instancing",
+                    "stage": "Fragment",
+                    "platform": "D3D",
+                    "keywords": [
+                        "INSTANCING_ON"
+                    ],
+                    "code": "expected/shaders/Instancing.0.0.Fragment.D3D.INSTANCING_ON.bin",
+                    "attributes": [],
+                    "constantBuffers": [
+                        {
+                            "name": "$Globals",
+                            "size": 48,
+                            "fields": [
+                                {
+                                    "name": "_Tint",
+                                    "index": 32,
+                                    "constantType": "Vector",
+                                    "dataType": "Float",
+                                    "rows": 1,
+                                    "columns": 4,
+                                    "arraySize": 0,
+                                    "structSize": 0,
+                                    "structFields": []
+                                }
+                            ]
+                        }
+                    ],
+                    "textures": []
+                }
+            ]
+        }
+    ],
+    "enums": [
+        {
+            "name": "UnityEditor.Rendering.ShaderCompilerPlatform",
+            "values": [
+                {
+                    "name": "None",
+                    "value": 0
+                },
+                {
+                    "name": "D3D",
+                    "value": 4
+                },
+                {
+                    "name": "GLES20",
+                    "value": 5
+                },
+                {
+                    "name": "GLES3x",
+                    "value": 9
+                },
+                {
+                    "name": "PS4",
+                    "value": 11
+                },
+                {
+                    "name": "XboxOneD3D11",
+                    "value": 12
+                },
+                {
+                    "name": "Metal",
+                    "value": 14
+                },
+                {
+                    "name": "OpenGLCore",
+                    "value": 15
+                },
+                {
+                    "name": "Vulkan",
+                    "value": 18
+                },
+                {
+                    "name": "Switch",
+                    "value": 19
+                },
+                {
+                    "name": "XboxOneD3D12",
+                    "value": 20
+                },
+                {
+                    "name": "GameCoreXboxOne",
+                    "value": 21
+                },
+                {
+                    "name": "GameCoreXboxSeries",
+                    "value": 22
+                },
+                {
+                    "name": "PS5",
+                    "value": 23
+                },
+                {
+                    "name": "PS5NGGC",
+                    "value": 24
+                },
+                {
+                    "name": "GameCore",
+                    "value": 25
+                }
+            ]
+        },
+        {
+            "name": "UnityEngine.Rendering.TextureDimension",
+            "values": [
+                {
+                    "name": "None",
+                    "value": 0
+                },
+                {
+                    "name": "Any",
+                    "value": 1
+                },
+                {
+                    "name": "Tex2D",
+                    "value": 2
+                },
+                {
+                    "name": "Tex3D",
+                    "value": 3
+                },
+                {
+                    "name": "Cube",
+                    "value": 4
+                },
+                {
+                    "name": "Tex2DArray",
+                    "value": 5
+                },
+                {
+                    "name": "CubeArray",
+                    "value": 6
+                },
+                {
+                    "name": "Unknown",
+                    "value": -1
+                }
+            ]
+        },
+        {
+            "name": "UnityEngine.Rendering.VertexAttribute",
+            "values": [
+                {
+                    "name": "Position",
+                    "value": 0
+                },
+                {
+                    "name": "Normal",
+                    "value": 1
+                },
+                {
+                    "name": "Tangent",
+                    "value": 2
+                },
+                {
+                    "name": "Color",
+                    "value": 3
+                },
+                {
+                    "name": "TexCoord0",
+                    "value": 4
+                },
+                {
+                    "name": "TexCoord1",
+                    "value": 5
+                },
+                {
+                    "name": "TexCoord2",
+                    "value": 6
+                },
+                {
+                    "name": "TexCoord3",
+                    "value": 7
+                },
+                {
+                    "name": "TexCoord4",
+                    "value": 8
+                },
+                {
+                    "name": "TexCoord5",
+                    "value": 9
+                },
+                {
+                    "name": "TexCoord6",
+                    "value": 10
+                },
+                {
+                    "name": "TexCoord7",
+                    "value": 11
+                },
+                {
+                    "name": "BlendWeight",
+                    "value": 12
+                },
+                {
+                    "name": "BlendIndices",
+                    "value": 13
+                }
+            ]
+        },
+        {
+            "name": "UnityEngine.Rendering.ShaderParamType",
+            "values": [
+                {
+                    "name": "Float",
+                    "value": 0
+                },
+                {
+                    "name": "Int",
+                    "value": 1
+                },
+                {
+                    "name": "Bool",
+                    "value": 2
+                },
+                {
+                    "name": "Half",
+                    "value": 3
+                },
+                {
+                    "name": "Short",
+                    "value": 4
+                },
+                {
+                    "name": "UInt",
+                    "value": 5
+                }
+            ]
+        },
+        {
+            "name": "UnityEngine.Rendering.GraphicsDeviceType",
+            "values": [
+                {
+                    "name": "OpenGL2",
+                    "value": 0
+                },
+                {
+                    "name": "Direct3D9",
+                    "value": 1
+                },
+                {
+                    "name": "Direct3D11",
+                    "value": 2
+                },
+                {
+                    "name": "PlayStation3",
+                    "value": 3
+                },
+                {
+                    "name": "Null",
+                    "value": 4
+                },
+                {
+                    "name": "Xbox360",
+                    "value": 6
+                },
+                {
+                    "name": "OpenGLES2",
+                    "value": 8
+                },
+                {
+                    "name": "OpenGLES3",
+                    "value": 11
+                },
+                {
+                    "name": "PlayStationVita",
+                    "value": 12
+                },
+                {
+                    "name": "PlayStation4",
+                    "value": 13
+                },
+                {
+                    "name": "XboxOne",
+                    "value": 14
+                },
+                {
+                    "name": "PlayStationMobile",
+                    "value": 15
+                },
+                {
+                    "name": "Metal",
+                    "value": 16
+                },
+                {
+                    "name": "OpenGLCore",
+                    "value": 17
+                },
+                {
+                    "name": "Direct3D12",
+                    "value": 18
+                },
+                {
+                    "name": "N3DS",
+                    "value": 19
+                },
+                {
+                    "name": "Vulkan",
+                    "value": 21
+                },
+                {
+                    "name": "Switch",
+                    "value": 22
+                },
+                {
+                    "name": "XboxOneD3D12",
+                    "value": 23
+                },
+                {
+                    "name": "GameCoreXboxOne",
+                    "value": 24
+                },
+                {
+                    "name": "GameCoreXboxSeries",
+                    "value": 25
+                },
+                {
+                    "name": "PlayStation5",
+                    "value": 26
+                },
+                {
+                    "name": "PlayStation5NGGC",
+                    "value": 27
+                },
+                {
+                    "name": "GameCoreScarlett",
+                    "value": -1
+                }
+            ]
+        }
+    ]
+}

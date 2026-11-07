@@ -1,0 +1,6 @@
+# `cargo run --example unity2rust -- crates/rabex-shader/compute.unity2rust.toml`, from the workspace root
+game_paths = ["~/.steamapps/Nine Sols", "~/.steamapps/Hollow Knight Silksong"]
+bundles = ["crates/rabex-shader/tests/fixtures/6000.3.27f2/compute"]
+class_ids = ["ComputeShader"]
+derives = "Debug, Clone, serde::Deserialize, serde::Serialize"
+scripts = {}
