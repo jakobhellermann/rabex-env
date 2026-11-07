@@ -1,0 +1,288 @@
+{
+    "unityVersion": "2020.2.2f1",
+    "bundles": [
+        {
+            "target": "StandaloneLinux64",
+            "bundle": "shaders",
+            "platforms": [
+                "Vulkan",
+                "OpenGLCore"
+            ]
+        },
+        {
+            "target": "StandaloneWindows64",
+            "bundle": "StandaloneWindows64/shaders",
+            "platforms": [
+                "D3D"
+            ]
+        }
+    ],
+    "shaders": [
+        {
+            "name": "Rabex/Unlit",
+            "variants": []
+        },
+        {
+            "name": "Rabex/Keywords",
+            "variants": []
+        },
+        {
+            "name": "Rabex/Layout",
+            "variants": []
+        },
+        {
+            "name": "Rabex/Features",
+            "variants": []
+        },
+        {
+            "name": "Rabex/Packing",
+            "variants": []
+        },
+        {
+            "name": "Rabex/Instancing",
+            "variants": []
+        }
+    ],
+    "enums": [
+        {
+            "name": "UnityEditor.Rendering.ShaderCompilerPlatform",
+            "values": [
+                {
+                    "name": "None",
+                    "value": 0
+                },
+                {
+                    "name": "D3D",
+                    "value": 4
+                },
+                {
+                    "name": "GLES20",
+                    "value": 5
+                },
+                {
+                    "name": "GLES3x",
+                    "value": 9
+                },
+                {
+                    "name": "PS4",
+                    "value": 11
+                },
+                {
+                    "name": "XboxOneD3D11",
+                    "value": 12
+                },
+                {
+                    "name": "Metal",
+                    "value": 14
+                },
+                {
+                    "name": "OpenGLCore",
+                    "value": 15
+                },
+                {
+                    "name": "Vulkan",
+                    "value": 18
+                },
+                {
+                    "name": "Switch",
+                    "value": 19
+                },
+                {
+                    "name": "XboxOneD3D12",
+                    "value": 20
+                },
+                {
+                    "name": "GameCore",
+                    "value": 21
+                }
+            ]
+        },
+        {
+            "name": "UnityEngine.Rendering.TextureDimension",
+            "values": [
+                {
+                    "name": "None",
+                    "value": 0
+                },
+                {
+                    "name": "Any",
+                    "value": 1
+                },
+                {
+                    "name": "Tex2D",
+                    "value": 2
+                },
+                {
+                    "name": "Tex3D",
+                    "value": 3
+                },
+                {
+                    "name": "Cube",
+                    "value": 4
+                },
+                {
+                    "name": "Tex2DArray",
+                    "value": 5
+                },
+                {
+                    "name": "CubeArray",
+                    "value": 6
+                },
+                {
+                    "name": "Unknown",
+                    "value": -1
+                }
+            ]
+        },
+        {
+            "name": "UnityEngine.Rendering.VertexAttribute",
+            "values": [
+                {
+                    "name": "Position",
+                    "value": 0
+                },
+                {
+                    "name": "Normal",
+                    "value": 1
+                },
+                {
+                    "name": "Tangent",
+                    "value": 2
+                },
+                {
+                    "name": "Color",
+                    "value": 3
+                },
+                {
+                    "name": "TexCoord0",
+                    "value": 4
+                },
+                {
+                    "name": "TexCoord1",
+                    "value": 5
+                },
+                {
+                    "name": "TexCoord2",
+                    "value": 6
+                },
+                {
+                    "name": "TexCoord3",
+                    "value": 7
+                },
+                {
+                    "name": "TexCoord4",
+                    "value": 8
+                },
+                {
+                    "name": "TexCoord5",
+                    "value": 9
+                },
+                {
+                    "name": "TexCoord6",
+                    "value": 10
+                },
+                {
+                    "name": "TexCoord7",
+                    "value": 11
+                },
+                {
+                    "name": "BlendWeight",
+                    "value": 12
+                },
+                {
+                    "name": "BlendIndices",
+                    "value": 13
+                }
+            ]
+        },
+        {
+            "name": "UnityEngine.Rendering.GraphicsDeviceType",
+            "values": [
+                {
+                    "name": "OpenGL2",
+                    "value": 0
+                },
+                {
+                    "name": "Direct3D9",
+                    "value": 1
+                },
+                {
+                    "name": "Direct3D11",
+                    "value": 2
+                },
+                {
+                    "name": "PlayStation3",
+                    "value": 3
+                },
+                {
+                    "name": "Null",
+                    "value": 4
+                },
+                {
+                    "name": "Xbox360",
+                    "value": 6
+                },
+                {
+                    "name": "OpenGLES2",
+                    "value": 8
+                },
+                {
+                    "name": "OpenGLES3",
+                    "value": 11
+                },
+                {
+                    "name": "PlayStationVita",
+                    "value": 12
+                },
+                {
+                    "name": "PlayStation4",
+                    "value": 13
+                },
+                {
+                    "name": "XboxOne",
+                    "value": 14
+                },
+                {
+                    "name": "PlayStationMobile",
+                    "value": 15
+                },
+                {
+                    "name": "Metal",
+                    "value": 16
+                },
+                {
+                    "name": "OpenGLCore",
+                    "value": 17
+                },
+                {
+                    "name": "Direct3D12",
+                    "value": 18
+                },
+                {
+                    "name": "N3DS",
+                    "value": 19
+                },
+                {
+                    "name": "Vulkan",
+                    "value": 21
+                },
+                {
+                    "name": "Switch",
+                    "value": 22
+                },
+                {
+                    "name": "XboxOneD3D12",
+                    "value": 23
+                },
+                {
+                    "name": "GameCoreXboxOne",
+                    "value": 24
+                },
+                {
+                    "name": "GameCoreScarlett",
+                    "value": 25
+                }
+            ]
+        }
+    ]
+}
