@@ -23,9 +23,16 @@ type RustCode = String;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct VersionSource {
+    version: String,
+    class_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Config<'a> {
     /// One or more game installs to merge into a single definition. Fields that are not
-    /// present in every game are generated as `Option<_>` with `#[serde(default)]`.
+    /// present in every game are generated as `Option<_>`, absent when `None`.
     game_paths: Vec<String>,
     #[serde(borrow)]
     #[serde(default)]
@@ -36,6 +43,46 @@ struct Config<'a> {
     class_ids: Vec<&'a str>,
     #[serde(default)]
     untyped_pptr_fields: Vec<String>,
+    /// Asset bundles whose embedded type trees are merged like games, for the classes of
+    /// `class_ids`. Labelled with the bundle's Unity version.
+    #[serde(default)]
+    bundles: Vec<String>,
+    /// Unity versions whose trees the type tree package holds, merged like bundles and
+    /// labelled with the version: versions no game or bundle at hand covers, each for the
+    /// classes it is evidence on.
+    #[serde(default)]
+    versions: Vec<VersionSource>,
+    /// Defaults to `Debug, serde::Deserialize`.
+    #[serde(default)]
+    derives: Option<&'a str>,
+}
+
+/// The type trees embedded in the main serialized file of an asset bundle, by class.
+fn bundle_typetrees(path: &str) -> Result<(String, HashMap<ClassId, TypeTreeNode>)> {
+    use rabex::files::SerializedFile;
+    use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
+
+    let data = std::fs::read(path).with_context(|| path.to_owned())?;
+    let reader = BundleFileReader::from_reader(
+        std::io::Cursor::new(data.as_slice()),
+        &ExtractionConfig::default(),
+    )?;
+    let entry = reader
+        .main_serializedfile()
+        .with_context(|| format!("{path}: no serialized file"))?;
+    let file_data = reader.read_at_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut std::io::Cursor::new(file_data.as_slice()))?;
+    let version = file
+        .m_UnityVersion
+        .as_ref()
+        .with_context(|| format!("{path}: no Unity version"))?
+        .to_string();
+    let typetrees = file
+        .m_Types
+        .iter()
+        .filter_map(|ty| Some((ty.m_ClassID, ty.m_Type.clone()?)))
+        .collect();
+    Ok((version, typetrees))
 }
 
 fn main() -> Result<()> {
@@ -72,8 +119,31 @@ fn main() -> Result<()> {
         })
         .collect();
 
+    let mut labels = labels;
+    let mut bundles = Vec::new();
+    for path in &config.bundles {
+        let (version, typetrees) = bundle_typetrees(path)?;
+        labels.push(version);
+        bundles.push(typetrees);
+    }
+
+    let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+    for VersionSource { version, class_ids } in &config.versions {
+        let unity: rabex::UnityVersion = version.parse()?;
+        let mut typetrees = HashMap::new();
+        for class in class_ids {
+            let class_id = ClassId::from_str(class)?;
+            let tree = tpk
+                .get_typetree_node(class_id, &unity)
+                .with_context(|| format!("no {class} tree for {version}"))?;
+            typetrees.insert(class_id, tree.into_owned());
+        }
+        labels.push(version.clone());
+        bundles.push(typetrees);
+    }
+
     let settings = Settings {
-        derives: Some("Debug, serde::Deserialize"),
+        derives: Some(config.derives.unwrap_or("Debug, serde::Deserialize")),
         field_ignores: &config.field_ignores,
         untyped_pptr_fields: &config.untyped_pptr_fields,
         additional_fields: HashMap::from_iter([(
@@ -81,7 +151,7 @@ fn main() -> Result<()> {
             [("displayName", "Option<LocalisedString>")].as_slice(),
         )]),
     };
-    let mut cx = Context::new(&envs, &labels, settings);
+    let mut cx = Context::new(&envs, &bundles, &labels, settings);
 
     for class_id in config.class_ids {
         let class_id = ClassId::from_str(class_id)?;
@@ -100,11 +170,14 @@ fn main() -> Result<()> {
 struct Context<'a> {
     /// the games to merge into one definition; non-shared fields become `Option<_>`
     envs: &'a [Environment],
+    /// type trees by class of bundles, merged after `envs`
+    bundles: &'a [HashMap<ClassId, TypeTreeNode>],
     /// human-readable label per env (same order), for annotating subset-only fields
     labels: &'a [String],
     settings: Settings<'a>,
 
-    generated: FxHashSet<String>,
+    /// Types whose union grew since their dependencies were discovered.
+    union_dirty: FxHashSet<String>,
     generated_code: Vec<(TypeName, RustCode)>,
     class_id_types: BTreeMap<TypeName, ClassId>,
     hash_key_types: FxHashSet<TypeName>,
@@ -122,12 +195,18 @@ struct Settings<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn new(envs: &'a [Environment], labels: &'a [String], settings: Settings<'a>) -> Self {
+    pub fn new(
+        envs: &'a [Environment],
+        bundles: &'a [HashMap<ClassId, TypeTreeNode>],
+        labels: &'a [String],
+        settings: Settings<'a>,
+    ) -> Self {
         Context {
             envs,
+            bundles,
             labels,
             settings,
-            generated: FxHashSet::default(),
+            union_dirty: FxHashSet::default(),
             generated_code: Vec::new(),
             class_id_types: BTreeMap::new(),
             hash_key_types: FxHashSet::default(),
@@ -140,6 +219,10 @@ impl<'a> Context<'a> {
         self.handle_queue()?;
         writeln!(
             writer,
+            "// Generated by unity2rust from examples/unity2rust.toml; edits are lost on regeneration."
+        )?;
+        writeln!(
+            writer,
             "#![allow(dead_code, unused_imports, non_snake_case, nonstandard_style)]"
         )?;
         writeln!(
@@ -150,9 +233,9 @@ impl<'a> Context<'a> {
         if self
             .generated_code
             .iter()
-            .any(|(_, code)| code.contains("HashMap<"))
+            .any(|(_, code)| code.contains("IndexMap<"))
         {
-            writeln!(writer, "use std::collections::HashMap;")?;
+            writeln!(writer, "use indexmap::IndexMap;")?;
         }
         writeln!(writer)?;
         // each block already ends with a newline from generate_inner; separate blocks
@@ -180,13 +263,30 @@ impl<'a> Context<'a> {
         Ok(())
     }
     pub fn generate_classid(&mut self, class_id: ClassId) -> Result<()> {
+        // every source labels itself, so `present_in` ids line up with `labels`; a bundle
+        // without the class simply contributes nothing
         let mut nodes = Vec::new();
-        for env in self.envs {
-            if let Some(tt) = env.tpk.get_typetree_node(class_id, env.unity_version()?) {
-                nodes.push(tt);
+        for (id, env) in self.envs.iter().enumerate() {
+            let tt = env
+                .tpk
+                .get_typetree_node(class_id, env.unity_version()?)
+                .with_context(|| {
+                    format!("{} has no type tree for {class_id:?}", self.labels[id])
+                })?;
+            nodes.push((id, tt.into_owned()));
+        }
+        for (i, bundle) in self.bundles.iter().enumerate() {
+            let id = self.envs.len() + i;
+            if let Some(tt) = bundle.get(&class_id) {
+                nodes.push((id, tt.clone()));
+            } else {
+                eprintln!(
+                    "warning: {} has no type tree for {class_id:?}",
+                    self.labels[id]
+                );
             }
         }
-        let merged = MergedTypeTree::merge(nodes.iter().map(|tt| tt.as_ref()))?
+        let merged = MergedTypeTree::merge(nodes.iter().map(|(id, n)| (*id, n)))?
             .context("typetree not found")?;
         let type_name = self.escape_typename(&merged);
         self.class_id_types.insert(type_name, class_id);
@@ -202,20 +302,15 @@ impl<'a> Context<'a> {
     /// Resolve `script` in `assembly` across every env and merge the results into one tree.
     fn merged_typetree(&self, assembly: &str, script: &str) -> Result<Option<MergedTypeTree>> {
         let mut nodes = Vec::new();
-        for env in self.envs {
+        for (id, env) in self.envs.iter().enumerate() {
             if let Some(tt) = env.generate_typetree(assembly, script)? {
-                nodes.push(tt);
+                nodes.push((id, tt));
             }
         }
         Ok(MergedTypeTree::merge(nodes)?)
     }
 
     fn queue(&mut self, assembly: &str, tt: MergedTypeTree) {
-        if self.generated.contains(&tt.m_Type) {
-            return;
-        }
-        assert!(self.generated.insert(tt.m_Type.clone()));
-
         self.queued.push_back((assembly.to_owned(), tt));
     }
 
@@ -318,12 +413,41 @@ impl<'a> Context<'a> {
     }
 
     fn handle_queue(&mut self) -> Result<()> {
-        let mut discovered = Vec::new();
-        while let Some((assembly, item)) = self.queued.pop_front() {
-            self.discover_type_dependencies(&assembly, &item)?;
-            discovered.push((assembly, item));
+        // A type can arrive several times with different fields per version, like
+        // ConstantBuffer flat on Unity 2020 sub programs and inside m_CommonParameters later;
+        // every arrival unions into one definition before anything is generated.
+        let mut discovered: IndexMap<String, (String, MergedTypeTree)> = IndexMap::new();
+        loop {
+            while let Some((assembly, item)) = self.queued.pop_front() {
+                let type_name = item.m_Type.clone();
+                if let Some((existing_assembly, existing)) = discovered.get_mut(&type_name) {
+                    let (merged, changed) =
+                        std::mem::replace(existing, existing.clone()).union(item)?;
+                    *existing = merged;
+                    if changed {
+                        self.union_dirty.insert(type_name.clone());
+                        let _ = existing_assembly;
+                    }
+                } else {
+                    self.discover_type_dependencies(&assembly, &item)?;
+                    discovered.insert(type_name, (assembly, item));
+                }
+            }
+            if self.union_dirty.is_empty() {
+                break;
+            }
+            let dirty: Vec<String> = self.union_dirty.drain().collect();
+            for type_name in dirty {
+                let (assembly, item) = discovered.get(&type_name).unwrap();
+                let (assembly, item) = (assembly.clone(), item.clone());
+                self.discover_type_dependencies(&assembly, &item)?;
+            }
         }
 
+        let discovered: Vec<_> = discovered
+            .into_iter()
+            .map(|(_, (assembly, item))| (assembly, item))
+            .collect();
         self.propagate_hash_key_derives(&discovered);
 
         for (assembly, item) in discovered {
@@ -361,7 +485,7 @@ impl<'a> Context<'a> {
     ) -> Result<Option<(String, MergedTypeTree)>> {
         let envs = self.envs;
         let mut found_assembly: Option<String> = None;
-        let mut variants: Vec<&TypeTreeNode> = Vec::new();
+        let mut variants: Vec<(usize, &TypeTreeNode)> = Vec::new();
 
         for (i, env) in envs.iter().enumerate() {
             let resolved = if let Some(ty) = env.generate_typetree(preferred_assembly, full_name)? {
@@ -381,7 +505,7 @@ impl<'a> Context<'a> {
             };
             if let Some((assembly, ty)) = resolved {
                 found_assembly.get_or_insert(assembly);
-                variants.push(ty);
+                variants.push((i, ty));
             }
         }
 
@@ -443,7 +567,10 @@ impl<'a> Context<'a> {
                     .map(|&i| self.labels[i].as_str())
                     .collect();
                 writeln!(&mut f, "    // only in: {}", games.join(", "))?;
-                writeln!(&mut f, "    #[serde(default)]")?;
+                writeln!(
+                    &mut f,
+                    "    #[serde(default, skip_serializing_if = \"Option::is_none\")]"
+                )?;
                 Cow::Owned(format!("Option<{field_ty}>"))
             };
             writeln!(&mut f, "    pub {}: {},{}", field_name, field_ty, comment,)?;
@@ -493,7 +620,8 @@ impl<'a> Context<'a> {
             }
             Classify::Map { key, value } => {
                 format!(
-                    "HashMap<{}, {}>",
+                    // keeps the serialized order, so objects roundtrip byte for byte
+                    "IndexMap<{}, {}>",
                     self.field_type(assembly, key, untyped_pptr)?,
                     self.field_type(assembly, value, untyped_pptr)?
                 )
@@ -566,12 +694,12 @@ impl<'a> Context<'a> {
     fn escape_identifier<'tt>(&self, identifier: &'tt str) -> Cow<'tt, str> {
         if ["type"].contains(&identifier) {
             Cow::Owned(format!("r#{identifier}"))
-        } else if identifier.contains(|c| matches!(c, '[' | ' ')) {
+        } else if identifier.contains(['[', ' ']) {
             // Unity type trees can use array element names such as `data[0]`
             Cow::Owned(
                 identifier
                     .replace(']', "")
-                    .replace(|c| matches!(c, '[' | ' '), "_")
+                    .replace(['[', ' '], "_")
                     .replace("__", "_"),
             )
         } else {
