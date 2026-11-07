@@ -1,0 +1,22 @@
+[package]
+name = "rabex-shader-convert"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+description = "Convert compiled Unity shader programs between graphics APIs."
+
+[dependencies]
+anyhow = "1.0"
+glslang = "0.9"
+hlslcc = { path = "../hlslcc" }
+md-5 = "0.10"
+regex = "1.11"
+rabex = { version = "0.2", default-features = false, features = ["compression-lz4"] }
+rabex-shader = { path = "../rabex-shader" }
+smolv = { path = "../smolv" }
+spirv = "0.4"
+rayon = "1.11"
+
+[dev-dependencies]
+byteorder = "1.5"
+rabex-env = { path = "../.." }
