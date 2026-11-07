@@ -1,0 +1,24 @@
+[package]
+name = "rabex-convert"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+description = "Rewrite Unity asset bundles and serialized files: typetree re-encoding across Unity versions, per-class rules."
+
+[dependencies]
+anyhow = "1.0"
+serde = "1.0"
+byteorder = "1.5"
+rabex = { version = "0.2", default-features = false, features = ["compression-lz4"] }
+rabex-shader = { path = "../rabex-shader" }
+# the shader downport rewrites Vulkan programs, which is where that lives
+rabex-shader-convert = { path = "../rabex-shader-convert" }
+smolv = { path = "../smolv" }
+indexmap = "2.11"
+serde-value = { git = "https://github.com/jakobhellermann/serde-value", branch = "preserve-order", features = [
+  "preserve_order",
+] }
+
+[dev-dependencies]
+# the tests read the fixture bundles through the embedded type tree package
+rabex = { version = "0.2", features = ["embed-tpk"] }
