@@ -1,0 +1,6 @@
+[package]
+name = "smolv"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "SMOL-V, a compact encoding of SPIR-V, as used for Unity's Vulkan shaders."
