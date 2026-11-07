@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::path::Path;
+
 use anyhow::Result;
 use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
@@ -36,6 +38,12 @@ fn search_transform(input: &str) -> String {
 }
 
 pub fn find_game(name_filter: &str) -> Result<Option<Environment>> {
+    // a directory argument addresses games Steam doesn't list, like version copies
+    if Path::new(name_filter).is_dir() {
+        let game_files = GameFiles::probe(name_filter)?;
+        let tpk = TypeTreeCache::new(TpkTypeTreeBlob::embedded());
+        return Ok(Some(Environment::new(game_files, tpk)));
+    }
     let name_filter = search_transform(name_filter);
 
     let steam = steamlocate::SteamDir::locate()?;
