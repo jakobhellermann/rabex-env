@@ -1,0 +1,124 @@
+#ifdef VERTEX
+#version 150
+#extension GL_ARB_explicit_attrib_location : require
+#ifdef GL_ARB_shader_bit_encoding
+#extension GL_ARB_shader_bit_encoding : enable
+#endif
+
+#define HLSLCC_ENABLE_UNIFORM_BUFFERS 1
+#if HLSLCC_ENABLE_UNIFORM_BUFFERS
+#define UNITY_UNIFORM
+#else
+#define UNITY_UNIFORM uniform
+#endif
+#define UNITY_SUPPORTS_UNIFORM_LOCATION 1
+#if UNITY_SUPPORTS_UNIFORM_LOCATION
+#define UNITY_LOCATION(x) layout(location = x)
+#define UNITY_BINDING(x) layout(binding = x, std140)
+#else
+#define UNITY_LOCATION(x)
+#define UNITY_BINDING(x) layout(std140)
+#endif
+uniform 	vec4 hlslcc_mtx4x4unity_MatrixVP[4];
+UNITY_BINDING(0) uniform RabexPacking {
+	int                _Mode;
+	int                _VertexOnly;
+	vec4                _ColorA;
+	vec4                _ColorB;
+	float                _Scale;
+	int                _ScaleSpace;
+	float                _Offset;
+	int                _Shared;
+	int                _FragmentOnly;
+	float                _Tail;
+};
+UNITY_BINDING(1) uniform RabexPacked {
+	float                _Single;
+	vec3                _Triple;
+};
+in  vec4 in_POSITION0;
+out vec4 vs_COLOR0;
+vec4 u_xlat0;
+int u_xlati0;
+vec4 u_xlat1;
+vec2 u_xlat2;
+float u_xlat4;
+void main()
+{
+    u_xlati0 = _ScaleSpace + 1;
+    u_xlat0.x = float(u_xlati0);
+    u_xlat2.xy = vec2(ivec2(_VertexOnly, _Mode));
+    u_xlat2.x = u_xlat2.x * _Offset;
+    u_xlat4 = u_xlat2.y * 0.100000001;
+    u_xlat0.x = _Scale * u_xlat0.x + u_xlat2.x;
+    u_xlat0.xyw = u_xlat0.xxx * in_POSITION0.xyz;
+    u_xlat1 = u_xlat0.yyyy * hlslcc_mtx4x4unity_MatrixVP[1];
+    u_xlat1 = hlslcc_mtx4x4unity_MatrixVP[0] * u_xlat0.xxxx + u_xlat1;
+    u_xlat1 = hlslcc_mtx4x4unity_MatrixVP[2] * u_xlat0.wwww + u_xlat1;
+    gl_Position = u_xlat1 + hlslcc_mtx4x4unity_MatrixVP[3];
+    u_xlat0.x = float(_Shared);
+    vs_COLOR0.w = u_xlat0.x * 0.25 + u_xlat4;
+    vs_COLOR0.xyz = vec3(_Single) * vec3(_Triple.x, _Triple.y, _Triple.z);
+    return;
+}
+
+#endif
+#ifdef FRAGMENT
+#version 150
+#extension GL_ARB_explicit_attrib_location : require
+#ifdef GL_ARB_shader_bit_encoding
+#extension GL_ARB_shader_bit_encoding : enable
+#endif
+
+#define HLSLCC_ENABLE_UNIFORM_BUFFERS 1
+#if HLSLCC_ENABLE_UNIFORM_BUFFERS
+#define UNITY_UNIFORM
+#else
+#define UNITY_UNIFORM uniform
+#endif
+#define UNITY_SUPPORTS_UNIFORM_LOCATION 1
+#if UNITY_SUPPORTS_UNIFORM_LOCATION
+#define UNITY_LOCATION(x) layout(location = x)
+#define UNITY_BINDING(x) layout(binding = x, std140)
+#else
+#define UNITY_LOCATION(x)
+#define UNITY_BINDING(x) layout(std140)
+#endif
+UNITY_BINDING(0) uniform RabexPacking {
+	int                _Mode;
+	int                _VertexOnly;
+	vec4                _ColorA;
+	vec4                _ColorB;
+	float                _Scale;
+	int                _ScaleSpace;
+	float                _Offset;
+	int                _Shared;
+	int                _FragmentOnly;
+	float                _Tail;
+};
+UNITY_BINDING(1) uniform RabexPacked {
+	float                _Single;
+	vec3                _Triple;
+};
+in  vec4 vs_COLOR0;
+layout(location = 0) out vec4 SV_Target0;
+vec4 u_xlat0;
+vec4 u_xlat1;
+float u_xlat6;
+bool u_xlatb6;
+void main()
+{
+    u_xlat0.x = float(_FragmentOnly);
+    u_xlat0.x = u_xlat0.x * _Tail;
+    u_xlat0.xyz = vec3(_Triple.x, _Triple.y, _Triple.z) * vec3(_Single) + u_xlat0.xxx;
+    u_xlat6 = float(_Mode);
+    u_xlat0.xyz = vec3(u_xlat6) * vec3(0.0500000007, 0.0500000007, 0.0500000007) + u_xlat0.xyz;
+    u_xlatb6 = _Shared==2;
+    u_xlat1 = (bool(u_xlatb6)) ? _ColorA : _ColorB;
+    u_xlat1.xyz = u_xlat0.xyz + u_xlat1.xyz;
+    u_xlat0 = vs_COLOR0 * vec4(0.5, 0.5, 0.5, 0.5);
+    SV_Target0 = u_xlat1 * vs_COLOR0.wwww + u_xlat0;
+    return;
+}
+
+#endif

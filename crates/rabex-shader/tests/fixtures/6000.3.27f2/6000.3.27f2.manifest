@@ -1,0 +1,9 @@
+ManifestFileVersion: 0
+UnityVersion: 6000.3.27f2
+CRC: 1744360170
+HashAppended: 0
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: shaders
+      Dependencies: {}

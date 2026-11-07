@@ -1,4 +1,8 @@
-game_paths = ["~/.steamapps/Hollow Knight Silksong"]
+game_paths = [
+  "/home/jakob/.steamapps/Hollow Knight-1.5.78.11833",
+  "/home/jakob/.steamapps/Nine Sols",
+  "/home/jakob/.steamapps/Hollow Knight Silksong",
+]
 field_ignores = [
   # "audio",
   # "clipref",
@@ -17,13 +21,29 @@ field_ignores = [
 
 untyped_pptr_fields = [
   "Shader.m_NonModifiableTextures", # either Texture2D or Texture3D : Texture
+  "UnityTexEnv.m_Texture", # the same: any Texture
 ]
 
 class_ids = [
     "Shader",
     "Texture2D",
-    "Texture3D"
+    "Texture3D",
+    "Material"
 ]
+
+derives = "Debug, Clone, serde::Deserialize, serde::Serialize"
+
+bundles = [
+  "/home/jakob/dev/games/unity/RabexTests/Fixtures/2020.2.2f1/shaders",
+  "/home/jakob/dev/games/unity/RabexTests/Fixtures/2022.3.62f3/shaders",
+  "/home/jakob/dev/games/unity/RabexTests/Fixtures/6000.3.27f2/shaders",
+]
+
+# versions only the type tree package covers, for the classes they are evidence on
+[[versions]]
+# A Short Hike's 2019.4 build
+version = "2019.4.29f1"
+class_ids = ["Shader"]
 
 [scripts]
 "Assembly-CSharp.dll" = [

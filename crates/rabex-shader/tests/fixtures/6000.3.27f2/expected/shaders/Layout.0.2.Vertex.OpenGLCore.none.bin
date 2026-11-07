@@ -1,0 +1,140 @@
+#ifdef VERTEX
+#version 420
+#extension GL_ARB_explicit_attrib_location : require
+#extension GL_ARB_shading_language_420pack : require
+#ifndef UNITY_RUNTIME_INSTANCING_ARRAY_SIZE
+	#define UNITY_RUNTIME_INSTANCING_ARRAY_SIZE 2
+#endif
+
+#define HLSLCC_ENABLE_UNIFORM_BUFFERS 1
+#if HLSLCC_ENABLE_UNIFORM_BUFFERS
+#define UNITY_UNIFORM
+#else
+#define UNITY_UNIFORM uniform
+#endif
+#define UNITY_SUPPORTS_UNIFORM_LOCATION 1
+#if UNITY_SUPPORTS_UNIFORM_LOCATION
+#define UNITY_LOCATION(x) layout(location = x)
+#define UNITY_BINDING(x) layout(binding = x, std140)
+#else
+#define UNITY_LOCATION(x)
+#define UNITY_BINDING(x) layout(std140)
+#endif
+precise vec4 u_xlat_precise_vec4;
+precise ivec4 u_xlat_precise_ivec4;
+precise bvec4 u_xlat_precise_bvec4;
+precise uvec4 u_xlat_precise_uvec4;
+uniform 	vec4 hlslcc_mtx4x4unity_MatrixVP[4];
+struct _Instances_Type {
+	vec4 color;
+	vec4 hlslcc_mtx4x4transform[4];
+	int flags;
+};
+UNITY_BINDING(0) uniform UnityInstancing_RabexProps {
+	_Instances_Type                _Instances[UNITY_RUNTIME_INSTANCING_ARRAY_SIZE];
+};
+in  vec4 in_POSITION0;
+layout(location = 0) flat out uint vs_TEXCOORD0;
+vec4 u_xlat0;
+int u_xlati0;
+vec4 u_xlat1;
+void main()
+{
+    u_xlati0 = gl_InstanceID * 6;
+    u_xlat1 = in_POSITION0.yyyy * _Instances[gl_InstanceID].hlslcc_mtx4x4transform[1];
+    u_xlat1 = _Instances[gl_InstanceID].hlslcc_mtx4x4transform[0] * in_POSITION0.xxxx + u_xlat1;
+    u_xlat1 = _Instances[gl_InstanceID].hlslcc_mtx4x4transform[2] * in_POSITION0.zzzz + u_xlat1;
+    u_xlat0 = _Instances[gl_InstanceID].hlslcc_mtx4x4transform[3] * in_POSITION0.wwww + u_xlat1;
+    u_xlat1 = u_xlat0.yyyy * hlslcc_mtx4x4unity_MatrixVP[1];
+    u_xlat1 = hlslcc_mtx4x4unity_MatrixVP[0] * u_xlat0.xxxx + u_xlat1;
+    u_xlat1 = hlslcc_mtx4x4unity_MatrixVP[2] * u_xlat0.zzzz + u_xlat1;
+    gl_Position = hlslcc_mtx4x4unity_MatrixVP[3] * u_xlat0.wwww + u_xlat1;
+    vs_TEXCOORD0 =  uint(gl_InstanceID);
+    return;
+}
+
+#endif
+#ifdef FRAGMENT
+#version 420
+#extension GL_ARB_explicit_attrib_location : require
+#extension GL_ARB_shading_language_420pack : require
+#ifdef GL_ARB_shader_atomic_counters
+#extension GL_ARB_shader_atomic_counters : enable
+#endif
+#ifdef GL_ARB_shader_storage_buffer_object
+#extension GL_ARB_shader_storage_buffer_object : enable
+#endif
+#ifndef UNITY_RUNTIME_INSTANCING_ARRAY_SIZE
+	#define UNITY_RUNTIME_INSTANCING_ARRAY_SIZE 2
+#endif
+
+#define HLSLCC_ENABLE_UNIFORM_BUFFERS 1
+#if HLSLCC_ENABLE_UNIFORM_BUFFERS
+#define UNITY_UNIFORM
+#else
+#define UNITY_UNIFORM uniform
+#endif
+#define UNITY_SUPPORTS_UNIFORM_LOCATION 1
+#if UNITY_SUPPORTS_UNIFORM_LOCATION
+#define UNITY_LOCATION(x) layout(location = x)
+#define UNITY_BINDING(x) layout(binding = x, std140)
+#else
+#define UNITY_LOCATION(x)
+#define UNITY_BINDING(x) layout(std140)
+#endif
+precise vec4 u_xlat_precise_vec4;
+precise ivec4 u_xlat_precise_ivec4;
+precise bvec4 u_xlat_precise_bvec4;
+precise uvec4 u_xlat_precise_uvec4;
+struct _Instances_Type {
+	vec4 color;
+	vec4 hlslcc_mtx4x4transform[4];
+	int flags;
+};
+UNITY_BINDING(0) uniform UnityInstancing_RabexProps {
+	_Instances_Type                _Instances[UNITY_RUNTIME_INSTANCING_ARRAY_SIZE];
+};
+UNITY_LOCATION(0) uniform  sampler2DMS _MS;
+layout(std430, binding = 0) readonly buffer _Bytes {
+	uint _Bytes_buf[];
+};
+ struct _RWBuf_type {
+	uint[4] value;
+};
+
+layout(std430, binding = 1) buffer _RWBuf {
+	_RWBuf_type _RWBuf_buf[];
+};
+writeonly layout(binding=2) uniform image2D _RWTex;
+layout(location = 0) flat in  uint vs_TEXCOORD0;
+layout(location = 0) out vec4 SV_Target0;
+vec4 u_xlat0;
+uvec4 u_xlatu0;
+vec4 u_xlat1;
+int u_xlati1;
+uvec4 u_xlatu1;
+float u_xlat3;
+void main()
+{
+vec4 hlslcc_FragCoord = vec4(gl_FragCoord.xyz, 1.0/gl_FragCoord.w);
+    u_xlatu0.xy =  uvec2(ivec2(hlslcc_FragCoord.xy));
+    u_xlatu0.z = uint(0u);
+    u_xlatu0.w = uint(0u);
+    u_xlat0 = texelFetch(_MS, ivec2(u_xlatu0.xy), 0);
+    u_xlati1 = int(vs_TEXCOORD0) * 6;
+    u_xlat3 = float(_Instances[int(vs_TEXCOORD0)].flags);
+    u_xlat0 = _Instances[int(vs_TEXCOORD0)].color * vec4(u_xlat3) + u_xlat0;
+    u_xlati1 = int(vs_TEXCOORD0) << (4 & int(0x1F));
+    u_xlat1 = vec4(uintBitsToFloat(_Bytes_buf[(u_xlati1 >> 2) + 0]), uintBitsToFloat(_Bytes_buf[(u_xlati1 >> 2) + 1]), uintBitsToFloat(_Bytes_buf[(u_xlati1 >> 2) + 2]), uintBitsToFloat(_Bytes_buf[(u_xlati1 >> 2) + 3]));
+    u_xlat0 = u_xlat0 + u_xlat1;
+    _RWBuf_buf[vs_TEXCOORD0].value[(0 >> 2)] = floatBitsToUint(u_xlat0.x);
+    _RWBuf_buf[vs_TEXCOORD0].value[(0 >> 2) + 1] = floatBitsToUint(u_xlat0.y);
+    _RWBuf_buf[vs_TEXCOORD0].value[(0 >> 2) + 2] = floatBitsToUint(u_xlat0.z);
+    _RWBuf_buf[vs_TEXCOORD0].value[(0 >> 2) + 3] = floatBitsToUint(u_xlat0.w);
+    u_xlatu1 = uvec4(hlslcc_FragCoord.xyyy);
+    imageStore(_RWTex, ivec2(u_xlatu1.xy), u_xlat0);
+    SV_Target0 = u_xlat0;
+    return;
+}
+
+#endif

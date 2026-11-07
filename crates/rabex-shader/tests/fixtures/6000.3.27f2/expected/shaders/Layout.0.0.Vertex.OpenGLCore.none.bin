@@ -1,0 +1,158 @@
+#ifdef VERTEX
+#version 420
+#extension GL_ARB_explicit_attrib_location : require
+#extension GL_ARB_shading_language_420pack : require
+
+#define HLSLCC_ENABLE_UNIFORM_BUFFERS 1
+#if HLSLCC_ENABLE_UNIFORM_BUFFERS
+#define UNITY_UNIFORM
+#else
+#define UNITY_UNIFORM uniform
+#endif
+#define UNITY_SUPPORTS_UNIFORM_LOCATION 1
+#if UNITY_SUPPORTS_UNIFORM_LOCATION
+#define UNITY_LOCATION(x) layout(location = x)
+#define UNITY_BINDING(x) layout(binding = x, std140)
+#else
+#define UNITY_LOCATION(x)
+#define UNITY_BINDING(x) layout(std140)
+#endif
+precise vec4 u_xlat_precise_vec4;
+precise ivec4 u_xlat_precise_ivec4;
+precise bvec4 u_xlat_precise_bvec4;
+precise uvec4 u_xlat_precise_uvec4;
+uniform 	vec4 hlslcc_mtx4x4unity_MatrixVP[4];
+UNITY_BINDING(0) uniform RabexCustom {
+	vec4                hlslcc_mtx4x4_Mat[4];
+	vec4                _Arr[3];
+	float                _Scalar;
+	int                _Int;
+	vec4                hlslcc_mtx3x2_Mat32[2];
+};
+in  vec4 in_POSITION0;
+in  vec3 in_NORMAL0;
+in  vec4 in_TANGENT0;
+in  vec4 in_COLOR0;
+in  vec2 in_TEXCOORD0;
+in  vec2 in_TEXCOORD1;
+layout(location = 0) out vec4 vs_COLOR0;
+layout(location = 1) out vec4 vs_TEXCOORD0;
+layout(location = 2) out vec3 vs_TEXCOORD1;
+vec4 u_xlat0;
+vec4 u_xlat1;
+void main()
+{
+    u_xlat0 = in_POSITION0.yyyy * hlslcc_mtx4x4_Mat[1];
+    u_xlat0 = hlslcc_mtx4x4_Mat[0] * in_POSITION0.xxxx + u_xlat0;
+    u_xlat0 = hlslcc_mtx4x4_Mat[2] * in_POSITION0.zzzz + u_xlat0;
+    u_xlat0 = hlslcc_mtx4x4_Mat[3] * in_POSITION0.wwww + u_xlat0;
+    u_xlat1 = u_xlat0.yyyy * hlslcc_mtx4x4unity_MatrixVP[1];
+    u_xlat1 = hlslcc_mtx4x4unity_MatrixVP[0] * u_xlat0.xxxx + u_xlat1;
+    u_xlat1 = hlslcc_mtx4x4unity_MatrixVP[2] * u_xlat0.zzzz + u_xlat1;
+    gl_Position = hlslcc_mtx4x4unity_MatrixVP[3] * u_xlat0.wwww + u_xlat1;
+    vs_COLOR0 = in_TANGENT0 + in_COLOR0;
+    vs_TEXCOORD0.xy = in_TEXCOORD0.xy;
+    vs_TEXCOORD0.zw = in_TEXCOORD1.xy;
+    vs_TEXCOORD1.xyz = in_NORMAL0.xyz;
+    return;
+}
+
+#endif
+#ifdef FRAGMENT
+#version 420
+#extension GL_ARB_explicit_attrib_location : require
+#extension GL_ARB_shading_language_420pack : require
+#ifdef GL_ARB_shader_storage_buffer_object
+#extension GL_ARB_shader_storage_buffer_object : enable
+#endif
+
+#define HLSLCC_ENABLE_UNIFORM_BUFFERS 1
+#if HLSLCC_ENABLE_UNIFORM_BUFFERS
+#define UNITY_UNIFORM
+#else
+#define UNITY_UNIFORM uniform
+#endif
+#define UNITY_SUPPORTS_UNIFORM_LOCATION 1
+#if UNITY_SUPPORTS_UNIFORM_LOCATION
+#define UNITY_LOCATION(x) layout(location = x)
+#define UNITY_BINDING(x) layout(binding = x, std140)
+#else
+#define UNITY_LOCATION(x)
+#define UNITY_BINDING(x) layout(std140)
+#endif
+precise vec4 u_xlat_precise_vec4;
+precise ivec4 u_xlat_precise_ivec4;
+precise bvec4 u_xlat_precise_bvec4;
+precise uvec4 u_xlat_precise_uvec4;
+uniform 	vec4 _Global;
+UNITY_BINDING(0) uniform RabexCustom {
+	vec4                hlslcc_mtx4x4_Mat[4];
+	vec4                _Arr[3];
+	float                _Scalar;
+	int                _Int;
+	vec4                hlslcc_mtx3x2_Mat32[2];
+};
+UNITY_LOCATION(0) uniform  sampler2D _TexA;
+UNITY_LOCATION(1) uniform  sampler3D _Vol;
+UNITY_LOCATION(2) uniform  samplerCube _Cube;
+UNITY_LOCATION(3) uniform  sampler2DArray _TexArr;
+UNITY_LOCATION(4) uniform  sampler2D _NoSampler;
+UNITY_LOCATION(5) uniform  sampler2D _Inline;
+ struct _Buf_type {
+	uint[4] value;
+};
+
+layout(std430, binding = 0) readonly buffer _Buf {
+	_Buf_type _Buf_buf[];
+};
+ struct _Structs_type {
+	uint[4] value;
+};
+
+layout(std430, binding = 1) readonly buffer _Structs {
+	_Structs_type _Structs_buf[];
+};
+layout(location = 0) in  vec4 vs_COLOR0;
+layout(location = 1) in  vec4 vs_TEXCOORD0;
+layout(location = 2) in  vec3 vs_TEXCOORD1;
+layout(location = 0) out vec4 SV_Target0;
+vec4 u_xlat0;
+vec4 u_xlat1;
+int u_xlati1;
+uvec4 u_xlatu1;
+float u_xlat7;
+void main()
+{
+vec4 hlslcc_FragCoord = vec4(gl_FragCoord.xyz, 1.0/gl_FragCoord.w);
+    u_xlat0 = texture(_TexA, vs_TEXCOORD0.xy);
+    u_xlat1 = texture(_Vol, vs_TEXCOORD1.xyz);
+    u_xlat0 = u_xlat0 + u_xlat1;
+    u_xlat1 = texture(_Cube, vs_TEXCOORD1.xyz);
+    u_xlat0 = u_xlat0 + u_xlat1;
+    u_xlat1.z = float(_Int);
+    u_xlat1.xy = vs_TEXCOORD0.zw;
+    u_xlat1 = texture(_TexArr, u_xlat1.xyz);
+    u_xlat0 = u_xlat0 + u_xlat1;
+    u_xlatu1.xy =  uvec2(ivec2(hlslcc_FragCoord.xy));
+    u_xlatu1.z = uint(0u);
+    u_xlatu1.w = uint(0u);
+    u_xlat1 = texelFetch(_NoSampler, ivec2(u_xlatu1.xy), int(u_xlatu1.w));
+    u_xlat0 = u_xlat0 + u_xlat1;
+    u_xlat1 = texture(_Inline, vs_TEXCOORD0.zw);
+    u_xlat0 = u_xlat0 + u_xlat1;
+    u_xlat1 = vec4(uintBitsToFloat(_Buf_buf[_Int].value[(0 >> 2) + 0]), uintBitsToFloat(_Buf_buf[_Int].value[(0 >> 2) + 1]), uintBitsToFloat(_Buf_buf[_Int].value[(0 >> 2) + 2]), uintBitsToFloat(_Buf_buf[_Int].value[(0 >> 2) + 3]));
+    u_xlat0 = u_xlat0 + u_xlat1;
+    u_xlati1 = _Int;
+    u_xlat1 = _Arr[u_xlati1] * vec4(_Scalar) + _Global;
+    u_xlat0 = u_xlat0 + u_xlat1;
+    u_xlat1.xy = vs_TEXCOORD1.yy * hlslcc_mtx3x2_Mat32[1].xy;
+    u_xlat1.xy = hlslcc_mtx3x2_Mat32[0].xy * vs_TEXCOORD1.xx + u_xlat1.xy;
+    u_xlat0.xy = u_xlat0.xy + u_xlat1.xy;
+    u_xlat1.xyz = vec3(uintBitsToFloat(_Structs_buf[_Int].value[(0 >> 2) + 0]), uintBitsToFloat(_Structs_buf[_Int].value[(0 >> 2) + 1]), uintBitsToFloat(_Structs_buf[_Int].value[(0 >> 2) + 2]));
+    u_xlat7 = uintBitsToFloat(_Structs_buf[1].value[(12 >> 2) + 0]);
+    u_xlat0.xyz = u_xlat1.xyz * vec3(u_xlat7) + u_xlat0.xyz;
+    SV_Target0 = u_xlat0 * vs_COLOR0;
+    return;
+}
+
+#endif

@@ -1,0 +1,29 @@
+ManifestFileVersion: 0
+UnityVersion: 6000.3.27f2
+CRC: 3490531520
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: c8f990da0c933201beb42e00ec12daf6
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 74616c350bac436be9c6560c196b91ae
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 84f2f9c000bd54b42cff6d81bf764e46
+HashAppended: 0
+ClassTypes:
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Generated/shaders/Layout.shader
+- Assets/Generated/shaders/Keywords.shader
+- Assets/Generated/shaders/Instancing.shader.mat
+- Assets/Generated/shaders/Features.shader
+- Assets/Generated/shaders/Instancing.shader
+- Assets/Generated/shaders/Packing.shader
+- Assets/Generated/shaders/Unlit.shader
+Dependencies: []

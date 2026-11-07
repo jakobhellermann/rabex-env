@@ -1,0 +1,7 @@
+# `cargo run --example unity2rust -- crates/rabex-shader/unity2rust.toml`, from the workspace root
+game_paths = ["~/.steamapps/Nine Sols", "~/.steamapps/Hollow Knight Silksong"]
+bundles = ["crates/rabex-shader/tests/fixtures/6000.3.27f2/shaders"]
+class_ids = ["Shader"]
+derives = "Debug, serde::Deserialize, serde::Serialize"
+scripts = {}
+untyped_pptr_fields = ["Shader.m_NonModifiableTextures"]

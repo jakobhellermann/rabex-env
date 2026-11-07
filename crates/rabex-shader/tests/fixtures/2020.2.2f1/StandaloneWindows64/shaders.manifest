@@ -1,0 +1,25 @@
+ManifestFileVersion: 0
+CRC: 444501848
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 3b82b5394631f96192bd87116126c97b
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: def2bc6467cb9fa38fe2d2f4733ddfe7
+HashAppended: 0
+ClassTypes:
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Generated/shaders/Unlit.shader
+- Assets/Generated/shaders/Packing.shader
+- Assets/Generated/shaders/Instancing.shader
+- Assets/Generated/shaders/Features.shader
+- Assets/Generated/shaders/Layout.shader
+- Assets/Generated/shaders/Instancing.shader.mat
+- Assets/Generated/shaders/Keywords.shader
+Dependencies: []
