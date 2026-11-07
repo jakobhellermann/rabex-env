@@ -307,11 +307,10 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
                         .read_at(cab.file)?
                         .expect("cab unexpectedly not present");
 
-                    let mut serialized =
-                        SerializedFile::from_reader(&mut Cursor::new(cab_data.as_slice()))?;
-                    serialized
-                        .m_UnityVersion
-                        .get_or_insert(self.unity_version()?.clone());
+                    let serialized = SerializedFile::from_reader_with_version(
+                        &mut Cursor::new(cab_data.as_slice()),
+                        self.unity_version()?,
+                    )?;
                     let file = self.serialized_files.insert(
                         path_name.to_owned(),
                         Box::new((serialized, Data::InMemory(cab_data))),
@@ -380,13 +379,14 @@ impl<R: EnvResolver, P: TypeTreeProvider + Sync> Environment<R, P> {
         let Some(addressables) = self.addressables()? else {
             return Ok(Default::default());
         };
+        let unity_version = self.unity_version()?.clone();
 
         use rayon::iter::{ParallelBridge as _, ParallelIterator as _};
 
         addressables
             .bundle_paths()
             .par_bridge()
-            .try_fold(BTreeMap::default, |mut acc, bundle_path| {
+            .try_fold(BTreeMap::default, move |mut acc, bundle_path| {
                 let bundle = self.load_addressables_bundle(bundle_path)?;
                 let bundle_identifier = bundle
                     .serialized_files()
@@ -399,7 +399,10 @@ impl<R: EnvResolver, P: TypeTreeProvider + Sync> Environment<R, P> {
                 for entry in bundle.serialized_files() {
                     let archive_path = ArchivePath::new(bundle_identifier, &entry.path);
                     let data = bundle.read_at_entry(entry)?;
-                    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+                    let file = SerializedFile::from_reader_with_version(
+                        &mut Cursor::new(data.as_slice()),
+                        &unity_version,
+                    )?;
                     let file = self.insert_cache(archive_path.into(), file, data.into());
 
                     acc.insert(archive_path.to_string(), file);
