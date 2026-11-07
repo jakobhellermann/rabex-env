@@ -47,6 +47,10 @@ serde-value = { git = "https://github.com/jakobhellermann/serde-value", branch =
 toml = { version = "1.1.2", default-features = false, features = ["parse", "serde", "std"] }
 rabex-env-testkit = { path = "crates/rabex-env-testkit" }
 rabex-texture = { path = "crates/rabex-texture" }
+rabex-shader = { path = "crates/rabex-shader" }
+rabex-convert = { path = "crates/rabex-convert" }
+spirv = "0.4"
+smolv = { path = "crates/smolv" }
 
 [[example]]
 name = "build_pptr_map"
