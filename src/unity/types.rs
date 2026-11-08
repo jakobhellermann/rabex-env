@@ -13,10 +13,31 @@ use rabex::objects::{ClassId, ClassIdType};
 use rustc_hash::FxHashMap;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BuildSettings {
     pub scenes: Vec<String>,
+    pub preloadedPlugins: Vec<String>,
+    pub enabledVRDevices: Vec<String>,
+    pub buildTags: Vec<String>,
+    pub hasPROVersion: bool,
+    pub isNoWatermarkBuild: bool,
+    pub isPrototypingBuild: bool,
+    pub isEducationalBuild: bool,
+    pub isEmbedded: bool,
+    pub isTrial: bool,
+    pub hasPublishingRights: bool,
+    pub hasShadows: bool,
+    pub hasSoftShadows: bool,
+    pub hasLocalLightShadows: bool,
+    pub hasAdvancedVersion: bool,
+    pub enableDynamicBatching: bool,
+    pub usesOnMouseEvents: bool,
+    pub hasClusterRendering: bool,
+    pub m_Version: String,
+    pub m_AuthToken: String,
+    pub m_GraphicsAPIs: Vec<i32>,
 }
+
 impl ClassIdType for BuildSettings {
     const CLASS_ID: ClassId = ClassId::BuildSettings;
 }
