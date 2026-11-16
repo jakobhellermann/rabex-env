@@ -8,6 +8,7 @@ use std::sync::OnceLock;
 
 use anyhow::{Context, Result};
 use elsa::sync::FrozenMap;
+use indexmap::IndexSet;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
@@ -244,6 +245,35 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         relative_path: impl AsRef<Path>,
     ) -> Result<SerializedFileHandle<'_, R, P>> {
         self.load_external_file(relative_path.as_ref())
+    }
+
+    /// The `m_Externals` of `file` and of the files they reference, transitively, in the order they are found.
+    ///
+    /// Only externals whose `pathName` `follow` accepts are included and loaded.
+    pub fn external_closure(
+        &self,
+        file: &SerializedFile,
+        follow: impl Fn(&str) -> bool,
+    ) -> Result<Vec<String>> {
+        let externals = |file: &SerializedFile| {
+            file.m_Externals
+                .iter()
+                .map(|external| external.pathName.clone())
+                .filter(|path| follow(path))
+                .collect::<Vec<_>>()
+        };
+
+        let mut closure: IndexSet<String> = externals(file).into_iter().collect();
+        let mut next = 0;
+        while let Some(path) = closure.get_index(next).cloned() {
+            let external = self
+                .load_serialized(&path)
+                .with_context(|| format!("loading external {path}"))?;
+            closure.extend(externals(external.file));
+            next += 1;
+        }
+
+        Ok(closure.into_iter().collect())
     }
 
     pub fn load_serialized_uncached(
