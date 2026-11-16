@@ -1,3 +1,5 @@
+mod write;
+
 use std::io::{Read, Seek};
 use std::sync::Arc;
 
@@ -539,6 +541,9 @@ pub struct Hash128(u32, u32, u32, u32);
 impl Hash128 {
     pub fn from_u32s([a, b, c, d]: [u32; 4]) -> Self {
         Hash128(a, b, c, d)
+    }
+    pub fn to_u32s(&self) -> [u32; 4] {
+        [self.0, self.1, self.2, self.3]
     }
 }
 
