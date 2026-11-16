@@ -105,6 +105,8 @@ fn prune_scene_inner(
         adjust_ancestor(
             replacements,
             file,
+            reader.by_ref(),
+            &env.tpk,
             &mut all_reachable,
             &transform_typetree,
             id,
@@ -139,6 +141,8 @@ fn prune_scene_inner(
 fn adjust_ancestor(
     replacements: &mut FxHashMap<PathId, Vec<u8>>,
     file: &SerializedFile,
+    data: &mut (impl Read + Seek),
+    tpk: &impl TypeTreeProvider,
     all_reachable: &mut BTreeSet<i64>,
     transform_typetree: &TypeTreeNode,
     id: PathId,
@@ -151,6 +155,15 @@ fn adjust_ancestor(
     let transform_modified =
         serde_typetree::to_vec_endianed(&transform, transform_typetree, file.m_Header.m_Endianess)?;
     assert!(replacements.insert(id, transform_modified).is_none());
+
+    let go = transform.m_GameObject.deref_local(file, tpk)?;
+    let mut go_data = go.read(data)?;
+    go_data
+        .m_Component
+        .retain(|pair| pair.component.m_PathID == id);
+    let go_modified =
+        serde_typetree::to_vec_endianed(&go_data, go.typetree()?, file.m_Header.m_Endianess)?;
+    assert!(replacements.insert(go.info.m_PathID, go_modified).is_none());
     Ok(())
 }
 
