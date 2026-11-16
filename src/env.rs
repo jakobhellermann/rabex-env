@@ -22,7 +22,7 @@ use crate::addressables::{AddressablesData, ArchivePath};
 use crate::handle::SerializedFileHandle;
 use crate::resolver::{EnvResolver, GameFiles};
 use crate::typetree_generator_cache::TypeTreeGeneratorCache;
-use crate::unity::types::{BuildSettings, MonoManager, MonoScript, ResourceManager};
+use crate::unity::types::{BuildSettings, MonoManager, MonoScript, PreloadData, ResourceManager};
 
 /// Owned or mmap-backed bytes
 pub enum Data {
@@ -245,6 +245,23 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
         relative_path: impl AsRef<Path>,
     ) -> Result<SerializedFileHandle<'_, R, P>> {
         self.load_external_file(relative_path.as_ref())
+    }
+
+    /// The transitive closure of files required to be loaded, for scene at `index`.
+    pub fn scene_dependency_files(&self, index: usize) -> Result<Vec<String>> {
+        let shared_assets = format!("sharedassets{index}.assets");
+        let handle = self.load_serialized(&shared_assets)?;
+        let preload: PreloadData = handle
+            .find_object_of::<PreloadData>()?
+            .with_context(|| format!("{shared_assets} has no PreloadData"))?;
+
+        let mut files = IndexSet::from([shared_assets.clone()]);
+        for pptr in &preload.m_Assets {
+            if let Some(index) = pptr.m_FileID.get_externals_index() {
+                files.insert(handle.file.m_Externals[index].pathName.clone());
+            }
+        }
+        Ok(files.into_iter().collect())
     }
 
     /// The `m_Externals` of `file` and of the files they reference, transitively, in the order they are found.
