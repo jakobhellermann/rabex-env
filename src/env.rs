@@ -487,7 +487,10 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
             .main_serializedfile()
             .context("no non-resource serializedfile in bundle")?;
         let data = bundle.read_at(&entry.path)?.unwrap();
-        let mut file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+        let mut file = SerializedFile::from_reader_with_version(
+            &mut Cursor::new(data.as_slice()),
+            self.unity_version()?,
+        )?;
         file.m_UnityVersion
             .get_or_insert(self.unity_version()?.clone());
         Ok((entry.path.clone(), file, data))
