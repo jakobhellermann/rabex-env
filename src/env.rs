@@ -589,4 +589,16 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
             .backend(self)?
             .generate(assembly, full_name)
     }
+
+    /// Generate the typetree for a given `MonoScript`, failing if it cannot be resolved
+    pub fn generate_typetree_for_script(&self, script: &MonoScript) -> Result<&TypeTreeNode> {
+        self.generate_typetree(&script.assembly_name(), &script.full_name())?
+            .with_context(|| {
+                format!(
+                    "no type tree for {} ({})",
+                    script.full_name(),
+                    script.assembly_name()
+                )
+            })
+    }
 }
