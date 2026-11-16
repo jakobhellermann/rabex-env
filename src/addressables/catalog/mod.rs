@@ -1,11 +1,13 @@
 use anyhow::Result;
 
 mod binary;
+mod builder;
 mod json;
 
 use std::io::Cursor;
 
 pub use binary::*;
+pub use builder::CatalogBuilder;
 
 /// Parse an addressables catalog, either as `catalog.json` or `catalog.bin`
 pub fn parse(data: &[u8]) -> Result<AddressablesCatalog> {

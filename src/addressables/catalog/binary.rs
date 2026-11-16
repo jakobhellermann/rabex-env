@@ -13,6 +13,13 @@ pub struct AssemblyClass {
     pub m_ClassName: Arc<String>,
 }
 impl AssemblyClass {
+    pub fn new(assembly: &str, class: &str) -> Self {
+        AssemblyClass {
+            m_AssemblyName: Arc::new(assembly.to_owned()),
+            m_ClassName: Arc::new(class.to_owned()),
+        }
+    }
+
     pub fn class_name(&self) -> &str {
         self.m_ClassName
             .rsplit_once('.')
@@ -70,6 +77,16 @@ pub mod resource_providers {
     pub const JSON_ASSET: &str =
         "UnityEngine.ResourceManagement.ResourceProviders.JsonAssetProvider";
     pub const TEXT_DATA: &str = "UnityEngine.ResourceManagement.ResourceProviders.TextDataProvider";
+}
+
+/// Fully qualified names of the assemblies catalog types live in
+pub mod assemblies {
+    pub const RESOURCE_MANAGER: &str =
+        "Unity.ResourceManager, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+    pub const CORE_MODULE: &str =
+        "UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+    pub const MSCORLIB: &str =
+        "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 }
 
 /// Descriptor of a catalog resource location
@@ -444,7 +461,7 @@ impl<'a> BinaryCatalogReader<'a> {
                 timeout: self.i16(common_info)?,
                 redirect_limit: self.u8(common_info + 2)?,
                 retry_count: self.u8(common_info + 3)?,
-                flags: self.i32(common_info + 4)?,
+                flags: CommonInfoFlags::from_bits_retain(self.i32(common_info + 4)?),
             },
             bundle_name: self.string(bundle_name, Some('_'))?,
             bundle_size,
@@ -561,5 +578,35 @@ pub struct CommonInfo {
     pub timeout: i16,
     pub redirect_limit: u8,
     pub retry_count: u8,
-    pub flags: i32,
+    pub flags: CommonInfoFlags,
+}
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct CommonInfoFlags: i32 {
+        const ALL_PACKED_ASSETS_AND_DEPENDENCIES = 1 << 0;
+        const CHUNKED_TRANSFER = 1 << 1;
+        const USE_CRC_FOR_CACHED_BUNDLE = 1 << 2;
+        const USE_UNITY_WEB_REQUEST_FOR_LOCAL_BUNDLES = 1 << 3;
+        const CLEAR_OTHER_CACHED_VERSIONS_WHEN_LOADED = 1 << 4;
+    }
+}
+
+impl AssetBundleRequestOptions {
+    /// Options for a bundle loaded from a local path
+    pub fn new(bundle_name: &str) -> Self {
+        AssetBundleRequestOptions {
+            hash: Hash128::from_u32s([0; 4]),
+            crc: 0,
+            common_info: CommonInfo {
+                timeout: 0,
+                redirect_limit: 32,
+                retry_count: 0,
+                flags: CommonInfoFlags::USE_CRC_FOR_CACHED_BUNDLE,
+            },
+            bundle_name: Arc::new(bundle_name.to_owned()),
+            // only used for the download size of remote bundles
+            bundle_size: 0,
+        }
+    }
 }

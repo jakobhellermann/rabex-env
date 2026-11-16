@@ -191,7 +191,7 @@ impl BinaryCatalogWriter {
         let mut common_info = Vec::with_capacity(8);
         common_info.extend_from_slice(&info.timeout.to_le_bytes());
         common_info.extend_from_slice(&[info.redirect_limit, info.retry_count]);
-        common_info.extend_from_slice(&info.flags.to_le_bytes());
+        common_info.extend_from_slice(&info.flags.bits().to_le_bytes());
         let common_info = self.blob(&common_info)?;
         self.blob(&u32_bytes(&[
             hash,

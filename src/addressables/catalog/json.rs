@@ -10,7 +10,8 @@ use serde_derive::Deserialize;
 
 use crate::addressables::catalog::{
     AddressablesCatalog, AssemblyClass, AssetBundleRequestOptions, CatalogKey, CatalogString,
-    CommonInfo, Hash128, ObjectInitializationData, ResourceLocation, SerializedObject,
+    CommonInfo, CommonInfoFlags, Hash128, ObjectInitializationData, ResourceLocation,
+    SerializedObject,
 };
 
 #[allow(non_snake_case)]
@@ -282,7 +283,7 @@ fn read_abro(extra_data: &[u8], offset: usize) -> Result<Option<AssetBundleReque
             timeout: abro.m_Timeout,
             redirect_limit: abro.m_RedirectLimit as u8,
             retry_count: abro.m_RetryCount as u8,
-            flags: 0,
+            flags: CommonInfoFlags::empty(),
         },
         bundle_name: Arc::new(abro.m_BundleName),
         bundle_size: abro.m_BundleSize as u32,
