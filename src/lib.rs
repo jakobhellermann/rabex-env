@@ -6,6 +6,7 @@ pub mod qualify;
 pub mod reachable;
 pub mod resolver;
 pub mod scene_lookup;
+pub mod streams;
 pub mod trace_pptr;
 pub mod typetree_generator_cache;
 pub mod typetree_merge;
