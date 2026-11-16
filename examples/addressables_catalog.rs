@@ -19,7 +19,7 @@ fn main() -> Result<()> {
         for loc in catalog.locations() {
             match loc.provider_id.as_str() {
                 resource_providers::ASSET_BUNDLE => {
-                    let abro = loc.data.as_ref().unwrap();
+                    let abro = loc.abro().unwrap();
                     let path = addressables.evaluate_string(&loc.internal_id);
                     let path = Path::new(&path)
                         .strip_prefix(addressables.build_folder())

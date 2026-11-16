@@ -4,7 +4,6 @@ pub mod catalog;
 pub mod settings;
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use anyhow::{Context as _, Result};
 use rabex::UnityVersion;
@@ -13,7 +12,7 @@ use rabex::typetree::TypeTreeProvider;
 use rustc_hash::FxHashMap;
 
 use crate::Environment;
-use crate::addressables::catalog::{AddressablesCatalog, ResourceLocation};
+use crate::addressables::catalog::AddressablesCatalog;
 use crate::addressables::settings::AddressablesSettings;
 use crate::resolver::EnvResolver;
 
@@ -70,18 +69,6 @@ impl AddressablesData {
                 })())
             })
             .collect()
-    }
-
-    pub fn resource_locations(&self, env: &impl EnvResolver) -> Result<Vec<Arc<ResourceLocation>>> {
-        let mut all = Vec::new();
-        for catalog in self.catalogs(env)? {
-            for (_key, locations) in catalog.resources {
-                for loc in locations {
-                    all.push(loc);
-                }
-            }
-        }
-        Ok(all)
     }
 
     pub fn evaluate_string(&self, str: &str) -> String {

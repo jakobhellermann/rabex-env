@@ -1,8 +1,7 @@
-// TODO: check string caching
-use std::collections::HashMap;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 use std::sync::Arc;
 
+use indexmap::IndexMap;
 use rustc_hash::FxHashMap;
 
 #[allow(non_snake_case)]
@@ -18,30 +17,9 @@ impl AssemblyClass {
             .map(|(_, name)| name)
             .unwrap_or(&*self.m_ClassName)
     }
-}
 
-impl AssemblyClass {
-    fn from_reader<R: Read + Seek>(
-        mut reader: R,
-        cache: &mut Cache,
-    ) -> Result<Self, std::io::Error> {
-        let reader = &mut reader;
-        let assembly_name = read_u32(reader)?;
-        let class_name = read_u32(reader)?;
-        let assembly_name = read_encoded_string_sep(reader, cache, assembly_name, '.')?;
-        let class_name = read_encoded_string_sep(reader, cache, class_name, '.')?;
-        Ok(AssemblyClass {
-            m_AssemblyName: assembly_name,
-            m_ClassName: class_name,
-        })
-    }
-
-    fn get_match_name(&self) -> String {
-        format!("{}; {}", self.get_assembly_short_name(), self.m_ClassName)
-    }
-    fn get_assembly_short_name(&self) -> &str {
-        assert!(self.m_AssemblyName.contains(','));
-        self.m_AssemblyName.split(',').next().unwrap()
+    fn is(&self, (assembly, class): (&str, &str)) -> bool {
+        self.m_AssemblyName.split(',').next() == Some(assembly) && *self.m_ClassName == class
     }
 }
 
@@ -49,96 +27,29 @@ impl AssemblyClass {
 pub struct ObjectInitializationData {
     pub id: Arc<String>,
     pub object_type: AssemblyClass,
-    pub data: Arc<String>,
-}
-impl ObjectInitializationData {
-    fn from_reader<R: Read + Seek>(
-        reader: &mut R,
-        cache: &mut Cache,
-    ) -> Result<Self, std::io::Error> {
-        let id_offset = read_u32(reader)?;
-        let object_type_offset = read_u32(reader)?;
-        let data_offset = read_u32(reader)?;
-
-        let id = read_encoded_string(reader, cache, id_offset)?;
-        reader.seek(SeekFrom::Start(object_type_offset as u64))?;
-        let object_type = AssemblyClass::from_reader(&mut *reader, cache)?;
-        let data = read_encoded_string(reader, cache, data_offset)?;
-
-        Ok(ObjectInitializationData {
-            id,
-            object_type,
-            data,
-        })
-    }
+    pub data: Option<Arc<String>>,
 }
 
-#[derive(Debug)]
-pub struct ResourceLocationHeader {
-    pub primary_key_offset: u32,
-    pub internal_id_offset: u32,
-    pub provider_id_offset: u32,
-    pub dependencies_offset: u32,
-    pub dependency_hash_code: i32,
-    pub data_offset: u32,
-    pub type_offset: u32,
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SerializedObject<T> {
+    /// `None` in JSON catalogs, which don't record it
+    pub type_: Option<AssemblyClass>,
+    /// `None` for a default-constructed object
+    pub object: Option<T>,
 }
-impl ResourceLocationHeader {
-    fn from_reader<R: Read + Seek>(reader: &mut R) -> Result<Self, std::io::Error> {
-        let primary_key_offset = read_u32(reader)?;
-        let internal_id_offset = read_u32(reader)?;
-        let provider_id_offset = read_u32(reader)?;
-        let dependencies_offset = read_u32(reader)?;
-        let dependency_hash_code = read_i32(reader)?;
-        let data_offset = read_u32(reader)?;
-        let type_offset = read_u32(reader)?;
-        Ok(ResourceLocationHeader {
-            primary_key_offset,
-            internal_id_offset,
-            provider_id_offset,
-            dependencies_offset,
-            dependency_hash_code,
-            data_offset,
-            type_offset,
-        })
-    }
 
-    pub fn primary_key<R: Read + Seek>(
-        &self,
-        catalog: &mut BinaryCatalogReader<R>,
-    ) -> Result<Arc<String>, std::io::Error> {
-        catalog.read_encoded_string_sep(self.primary_key_offset, '/')
-    }
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CatalogString {
+    pub value: Arc<String>,
+    /// Binary catalogs store strings containing this separator as deduplicated segments
+    pub separator: Option<char>,
+}
 
-    pub fn provider_id<R: Read + Seek>(
-        &self,
-        catalog: &mut BinaryCatalogReader<R>,
-    ) -> Result<Arc<String>, std::io::Error> {
-        catalog.read_encoded_string_sep(self.provider_id_offset, '.')
-    }
+pub type CatalogKey = SerializedObject<CatalogString>;
 
-    pub fn internal_id<R: Read + Seek>(
-        &self,
-        catalog: &mut BinaryCatalogReader<R>,
-    ) -> Result<Arc<String>, std::io::Error> {
-        catalog.read_encoded_string_sep(self.internal_id_offset, '/')
-    }
-
-    pub fn data<R: Read + Seek>(
-        &self,
-        catalog: &mut BinaryCatalogReader<R>,
-    ) -> Result<Option<Value>, std::io::Error> {
-        catalog.decode_v2(self.data_offset)
-    }
-
-    pub fn r#type<R: Read + Seek>(
-        &self,
-        catalog: &mut BinaryCatalogReader<R>,
-    ) -> Result<AssemblyClass, std::io::Error> {
-        catalog
-            .reader
-            .seek(SeekFrom::Start(self.type_offset as u64))?;
-        AssemblyClass::from_reader(&mut catalog.reader, &mut catalog.cache)
+impl CatalogKey {
+    pub fn as_str(&self) -> &str {
+        self.object.as_ref().map_or("", |s| s.value.as_str())
     }
 }
 
@@ -171,7 +82,7 @@ pub mod resource_providers {
 ///   - `primary_key` is the path from the editor I think
 ///   - `data` seems to be None
 ///   - `type_` varies
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct ResourceLocation {
     /// ID of the resource location
     ///
@@ -187,31 +98,15 @@ pub struct ResourceLocation {
     /// - `JsonAssetProvider`
     /// - `TextDataProvider`
     pub provider_id: Arc<String>,
-    pub dependencies: Vec<Arc<ResourceLocation>>,
-    pub data: Option<AssetBundleRequestOptions>,
+    /// Indices into [`AddressablesCatalog::locations`]
+    pub dependencies: Vec<usize>,
+    pub data: Option<SerializedObject<AssetBundleRequestOptions>>,
     pub dependency_hash_code: i32,
     /// Used in `Addressables.LoadAssetAsync<GameObject>(primaryKey)`
     pub primary_key: Arc<String>,
     pub type_: AssemblyClass,
 }
 
-impl std::fmt::Debug for ResourceLocation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ResourceLocation")
-            .field("internal_id", &self.internal_id)
-            .field("provider_id", &self.provider_id)
-            // .field("dependencies", &self.dependencies)
-            .field(
-                "dependencies",
-                &format!("{} dependencies", self.dependencies.len()),
-            )
-            .field("data", &self.data)
-            .field("dependency_hash_code", &self.dependency_hash_code)
-            .field("primary_key", &self.primary_key)
-            .field("type_", &self.type_)
-            .finish()
-    }
-}
 impl ResourceLocation {
     pub fn provider_name(&self) -> &str {
         self.provider_id
@@ -219,107 +114,56 @@ impl ResourceLocation {
             .map(|(_, name)| name)
             .unwrap_or(self.provider_id.as_ref())
     }
-    fn from_catalog_here<R: Read + Seek>(
-        catalog: &mut BinaryCatalogReader<R>,
-    ) -> Result<Self, std::io::Error> {
-        let header = ResourceLocationHeader::from_reader(&mut catalog.reader)?;
-        let primary_key = header.primary_key(catalog)?;
-        let internal_id = header.internal_id(catalog)?;
-        let provider_id = header.provider_id(catalog)?;
 
-        let dependency_offsets = catalog.read_offset_array(header.dependencies_offset)?;
-        let dependencies = dependency_offsets
-            .iter()
-            .map(|&offset| catalog.get_ot_read_resource(offset))
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let data = header.data(catalog)?.map(|ty| ty.into_abro().unwrap());
-        let r#type = header.r#type(catalog)?;
-
-        Ok(ResourceLocation {
-            internal_id,
-            provider_id,
-            dependencies,
-            data,
-            dependency_hash_code: header.dependency_hash_code,
-            primary_key,
-            type_: r#type,
-        })
+    pub fn abro(&self) -> Option<&AssetBundleRequestOptions> {
+        self.data.as_ref()?.object.as_ref()
     }
 }
+
 #[derive(Debug)]
 pub struct AddressablesCatalog {
     pub locator_id: Arc<String>,
-    pub build_result_hash: Arc<String>,
+    pub build_result_hash: Option<Arc<String>>,
     pub instance_provider_data: ObjectInitializationData,
     pub scene_provider_data: ObjectInitializationData,
     pub resource_provider_data: Vec<ObjectInitializationData>,
-    pub resources: HashMap<Arc<String>, Vec<Arc<ResourceLocation>>>,
-}
-
-struct BinaryCatalogHeader {
-    keys_offset: u32,
-    id_offset: u32,
-    instance_provider_offset: u32,
-    scene_provider_offset: u32,
-    init_objects_array_offset: u32,
-    build_result_hash_offset: u32,
-}
-impl BinaryCatalogHeader {
-    fn from_reader<R: Read + Seek>(reader: &mut R) -> Result<Self, std::io::Error> {
-        let magic = read_i32(reader)?;
-        if magic != 0xde38942 {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("Unexpected magic for addressables catalog: {}", magic),
-            ));
-        }
-        let version = read_i32(reader)?;
-        if version != 2 {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("Unsuppported version {}", version),
-            ));
-        }
-
-        let keys_offset = read_u32(reader)?;
-        let id_offset = read_u32(reader)?;
-        let instance_provider_offset = read_u32(reader)?;
-        let scene_provider_offset = read_u32(reader)?;
-        let init_objects_array_offset = read_u32(reader)?;
-        let build_result_hash_offset = read_u32(reader)?; // v2 only
-
-        Ok(BinaryCatalogHeader {
-            keys_offset,
-            id_offset,
-            instance_provider_offset,
-            scene_provider_offset,
-            init_objects_array_offset,
-            build_result_hash_offset,
-        })
-    }
-}
-
-struct Cache {
-    strings: FxHashMap<u32, Arc<String>>,
-    locations: FxHashMap<u32, Arc<ResourceLocation>>,
-}
-
-pub struct BinaryCatalogReader<R> {
-    reader: R,
-    header: BinaryCatalogHeader,
-    cache: Cache,
+    pub locations: Vec<ResourceLocation>,
+    /// Indices into [`AddressablesCatalog::locations`]
+    pub resources: IndexMap<CatalogKey, Vec<usize>>,
 }
 
 impl AddressablesCatalog {
-    pub fn from_reader<R: Read + Seek>(reader: R) -> Result<Self, std::io::Error> {
-        BinaryCatalogReader::new(reader)?.read()
+    pub fn from_reader<R: Read + Seek>(mut reader: R) -> Result<Self, std::io::Error> {
+        let mut data = Vec::new();
+        reader.read_to_end(&mut data)?;
+        Self::from_bytes(&data)
+    }
+
+    pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+        BinaryCatalogReader::new(data).read()
     }
 
     pub fn locations(&self) -> impl Iterator<Item = &ResourceLocation> {
-        self.resources
-            .values()
-            .flat_map(|locations| locations.iter().map(Arc::as_ref))
+        self.locations.iter()
+    }
+
+    pub fn locations_at<'a>(
+        &'a self,
+        indices: &'a [usize],
+    ) -> impl Iterator<Item = &'a ResourceLocation> + 'a {
+        indices.iter().map(|&i| &self.locations[i])
+    }
+
+    pub fn dependencies<'a>(
+        &'a self,
+        location: &'a ResourceLocation,
+    ) -> impl Iterator<Item = &'a ResourceLocation> + 'a {
+        self.locations_at(&location.dependencies)
+    }
+
+    pub fn locations_of_key(&self, key: &str) -> Option<impl Iterator<Item = &ResourceLocation>> {
+        let (_, indices) = self.resources.iter().find(|(k, _)| k.as_str() == key)?;
+        Some(self.locations_at(indices))
     }
 
     pub fn locations_of_provider(
@@ -331,137 +175,143 @@ impl AddressablesCatalog {
     }
 }
 
-impl<R: Read + Seek> BinaryCatalogReader<R> {
-    pub fn new(mut reader: R) -> Result<Self, std::io::Error> {
-        let header = BinaryCatalogHeader::from_reader(&mut reader)?;
-        let cache = Cache {
-            strings: HashMap::default(),
-            locations: HashMap::default(),
-        };
-        Ok(BinaryCatalogReader {
-            reader,
-            header,
-            cache,
-        })
-    }
-    fn read_encoded_string(&mut self, encoded_offset: u32) -> Result<Arc<String>, std::io::Error> {
-        read_encoded_string(&mut self.reader, &mut self.cache, encoded_offset)
-    }
-    fn read_encoded_string_sep(
-        &mut self,
-        encoded_offset: u32,
-        dynamic_string_separator: char,
-    ) -> Result<Arc<String>, std::io::Error> {
-        read_encoded_string_sep(
-            &mut self.reader,
-            &mut self.cache,
-            encoded_offset,
-            dynamic_string_separator,
-        )
-    }
-    fn decode_v2(&mut self, offset: u32) -> Result<Option<Value>, std::io::Error> {
-        decode_v2(&mut self.reader, &mut self.cache, offset)
-    }
+const MAGIC: i32 = 0x0de38942;
+const VERSION: i32 = 2;
+const NONE: u32 = u32::MAX;
+const UNICODE_FLAG: u32 = 0x8000_0000;
+const DYNAMIC_FLAG: u32 = 0x4000_0000;
+const OFFSET_MASK: u32 = 0x3fff_ffff;
 
-    pub fn location_headers(&mut self) -> Result<Vec<ResourceLocationHeader>, std::io::Error> {
-        let key_location_offsets = self.read_offset_array(self.header.keys_offset)?;
+const STRING_TYPE: (&str, &str) = ("mscorlib", "System.String");
+const ABRO_TYPE: (&str, &str) = (
+    "Unity.ResourceManager",
+    "UnityEngine.ResourceManagement.ResourceProviders.AssetBundleRequestOptions",
+);
 
-        let mut resources = Vec::new();
-        for i in (0..key_location_offsets.len()).step_by(2) {
-            let _key_offset = key_location_offsets[i];
-            let location_list_offset = key_location_offsets[i + 1];
+fn invalid(msg: impl Into<String>) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::InvalidData, msg.into())
+}
 
-            let location_offsets = self.read_offset_array(location_list_offset)?;
-            for &location in location_offsets.as_slice() {
-                self.reader.seek(SeekFrom::Start(location as u64))?;
-                let location = ResourceLocationHeader::from_reader(&mut self.reader)?;
-                resources.push(location);
-            }
+struct BinaryCatalogReader<'a> {
+    data: &'a [u8],
+    strings: FxHashMap<(u32, Option<char>), Arc<String>>,
+}
+
+impl<'a> BinaryCatalogReader<'a> {
+    fn new(data: &'a [u8]) -> Self {
+        BinaryCatalogReader {
+            data,
+            strings: FxHashMap::default(),
         }
-        Ok(resources)
     }
 
-    pub fn assetbundle_names(&mut self) -> Result<Vec<(String, String)>, std::io::Error> {
-        let key_location_offsets = self.read_offset_array(self.header.keys_offset)?;
-
-        let mut resources = Vec::new();
-        for i in (0..key_location_offsets.len()).step_by(2) {
-            let _key_offset = key_location_offsets[i];
-            let location_list_offset = key_location_offsets[i + 1];
-
-            let location_offsets = self.read_offset_array(location_list_offset)?;
-            for &location in location_offsets.as_slice() {
-                self.reader.seek(SeekFrom::Start(location as u64))?;
-                let location = ResourceLocationHeader::from_reader(&mut self.reader)?;
-                let provider_id = location.provider_id(self)?;
-                if *provider_id
-                    != "UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider"
-                {
-                    continue;
-                }
-                let internal_id = location.internal_id(self)?;
-                let abro = location
-                    .data(self)?
-                    .expect("no data for AssetBundleProvider")
-                    .into_abro()
-                    .unwrap();
-                let path = internal_id
-                    .strip_prefix("{UnityEngine.AddressableAssets.Addressables.RuntimePath}")
-                    .expect("expected RuntimePath placeholder in provider ID")
-                    .trim_start_matches(['/', '\\']);
-
-                resources.push((path.to_owned(), (*abro.bundle_name).clone()));
-            }
+    fn bytes(&self, offset: u32, len: usize) -> Result<&'a [u8], std::io::Error> {
+        let start = offset as usize;
+        self.data
+            .get(start..start + len)
+            .ok_or_else(|| invalid(format!("catalog read out of bounds at {start}+{len}")))
+    }
+    fn array<const N: usize>(&self, offset: u32) -> Result<[u8; N], std::io::Error> {
+        Ok(self.bytes(offset, N)?.try_into().unwrap())
+    }
+    fn u8(&self, offset: u32) -> Result<u8, std::io::Error> {
+        Ok(self.array::<1>(offset)?[0])
+    }
+    fn i16(&self, offset: u32) -> Result<i16, std::io::Error> {
+        Ok(i16::from_le_bytes(self.array(offset)?))
+    }
+    fn u32(&self, offset: u32) -> Result<u32, std::io::Error> {
+        Ok(u32::from_le_bytes(self.array(offset)?))
+    }
+    fn i32(&self, offset: u32) -> Result<i32, std::io::Error> {
+        Ok(i32::from_le_bytes(self.array(offset)?))
+    }
+    fn u32s<const N: usize>(&self, offset: u32) -> Result<[u32; N], std::io::Error> {
+        let mut values = [0; N];
+        for (i, value) in values.iter_mut().enumerate() {
+            *value = self.u32(offset + 4 * i as u32)?;
         }
-        Ok(resources)
+        Ok(values)
+    }
+    /// Payload of a blob whose `i32` byte length precedes `offset`
+    fn length_prefixed(&self, offset: u32) -> Result<&'a [u8], std::io::Error> {
+        let len_offset = offset
+            .checked_sub(4)
+            .ok_or_else(|| invalid(format!("length prefix before {offset:#x} out of bounds")))?;
+        let len = self.i32(len_offset)?;
+        let len =
+            usize::try_from(len).map_err(|_| invalid(format!("negative length at {offset:#x}")))?;
+        self.bytes(offset, len)
     }
 
-    pub fn read(&mut self) -> Result<AddressablesCatalog, std::io::Error> {
-        let locator_id = self.read_encoded_string(self.header.id_offset)?;
-        let build_result_hash = self.read_encoded_string(self.header.build_result_hash_offset)?;
+    fn read(&mut self) -> Result<AddressablesCatalog, std::io::Error> {
+        let magic = self.i32(0)?;
+        if magic != MAGIC {
+            return Err(invalid(format!(
+                "Unexpected magic for addressables catalog: {magic}"
+            )));
+        }
+        let version = self.i32(4)?;
+        if version != VERSION {
+            return Err(invalid(format!("Unsupported version {version}")));
+        }
+        let [
+            keys_offset,
+            id_offset,
+            instance_provider_offset,
+            scene_provider_offset,
+            init_objects_array_offset,
+            build_result_hash_offset,
+        ] = self.u32s(8)?;
 
-        self.reader
-            .seek(SeekFrom::Start(self.header.instance_provider_offset as u64))?;
-        let instance_provider_data =
-            ObjectInitializationData::from_reader(&mut self.reader, &mut self.cache)?;
+        let locator_id = self.string(id_offset, None)?;
+        let build_result_hash = self.optional_string(build_result_hash_offset, None)?;
+        let instance_provider_data = self.object_init(instance_provider_offset)?;
+        let scene_provider_data = self.object_init(scene_provider_offset)?;
+        let resource_provider_data = self
+            .offset_array(init_objects_array_offset)?
+            .unwrap_or_default()
+            .into_iter()
+            .map(|offset| self.object_init(offset))
+            .collect::<Result<_, _>>()?;
 
-        self.reader
-            .seek(SeekFrom::Start(self.header.scene_provider_offset as u64))?;
-        let scene_provider_data =
-            ObjectInitializationData::from_reader(&mut self.reader, &mut self.cache)?;
-
-        let resource_provider_data_offsets =
-            self.read_offset_array(self.header.init_objects_array_offset)?;
-        let resource_provider_data = resource_provider_data_offsets
+        let key_entries = self
+            .offset_array(keys_offset)?
+            .ok_or_else(|| invalid("catalog has no keys array"))?;
+        let (pairs, rest) = key_entries.as_chunks::<2>();
+        if !rest.is_empty() {
+            return Err(invalid("odd number of entries in keys array"));
+        }
+        let key_entries = pairs
             .iter()
-            .map(|&offset| {
-                self.reader.seek(SeekFrom::Start(offset as u64))?;
-                ObjectInitializationData::from_reader(&mut self.reader, &mut self.cache)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|&[key, locations]| Ok((key, self.offset_array(locations)?.unwrap_or_default())))
+            .collect::<Result<Vec<_>, std::io::Error>>()?;
 
-        let resources = {
-            let key_location_offsets = self.read_offset_array(self.header.keys_offset)?;
+        let location_offsets = self.location_offsets(key_entries.iter().flat_map(|(_, l)| l))?;
+        let location_index: FxHashMap<u32, usize> = location_offsets
+            .iter()
+            .enumerate()
+            .map(|(i, &offset)| (offset, i))
+            .collect();
+        let locations = location_offsets
+            .iter()
+            .map(|&offset| self.location(offset, &location_index))
+            .collect::<Result<_, _>>()?;
 
-            let mut resources = HashMap::default();
-            for i in (0..key_location_offsets.len()).step_by(2) {
-                let key_offset = key_location_offsets[i];
-                let location_list_offset = key_location_offsets[i + 1];
-
-                let key = self
-                    .decode_v2(key_offset)?
-                    .expect("expected null resource key")
-                    .into_string()
-                    .expect("unexpected non-string resource key");
-                let location_offsets = self.read_offset_array(location_list_offset)?;
-                let locations = location_offsets
-                    .iter()
-                    .map(|&offset| self.get_ot_read_resource(offset))
-                    .collect::<Result<Vec<_>, _>>()?;
-                resources.insert(key, locations);
+        let mut resources = IndexMap::with_capacity(key_entries.len());
+        for (key_offset, location_offsets) in key_entries {
+            let key = self
+                .serialized(key_offset, STRING_TYPE, Self::string_object)?
+                .ok_or_else(|| invalid("null resource key"))?;
+            let indices = location_offsets
+                .iter()
+                .map(|offset| location_index[offset])
+                .collect();
+            if resources.contains_key(&key) {
+                return Err(invalid(format!("duplicate resource key {key:?}")));
             }
-            resources
-        };
+            resources.insert(key, indices);
+        }
 
         Ok(AddressablesCatalog {
             locator_id,
@@ -469,170 +319,220 @@ impl<R: Read + Seek> BinaryCatalogReader<R> {
             instance_provider_data,
             scene_provider_data,
             resource_provider_data,
+            locations,
             resources,
         })
     }
 
-    fn get_ot_read_resource(
+    /// All locations reachable from `roots`, sorted by offset
+    fn location_offsets<'r>(
+        &self,
+        roots: impl Iterator<Item = &'r u32>,
+    ) -> Result<Vec<u32>, std::io::Error> {
+        let mut seen = rustc_hash::FxHashSet::default();
+        let mut stack: Vec<u32> = roots.copied().collect();
+        while let Some(offset) = stack.pop() {
+            if !seen.insert(offset) {
+                continue;
+            }
+            let dependencies_offset = self.u32(offset + 12)?;
+            stack.extend(self.offset_array(dependencies_offset)?.unwrap_or_default());
+        }
+        let mut offsets: Vec<u32> = seen.into_iter().collect();
+        offsets.sort_unstable();
+        Ok(offsets)
+    }
+
+    fn location(
         &mut self,
         offset: u32,
-    ) -> Result<Arc<ResourceLocation>, std::io::Error> {
-        if let Some(cached) = self.cache.locations.get(&offset) {
-            return Ok(Arc::clone(cached));
+        location_index: &FxHashMap<u32, usize>,
+    ) -> Result<ResourceLocation, std::io::Error> {
+        let [
+            primary_key,
+            internal_id,
+            provider_id,
+            dependencies,
+            dependency_hash_code,
+            data,
+            type_,
+        ] = self.u32s(offset)?;
+
+        let dependencies = match self.offset_array(dependencies)? {
+            None => Vec::new(),
+            Some(offsets) if offsets.is_empty() => {
+                return Err(invalid(format!(
+                    "empty dependency array of location at {offset:#x}"
+                )));
+            }
+            Some(offsets) => offsets
+                .iter()
+                .map(|offset| location_index[offset])
+                .collect(),
+        };
+        Ok(ResourceLocation {
+            primary_key: self.string(primary_key, Some('/'))?,
+            internal_id: self.string(internal_id, Some('/'))?,
+            provider_id: self.string(provider_id, Some('.'))?,
+            dependencies,
+            dependency_hash_code: dependency_hash_code as i32,
+            data: self.serialized(data, ABRO_TYPE, Self::abro)?,
+            type_: self.assembly_class(type_)?,
+        })
+    }
+
+    fn assembly_class(&mut self, offset: u32) -> Result<AssemblyClass, std::io::Error> {
+        Ok(AssemblyClass {
+            m_AssemblyName: self.string(self.u32(offset)?, Some('.'))?,
+            m_ClassName: self.string(self.u32(offset + 4)?, Some('.'))?,
+        })
+    }
+
+    fn object_init(&mut self, offset: u32) -> Result<ObjectInitializationData, std::io::Error> {
+        Ok(ObjectInitializationData {
+            id: self.string(self.u32(offset)?, None)?,
+            object_type: self.assembly_class(self.u32(offset + 4)?)?,
+            data: self.optional_string(self.u32(offset + 8)?, None)?,
+        })
+    }
+
+    fn serialized<T>(
+        &mut self,
+        offset: u32,
+        expected_type: (&str, &str),
+        read_object: impl FnOnce(&mut Self, u32) -> Result<T, std::io::Error>,
+    ) -> Result<Option<SerializedObject<T>>, std::io::Error> {
+        if offset == NONE {
+            return Ok(None);
         }
-        self.reader.seek(SeekFrom::Start(offset as u64))?;
-        let location = Arc::new(ResourceLocation::from_catalog_here(self)?);
-
-        self.cache.locations.insert(offset, Arc::clone(&location));
-        Ok(location)
-    }
-
-    fn read_offset_array(&mut self, encoded_offset: u32) -> Result<Vec<u32>, std::io::Error> {
-        read_offset_array(&mut self.reader, encoded_offset)
-    }
-}
-
-fn read_i16<R: Read>(reader: &mut R) -> Result<i16, std::io::Error> {
-    let mut buf = [0; _];
-    reader.read_exact(&mut buf)?;
-    Ok(i16::from_le_bytes(buf))
-}
-
-fn read_i32<R: Read>(reader: &mut R) -> Result<i32, std::io::Error> {
-    let mut buf = [0; _];
-    reader.read_exact(&mut buf)?;
-    Ok(i32::from_le_bytes(buf))
-}
-
-fn read_u32<R: Read>(reader: &mut R) -> Result<u32, std::io::Error> {
-    let mut buf = [0; _];
-    reader.read_exact(&mut buf)?;
-    Ok(u32::from_le_bytes(buf))
-}
-fn read_i64<R: Read>(reader: &mut R) -> std::io::Result<i64> {
-    let mut buf = [0; 8];
-    reader.read_exact(&mut buf)?;
-    Ok(i64::from_le_bytes(buf))
-}
-fn read_bool<R: Read>(reader: &mut R) -> std::io::Result<bool> {
-    let mut buf = [0; 1];
-    reader.read_exact(&mut buf)?;
-    Ok(buf[0] != 0)
-}
-fn read_u8<R: Read>(reader: &mut R) -> std::io::Result<u8> {
-    let mut buf = [0; 1];
-    reader.read_exact(&mut buf)?;
-    Ok(buf[0])
-}
-fn read_char<R: Read>(reader: &mut R) -> std::io::Result<char> {
-    let mut buf = [0; 1];
-    reader.read_exact(&mut buf)?;
-    Ok(buf[0] as char)
-}
-
-fn read_encoded_string<R: Read + Seek>(
-    reader: &mut R,
-    cache: &mut Cache,
-    encoded_offset: u32,
-) -> Result<Arc<String>, std::io::Error> {
-    read_encoded_string_sep(reader, cache, encoded_offset, '\0')
-}
-
-fn read_encoded_string_sep<R: Read + Seek>(
-    reader: &mut R,
-    cache: &mut Cache,
-    encoded_offset: u32,
-    dynamic_string_separator: char,
-) -> Result<Arc<String>, std::io::Error> {
-    if let Some(cached) = cache.strings.get(&encoded_offset) {
-        return Ok(Arc::clone(cached));
-    }
-
-    if encoded_offset == u32::MAX {
-        return Ok(Arc::new(String::new()));
-    }
-
-    let unicode = (encoded_offset & 0x80000000) != 0;
-    let dynamic_string = (encoded_offset & 0x40000000) != 0 && dynamic_string_separator != '\0';
-    let offset = encoded_offset & 0x3fffffff;
-
-    let result = if dynamic_string {
-        read_segmented_string(reader, cache, offset, unicode, dynamic_string_separator)?
-    } else {
-        read_basic_string(reader, offset, unicode)?
-    };
-
-    let result = Arc::new(result);
-    cache.strings.insert(encoded_offset, Arc::clone(&result));
-
-    Ok(result)
-}
-
-fn read_basic_string<R: Read + Seek>(
-    reader: &mut R,
-    offset: u32,
-    _unicode: bool,
-) -> Result<String, std::io::Error> {
-    reader.seek(SeekFrom::Start(offset as u64 - 4))?;
-    let length = read_i32(reader)?;
-    let mut buf = vec![0; length as usize];
-    reader.read_exact(&mut buf)?;
-
-    let str = String::from_utf8(buf)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-    Ok(str)
-}
-
-fn read_segmented_string<R: Read + Seek>(
-    reader: &mut R,
-    cache: &mut Cache,
-    offset: u32,
-    _unicode: bool,
-    separator: char,
-) -> Result<String, std::io::Error> {
-    reader.seek(SeekFrom::Start(offset as u64))?;
-
-    let mut parts = Vec::new();
-    loop {
-        let part_offset = read_u32(reader)?;
-        let next_part_offset = read_u32(reader)?;
-        parts.push(read_encoded_string(reader, cache, part_offset)?);
-
-        if next_part_offset == u32::MAX {
-            break;
+        let type_ = self.assembly_class(self.u32(offset)?)?;
+        if !type_.is(expected_type) {
+            return Err(invalid(format!(
+                "expected serialized {expected_type:?}, got {type_:?}"
+            )));
         }
-
-        reader.seek(SeekFrom::Start(next_part_offset as u64))?;
+        let object_offset = self.u32(offset + 4)?;
+        let object = match object_offset {
+            NONE => None,
+            offset => Some(read_object(self, offset)?),
+        };
+        Ok(Some(SerializedObject {
+            type_: Some(type_),
+            object,
+        }))
     }
-    parts.reverse();
-    let parts = parts.iter().map(|part| part.as_str()).collect::<Vec<_>>(); // TODO:perf
-    Ok(parts.join(&separator.to_string()))
+
+    fn string_object(&mut self, offset: u32) -> Result<CatalogString, std::io::Error> {
+        let separator = match self.u8(offset + 4)? {
+            0 => None,
+            c => Some(c as char),
+        };
+        Ok(CatalogString {
+            value: self.string(self.u32(offset)?, separator)?,
+            separator,
+        })
+    }
+
+    fn abro(&mut self, offset: u32) -> Result<AssetBundleRequestOptions, std::io::Error> {
+        let [hash, bundle_name, crc, bundle_size, common_info] = self.u32s(offset)?;
+        Ok(AssetBundleRequestOptions {
+            hash: Hash128::from_u32s(self.u32s(hash)?),
+            crc,
+            common_info: CommonInfo {
+                timeout: self.i16(common_info)?,
+                redirect_limit: self.u8(common_info + 2)?,
+                retry_count: self.u8(common_info + 3)?,
+                flags: self.i32(common_info + 4)?,
+            },
+            bundle_name: self.string(bundle_name, Some('_'))?,
+            bundle_size,
+        })
+    }
+
+    fn string(
+        &mut self,
+        encoded_offset: u32,
+        separator: Option<char>,
+    ) -> Result<Arc<String>, std::io::Error> {
+        self.optional_string(encoded_offset, separator)?
+            .ok_or_else(|| invalid("unexpected null string"))
+    }
+
+    fn optional_string(
+        &mut self,
+        encoded_offset: u32,
+        separator: Option<char>,
+    ) -> Result<Option<Arc<String>>, std::io::Error> {
+        if encoded_offset == NONE {
+            return Ok(None);
+        }
+        if let Some(cached) = self.strings.get(&(encoded_offset, separator)) {
+            return Ok(Some(Arc::clone(cached)));
+        }
+        if encoded_offset & UNICODE_FLAG != 0 {
+            return Err(invalid(format!(
+                "unsupported unicode string at {:#x}",
+                encoded_offset & OFFSET_MASK
+            )));
+        }
+        let offset = encoded_offset & OFFSET_MASK;
+        let value = if encoded_offset & DYNAMIC_FLAG != 0 {
+            let separator = separator.ok_or_else(|| {
+                invalid(format!("segmented string without separator at {offset:#x}"))
+            })?;
+            self.segmented_string(offset, separator)?
+        } else {
+            let bytes = self.length_prefixed(offset)?;
+            String::from_utf8(bytes.to_vec())
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?
+        };
+        let value = Arc::new(value);
+        self.strings
+            .insert((encoded_offset, separator), Arc::clone(&value));
+        Ok(Some(value))
+    }
+
+    fn segmented_string(
+        &mut self,
+        mut offset: u32,
+        separator: char,
+    ) -> Result<String, std::io::Error> {
+        let mut parts = Vec::new();
+        loop {
+            let part = self.string(self.u32(offset)?, None)?;
+            parts.push(part);
+            let next = self.u32(offset + 4)?;
+            if next == NONE {
+                break;
+            }
+            offset = next;
+        }
+        parts.reverse();
+        Ok(parts
+            .iter()
+            .map(|part| part.as_str())
+            .collect::<Vec<_>>()
+            .join(&separator.to_string()))
+    }
+
+    fn offset_array(&self, offset: u32) -> Result<Option<Vec<u32>>, std::io::Error> {
+        if offset == NONE {
+            return Ok(None);
+        }
+        let (chunks, rest) = self.length_prefixed(offset)?.as_chunks::<4>();
+        if !rest.is_empty() {
+            return Err(invalid(format!(
+                "offset array at {offset:#x} has unaligned length"
+            )));
+        }
+        Ok(Some(
+            chunks
+                .iter()
+                .map(|chunk| u32::from_le_bytes(*chunk))
+                .collect(),
+        ))
+    }
 }
-
-fn read_offset_array<R: Read + Seek>(
-    reader: &mut R,
-    encoded_offset: u32,
-) -> Result<Vec<u32>, std::io::Error> {
-    if encoded_offset == u32::MAX {
-        return Ok(vec![]);
-    }
-    reader.seek(SeekFrom::Start(encoded_offset as u64 - 4))?;
-    let byte_size = read_i32(reader)?;
-    if byte_size % 4 != 0 {
-        unreachable!();
-    }
-    let elem_count = byte_size / 4;
-    // PERF: read + reinterpret
-    let mut results = vec![0; elem_count as usize];
-    for i in 0..elem_count {
-        results[i as usize] = read_u32(reader)?;
-    }
-
-    Ok(results)
-}
-
-//
-//
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hash128(u32, u32, u32, u32);
@@ -650,40 +550,6 @@ pub struct AssetBundleRequestOptions {
     pub bundle_name: Arc<String>,
     pub bundle_size: u32,
 }
-impl AssetBundleRequestOptions {
-    fn from_reader<R: Read + Seek>(
-        reader: &mut R,
-        cache: &mut Cache,
-    ) -> Result<Self, std::io::Error> {
-        let hash_offset = read_u32(reader)?;
-        let bundle_name_offset = read_u32(reader)?;
-        let crc = read_u32(reader)?;
-        let bundle_size = read_u32(reader)?;
-        let common_info_offset = read_u32(reader)?;
-
-        reader.seek(SeekFrom::Start(hash_offset as u64))?;
-        let hash_v0 = read_u32(reader)?;
-        let hash_v1 = read_u32(reader)?;
-        let hash_v2 = read_u32(reader)?;
-        let hash_v3 = read_u32(reader)?;
-        let hash = Hash128(hash_v0, hash_v1, hash_v2, hash_v3);
-
-        let bundle_name = read_encoded_string_sep(reader, cache, bundle_name_offset, '_')?;
-        // Crc = crc;
-        // BundleSize = bundleSize;
-
-        reader.seek(SeekFrom::Start(common_info_offset as u64))?;
-        let common_info = CommonInfo::from_reader(reader)?;
-
-        Ok(AssetBundleRequestOptions {
-            hash,
-            crc,
-            common_info,
-            bundle_name,
-            bundle_size,
-        })
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CommonInfo {
@@ -691,141 +557,4 @@ pub struct CommonInfo {
     pub redirect_limit: u8,
     pub retry_count: u8,
     pub flags: i32,
-}
-impl CommonInfo {
-    fn from_reader<R: Read + Seek>(reader: &mut R) -> Result<Self, std::io::Error> {
-        let timeout = read_i16(reader)?;
-        let redirect_limit = read_u8(reader)?;
-        let retry_count = read_u8(reader)?;
-        let flags = read_i32(reader)?;
-        Ok(CommonInfo {
-            timeout,
-            redirect_limit,
-            retry_count,
-            flags,
-        })
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Value {
-    Int(i32),
-    Long(i64),
-    Bool(bool),
-    String(Arc<String>),
-    Hash128(Hash128),
-    Abro(AssemblyClass, AssetBundleRequestOptions),
-}
-
-impl Value {
-    pub fn as_string(&self) -> Option<&str> {
-        match self {
-            Value::String(str) => Some(&**str),
-            _ => None,
-        }
-    }
-    pub fn into_string(self) -> Option<Arc<String>> {
-        match self {
-            Value::String(str) => Some(str),
-            _ => None,
-        }
-    }
-    pub fn into_abro(self) -> Option<AssetBundleRequestOptions> {
-        match self {
-            Value::Abro(_, abro) => Some(abro),
-            _ => None,
-        }
-    }
-}
-
-fn decode_v2<R: Read + Seek>(
-    reader: &mut R,
-    cache: &mut Cache,
-    offset: u32,
-) -> Result<Option<Value>, std::io::Error> {
-    const INT_MATCHNAME: &str = "mscorlib; System.Int32";
-    const LONG_MATCHNAME: &str = "mscorlib; System.Int64";
-    const BOOL_MATCHNAME: &str = "mscorlib; System.Boolean";
-    const STRING_MATCHNAME: &str = "mscorlib; System.String";
-    const HASH128_MATCHNAME: &str = "UnityEngine.CoreModule; UnityEngine.Hash128";
-    const ABRO_MATCHNAME: &str = "Unity.ResourceManager; UnityEngine.ResourceManagement.ResourceProviders.AssetBundleRequestOptions";
-
-    if offset == u32::MAX {
-        return Ok(None);
-    }
-
-    reader.seek(SeekFrom::Start(offset as u64))?;
-    let type_name_offset = read_u32(reader)?;
-    let object_offset = read_u32(reader)?;
-
-    let is_default_object = object_offset == u32::MAX;
-
-    reader.seek(SeekFrom::Start(type_name_offset as u64))?;
-    let serialized_type = AssemblyClass::from_reader(&mut *reader, cache)?;
-    let match_name = serialized_type.get_match_name();
-
-    match match_name.as_str() {
-        INT_MATCHNAME => {
-            if is_default_object {
-                return Ok(Some(Value::Int(0i32)));
-            }
-            reader.seek(SeekFrom::Start(object_offset as u64))?;
-            let value = read_i32(reader)?;
-            Ok(Some(Value::Int(value)))
-        }
-        LONG_MATCHNAME => {
-            if is_default_object {
-                return Ok(Some(Value::Long(0i64)));
-            }
-            reader.seek(SeekFrom::Start(object_offset as u64))?;
-            let value = read_i64(reader)?;
-            Ok(Some(Value::Long(value)))
-        }
-        BOOL_MATCHNAME => {
-            if is_default_object {
-                return Ok(Some(Value::Bool(false)));
-            }
-            reader.seek(SeekFrom::Start(object_offset as u64))?;
-            let value = read_bool(reader)?;
-            Ok(Some(Value::Bool(value)))
-        }
-        STRING_MATCHNAME => {
-            if is_default_object {
-                return Ok(Some(Value::String(Arc::new(String::new()))));
-            }
-            reader.seek(SeekFrom::Start(object_offset as u64))?;
-            let string_offset = read_u32(reader)?;
-            let separator = read_char(reader)?;
-            let value = read_encoded_string_sep(reader, cache, string_offset, separator)?;
-            Ok(Some(Value::String(value)))
-        }
-        HASH128_MATCHNAME => {
-            if is_default_object {
-                return Ok(Some(Value::Hash128(Hash128(0, 0, 0, 0))));
-            }
-            reader.seek(SeekFrom::Start(object_offset as u64))?;
-            let v0 = read_u32(reader)?;
-            let v1 = read_u32(reader)?;
-            let v2 = read_u32(reader)?;
-            let v3 = read_u32(reader)?;
-            Ok(Some(Value::Hash128(Hash128(v0, v1, v2, v3))))
-        }
-        ABRO_MATCHNAME => {
-            if is_default_object {
-                return Ok(None); // loses type info, can't do much
-            }
-
-            let value = {
-                reader.seek(SeekFrom::Start(object_offset as u64))?;
-                let obj = AssetBundleRequestOptions::from_reader(reader, cache)?;
-                Value::Abro(serialized_type, obj)
-            };
-
-            Ok(Some(value))
-        }
-        _ => Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            format!("Unsupported type for deserialization {}", match_name),
-        )),
-    }
 }

@@ -65,9 +65,8 @@ impl SceneIndex {
                     else {
                         continue;
                     };
-                    let Some(dep) = loc
-                        .dependencies
-                        .iter()
+                    let Some(dep) = catalog
+                        .dependencies(loc)
                         .find(|dep| dep.provider_id.as_str() == resource_providers::ASSET_BUNDLE)
                     else {
                         continue;

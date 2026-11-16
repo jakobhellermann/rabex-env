@@ -1,16 +1,16 @@
 //! Parser for the JSON addressables catalog (`catalog.json`), the old alternative to `catalog.bin`.
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::{Context as _, Result, bail};
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64;
+use indexmap::IndexMap;
 use serde_derive::Deserialize;
 
 use crate::addressables::catalog::{
-    AddressablesCatalog, AssemblyClass, AssetBundleRequestOptions, CommonInfo, Hash128,
-    ObjectInitializationData, ResourceLocation,
+    AddressablesCatalog, AssemblyClass, AssetBundleRequestOptions, CatalogKey, CatalogString,
+    CommonInfo, Hash128, ObjectInitializationData, ResourceLocation, SerializedObject,
 };
 
 #[allow(non_snake_case)]
@@ -18,7 +18,7 @@ use crate::addressables::catalog::{
 struct JsonCatalog {
     m_LocatorId: String,
     #[serde(default)]
-    m_BuildResultHash: String,
+    m_BuildResultHash: Option<String>,
     m_InstanceProviderData: JsonObjectInitData,
     m_SceneProviderData: JsonObjectInitData,
     m_ResourceProviderData: Vec<JsonObjectInitData>,
@@ -62,7 +62,7 @@ impl JsonObjectInitData {
         ObjectInitializationData {
             id: Arc::new(self.m_Id),
             object_type: self.m_ObjectType.into_assembly_class(),
-            data: Arc::new(self.m_Data),
+            data: Some(Arc::new(self.m_Data)),
         }
     }
 }
@@ -114,24 +114,29 @@ pub fn parse(bytes: &[u8]) -> Result<AddressablesCatalog> {
         prefixes: &cat.m_InternalIdPrefixes,
         extra_data: &extra_data,
     };
-    let mut memo: Vec<Option<Arc<ResourceLocation>>> = vec![None; entry_count];
-    for i in 0..entry_count {
-        ctx.build_location(i, &mut memo)?;
-    }
+    let locations = (0..entry_count)
+        .map(|i| ctx.build_location(i))
+        .collect::<Result<_>>()?;
 
     // Each bucket maps its key to the locations of its entries.
-    let mut resources = HashMap::default();
-    for (i, (_, entries)) in buckets.iter().enumerate() {
-        let locations = entries
-            .iter()
-            .map(|&e| Arc::clone(memo[e].as_ref().expect("all entries built")))
-            .collect();
-        resources.insert(Arc::new(keys[i].clone()), locations);
+    let mut resources = IndexMap::with_capacity(buckets.len());
+    for (key, (_, entries)) in keys.iter().zip(&buckets) {
+        let key = CatalogKey {
+            type_: None,
+            object: Some(CatalogString {
+                value: Arc::new(key.clone()),
+                separator: None,
+            }),
+        };
+        if resources.contains_key(&key) {
+            bail!("duplicate resource key {key:?}");
+        }
+        resources.insert(key, entries.clone());
     }
 
     Ok(AddressablesCatalog {
         locator_id: Arc::new(cat.m_LocatorId),
-        build_result_hash: Arc::new(cat.m_BuildResultHash),
+        build_result_hash: cat.m_BuildResultHash.map(Arc::new),
         instance_provider_data: cat.m_InstanceProviderData.into_init_data(),
         scene_provider_data: cat.m_SceneProviderData.into_init_data(),
         resource_provider_data: cat
@@ -139,6 +144,7 @@ pub fn parse(bytes: &[u8]) -> Result<AddressablesCatalog> {
             .into_iter()
             .map(JsonObjectInitData::into_init_data)
             .collect(),
+        locations,
         resources,
     })
 }
@@ -182,24 +188,12 @@ struct BuildCtx<'a> {
 }
 
 impl BuildCtx<'_> {
-    fn build_location(
-        &self,
-        idx: usize,
-        memo: &mut Vec<Option<Arc<ResourceLocation>>>,
-    ) -> Result<Arc<ResourceLocation>> {
-        if let Some(cached) = &memo[idx] {
-            return Ok(Arc::clone(cached));
-        }
+    fn build_location(&self, idx: usize) -> Result<ResourceLocation> {
         let entry = &self.raw[idx];
 
-        // Dependencies are all locations grouped under the dependency key's
-        // bucket (assumed acyclic, as bundle dependencies are).
+        // Dependencies are all locations grouped under the dependency key's bucket.
         let dependencies = if entry.dependency_key >= 0 {
-            let dep_entries = self.buckets[entry.dependency_key as usize].1.clone();
-            dep_entries
-                .iter()
-                .map(|&e| self.build_location(e, memo))
-                .collect::<Result<Vec<_>>>()?
+            self.buckets[entry.dependency_key as usize].1.clone()
         } else {
             Vec::new()
         };
@@ -233,17 +227,18 @@ impl BuildCtx<'_> {
             None
         };
 
-        let location = Arc::new(ResourceLocation {
+        Ok(ResourceLocation {
             internal_id: Arc::new(internal_id),
             provider_id: Arc::new(self.provider_ids[entry.provider as usize].clone()),
             dependencies,
-            data,
+            data: data.map(|abro| SerializedObject {
+                type_: None,
+                object: Some(abro),
+            }),
             dependency_hash_code: entry.dependency_hash,
             primary_key: Arc::new(primary_key),
             type_,
-        });
-        memo[idx] = Some(Arc::clone(&location));
-        Ok(location)
+        })
     }
 }
 
