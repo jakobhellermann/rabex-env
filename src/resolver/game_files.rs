@@ -28,30 +28,36 @@ fn find_unity_data_dir(install_dir: &Path) -> Result<Option<PathBuf>> {
         .filter_map(Result::ok)
         .find_map(|entry| {
             let path = entry.path();
-            if is_unity_data_dir(&path) {
-                return Some(path);
+            match is_unity_data_dir(&path) {
+                true => Some(path),
+                false => app_data_dir(&path),
             }
-            // On macOS the player ships as a `.app` bundle with the Unity data
-            // dir at `<Game>.app/Contents/Resources/Data`.
-            let is_app_bundle = path
-                .extension()
-                .and_then(OsStr::to_str)
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("app"));
-            if is_app_bundle {
-                let data_dir = path.join("Contents/Resources/Data");
-                if data_dir.is_dir() {
-                    return Some(data_dir);
-                }
-            }
-            None
         }))
 }
 
 fn is_unity_data_dir(dir: &Path) -> bool {
-    dir.file_name()
+    let is_data_dir = dir
+        .file_name()
         .and_then(OsStr::to_str)
-        .is_some_and(|name| name.ends_with("_Data"))
-        && dir.is_dir()
+        .is_some_and(|name| name.ends_with("_Data"));
+    (is_data_dir || is_app_data_dir(dir)) && dir.is_dir()
+}
+
+/// The data dir `<Game>.app/Contents/Resources/Data` of a macOS build
+fn app_data_dir(app: &Path) -> Option<PathBuf> {
+    let is_app_bundle = app
+        .extension()
+        .and_then(OsStr::to_str)
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("app"));
+    let data_dir = app.join("Contents/Resources/Data");
+    (is_app_bundle && data_dir.is_dir()).then_some(data_dir)
+}
+
+fn is_app_data_dir(dir: &Path) -> bool {
+    dir.parent()
+        .and_then(Path::parent)
+        .and_then(Path::parent)
+        .is_some_and(|app| app_data_dir(app).as_deref() == Some(dir))
 }
 
 impl GameFiles {
@@ -66,18 +72,19 @@ impl GameFiles {
             game_dir.display()
         );
 
-        Ok(match is_unity_data_dir(game_dir) {
-            true => game_dir.to_owned(),
-            false => match find_unity_data_dir(game_dir)? {
-                Some(dir) => dir,
-                None => {
-                    bail!(
-                        "Game Directory '{}' is not a unity game. It should have a gamename_Data folder.",
-                        game_dir.display()
-                    )
-                }
-            },
-        })
+        if is_unity_data_dir(game_dir) {
+            return Ok(game_dir.to_owned());
+        }
+        if let Some(dir) = app_data_dir(game_dir) {
+            return Ok(dir);
+        }
+        match find_unity_data_dir(game_dir)? {
+            Some(dir) => Ok(dir),
+            None => bail!(
+                "Game Directory '{}' is not a unity game. It should have a gamename_Data folder, or gamename.app/Contents/Resources/Data on macOS.",
+                game_dir.display()
+            ),
+        }
     }
     fn probe_inner(game_dir: &Path) -> Result<GameFiles> {
         let game_dir = GameFiles::probe_dir(game_dir)?;
