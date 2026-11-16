@@ -67,6 +67,57 @@ pub fn replace_pptrs_inplace_endianed(
     }
 }
 
+/// Replace every PPtr in `value` using `f`
+pub fn map_pptrs_inplace(
+    value: &mut [u8],
+    ty: &TypeTreeNode,
+    endianness: Endianness,
+    f: impl FnMut(&TypeTreeNode, PPtr) -> Result<PPtr>,
+) -> Result<()> {
+    match endianness {
+        Endianness::Little => map_pptrs_inplace_inner::<LittleEndian>(value, ty, f),
+        Endianness::Big => map_pptrs_inplace_inner::<BigEndian>(value, ty, f),
+    }
+}
+
+fn map_pptrs_inplace_inner<B: ByteOrder>(
+    value: &mut [u8],
+    ty: &TypeTreeNode,
+    mut f: impl FnMut(&TypeTreeNode, PPtr) -> Result<PPtr>,
+) -> Result<()> {
+    let len = value.len();
+    let mut cursor = Cursor::new(value);
+    let mut error = None;
+    let visited = visit::<_, B>(&mut cursor, ty, &mut |tt, reader| {
+        if !tt.m_Type.starts_with("PPtr<") {
+            return Ok(false);
+        }
+        let pos = reader.position() as usize;
+        let pptr = PPtr {
+            m_FileID: reader.read_i32::<B>()?.into(),
+            m_PathID: reader.read_i64::<B>()?,
+        };
+        if tt.requires_align() {
+            reader.align4()?;
+        }
+
+        let new = f(tt, pptr).map_err(|e| std::io::Error::other(error.insert(e).to_string()))?;
+        B::write_i32(&mut reader.get_mut()[pos..], new.m_FileID.value());
+        B::write_i64(&mut reader.get_mut()[pos + 4..], new.m_PathID);
+        Ok(true)
+    });
+    if let Some(error) = error {
+        return Err(error);
+    }
+    visited?;
+    anyhow::ensure!(
+        cursor.position() as usize == len,
+        "type tree covers {} of {len} bytes",
+        cursor.position()
+    );
+    Ok(())
+}
+
 pub fn replace_pptrs_inplace<B: ByteOrder>(
     value: &mut [u8],
     ty: &TypeTreeNode,
