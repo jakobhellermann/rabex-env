@@ -21,6 +21,8 @@ use crate::{Environment, reachable};
 pub struct PruneSceneResult {
     pub reachable: BTreeSet<PathId>,
     pub roots: Vec<(String, Transform)>,
+    /// The retained paths that don't exist in the scene
+    pub missing: Vec<String>,
 }
 
 pub fn prune_scene_handle<'a>(
@@ -51,20 +53,18 @@ pub fn prune_scene<'a>(
 
     let mut retain_ids = VecDeque::with_capacity(retain_paths.size_hint().0);
     let mut retain_objects = Vec::with_capacity(retain_paths.size_hint().0);
+    let mut missing = Vec::new();
     for path in retain_paths {
         match scene_lookup.lookup_path(&mut *reader, path)? {
             Some((path_id, transform)) => {
                 retain_ids.push_back(path_id);
                 retain_objects.push((path.to_owned(), transform));
             }
-            None => {
-                // TODO
-                eprintln!("Could not find path '{path}'")
-            }
+            None => missing.push(path.to_owned()),
         }
     }
 
-    prune_scene_inner(
+    let mut result = prune_scene_inner(
         env,
         file,
         reader,
@@ -72,7 +72,9 @@ pub fn prune_scene<'a>(
         retain_objects,
         replacements,
         disable_roots,
-    )
+    )?;
+    result.missing = missing;
+    Ok(result)
 }
 
 fn prune_scene_inner(
@@ -135,6 +137,7 @@ fn prune_scene_inner(
     Ok(PruneSceneResult {
         reachable: all_reachable,
         roots: retain_objects,
+        missing: Vec::new(),
     })
 }
 
