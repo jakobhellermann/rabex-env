@@ -26,10 +26,21 @@ impl CatalogBuilder {
         internal_id: &str,
         options: AssetBundleRequestOptions,
     ) -> usize {
+        self.add_bundle_with_dependencies(primary_key, internal_id, options, Vec::new())
+    }
+
+    /// Like [`Self::add_bundle`], loaded after the bundle locations `dependencies`
+    pub fn add_bundle_with_dependencies(
+        &mut self,
+        primary_key: &str,
+        internal_id: &str,
+        options: AssetBundleRequestOptions,
+        dependencies: Vec<usize>,
+    ) -> usize {
         self.add(ResourceLocation {
             internal_id: Arc::new(internal_id.to_owned()),
             provider_id: Arc::new(resource_providers::ASSET_BUNDLE.to_owned()),
-            dependencies: Vec::new(),
+            dependencies,
             data: Some(SerializedObject {
                 type_: Some(AssemblyClass::new(
                     assemblies::RESOURCE_MANAGER,
