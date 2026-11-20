@@ -78,6 +78,29 @@ impl CatalogBuilder {
         })
     }
 
+    /// Add the scene at the path `internal_id` in its streamed scene bundle, returning its location.
+    ///
+    /// `dependencies` lists every bundle location the scene needs.
+    pub fn add_scene(
+        &mut self,
+        primary_key: &str,
+        internal_id: &str,
+        dependencies: Vec<usize>,
+    ) -> usize {
+        self.add(ResourceLocation {
+            internal_id: Arc::new(internal_id.to_owned()),
+            provider_id: Arc::new(resource_providers::SCENE.to_owned()),
+            dependencies,
+            data: None,
+            dependency_hash_code: 0,
+            primary_key: Arc::new(primary_key.to_owned()),
+            type_: AssemblyClass::new(
+                assemblies::RESOURCE_MANAGER,
+                "UnityEngine.ResourceManagement.ResourceProviders.SceneInstance",
+            ),
+        })
+    }
+
     pub fn add_key(&mut self, key: &str, location: usize) {
         let key = CatalogKey {
             type_: Some(AssemblyClass::new(assemblies::MSCORLIB, "System.String")),

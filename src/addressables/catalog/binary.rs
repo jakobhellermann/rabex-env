@@ -76,6 +76,7 @@ pub mod resource_providers {
         "UnityEngine.ResourceManagement.ResourceProviders.ContentCatalogProvider";
     pub const JSON_ASSET: &str =
         "UnityEngine.ResourceManagement.ResourceProviders.JsonAssetProvider";
+    pub const SCENE: &str = "UnityEngine.ResourceManagement.ResourceProviders.SceneProvider";
     pub const TEXT_DATA: &str = "UnityEngine.ResourceManagement.ResourceProviders.TextDataProvider";
 }
 
