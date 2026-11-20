@@ -4,6 +4,7 @@
 //! file, and [`retarget`] re-encodes them for another Unity version.
 
 pub mod bundle;
+pub mod compat;
 pub mod fields;
 pub mod layout;
 pub mod material;

@@ -7,6 +7,7 @@ description = "Rewrite Unity asset bundles and serialized files: typetree re-enc
 
 [dependencies]
 anyhow = "1.0"
+rabex-env = { path = "../.." }
 serde = "1.0"
 byteorder = "1.5"
 rabex = { version = "0.3", default-features = false, features = ["compression-lz4"] }
@@ -22,3 +23,4 @@ serde-value = { git = "https://github.com/jakobhellermann/serde-value", branch =
 [dev-dependencies]
 # the tests read the fixture bundles through the embedded type tree package
 rabex = { version = "0.3", features = ["embed-tpk"] }
+memmap2 = "0.9"
