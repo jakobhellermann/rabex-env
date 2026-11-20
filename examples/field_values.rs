@@ -132,7 +132,7 @@ fn main() -> Result<()> {
                     return tally;
                 };
                 for entry in reader.serialized_files() {
-                    if let Ok(bytes) = reader.read_entry(entry) {
+                    if let Ok(bytes) = reader.read_at_entry(entry) {
                         let _ = tally_file(&bytes, &version, true, &wanted, &tpk, &mut tally);
                     }
                 }

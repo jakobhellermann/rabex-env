@@ -44,7 +44,7 @@ fn differ(a: &Path, b: &Path, config: &ExtractionConfig) -> Result<Option<String
         if (&x.path, x.flags) != (&y.path, y.flags) {
             return Ok(Some(format!("entry {} vs {}", x.path, y.path)));
         }
-        if a.read_entry(x)? != b.read_entry(y)? {
+        if a.read_at_entry(x)? != b.read_at_entry(y)? {
             return Ok(Some(format!("{} differs", x.path)));
         }
     }

@@ -1,6 +1,5 @@
 //! Mapping the serialized files of asset bundles.
 
-use std::borrow::Cow;
 use std::io::Cursor;
 
 use anyhow::{Context, Result};
@@ -75,7 +74,7 @@ pub fn rewrite_bundle<P: TypeTreeProvider>(
     let mut files = Vec::new();
     let mut changed = false;
     for entry in reader.files() {
-        let data = reader.read_entry(entry)?;
+        let data = reader.read_at_entry(entry)?;
         let serialized = reader.serialized_files().any(|s| s.path == entry.path);
         let rewritten = match serialized {
             true => {
@@ -91,7 +90,7 @@ pub fn rewrite_bundle<P: TypeTreeProvider>(
             false => None,
         };
         changed |= rewritten.is_some();
-        files.push((entry, rewritten.map(Cow::Owned).unwrap_or(data)));
+        files.push((entry, rewritten.unwrap_or(data)));
     }
     if !changed {
         return Ok(None);
@@ -117,7 +116,7 @@ pub fn rewrite_bundle<P: TypeTreeProvider>(
         out = out.without_revision();
     }
     for (entry, data) in files {
-        out.add_file_with_flags(&entry.path, data.as_ref(), entry.flags)?;
+        out.add_file_with_flags(&entry.path, &mut data.as_slice(), entry.flags)?;
     }
     let mut written = Cursor::new(Vec::new());
     let compression = versions

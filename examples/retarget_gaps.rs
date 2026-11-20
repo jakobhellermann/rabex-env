@@ -38,7 +38,7 @@ fn main() -> Result<()> {
         .par_iter()
         .map(|entry| {
             let result = (|| -> Result<Report> {
-                let bytes = reader.read_entry(entry)?;
+                let bytes = reader.read_at_entry(entry)?;
                 let mut rewriter = SerializedFileRewriter::new(&bytes, &tpk, &common)?;
                 let report = retarget.apply(&mut rewriter)?;
                 rewriter.finish()?;
