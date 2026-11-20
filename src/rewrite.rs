@@ -64,8 +64,8 @@ pub enum Scalar {
 /// Where some scalar fields lie in the objects of one type tree.
 pub struct Fields {
     steps: Vec<Step>,
-    /// How many fields each occurrence has.
-    count: usize,
+    /// The fields of each occurrence, as asked for.
+    names: Vec<String>,
 }
 
 impl Fields {
@@ -83,7 +83,7 @@ impl Fields {
         trim_trailing_skips(&mut steps);
         Ok(Fields {
             steps: vec![Step::Occurrence(Layout::of(tree), steps)],
-            count: paths.len(),
+            names: paths.iter().map(ToString::to_string).collect(),
         })
     }
 
@@ -98,7 +98,7 @@ impl Fields {
         trim_trailing_skips(&mut steps);
         Ok(Some(Fields {
             steps,
-            count: names.len(),
+            names: names.iter().map(|name| name.to_string()).collect(),
         }))
     }
 
@@ -109,7 +109,8 @@ impl Fields {
             offset: 0,
             kind: ScalarKind::Bool,
         };
-        let mut found = vec![unset; self.count];
+        let mut found = vec![unset; self.names.len()];
+
         let mut reader = Reader::new(object);
         walk(&self.steps, &mut reader, &mut found, &mut f)
     }
@@ -123,7 +124,8 @@ impl Fields {
     ) -> Result<()> {
         let bytes: &[u8] = object;
         let mut writes = Vec::new();
-        let mut values = Vec::with_capacity(self.count);
+        let mut values = Vec::with_capacity(self.names.len());
+
         self.find(bytes, |fields| {
             values.clear();
             for field in fields {
@@ -131,14 +133,23 @@ impl Fields {
             }
 
             f(&mut values)?;
-            writes.extend(fields.iter().copied().zip(values.iter().copied()));
+
+            writes.extend(
+                fields
+                    .iter()
+                    .copied()
+                    .zip(values.iter().copied())
+                    .enumerate(),
+            );
             Ok(())
         })?;
 
         let mut buf = [0u8; 8];
-        for (field, value) in writes {
+        for (index, (field, value)) in writes {
             // compare the bytes: a UInt8 field reads as an Int, while `f` may give it a Bool
-            let encoded = field.encode(value, &mut buf)?;
+            let encoded = field
+                .encode(value, &mut buf)
+                .with_context(|| self.names[index].clone())?;
             if object[field.range()] != *encoded {
                 object.to_mut()[field.range()].copy_from_slice(encoded);
             }
@@ -644,11 +655,11 @@ mod tests {
         };
         assert_eq!(
             error([Scalar::Int(256), Scalar::Bool(false)]),
-            "Int(256) is out of range for a U8"
+            "n: Int(256) is out of range for a U8"
         );
         assert_eq!(
             error([Scalar::Int(0), Scalar::Int(1)]),
-            "Int(1) for a Bool field"
+            "b: Int(1) for a Bool field"
         );
         Ok(())
     }
