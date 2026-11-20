@@ -373,3 +373,121 @@ fn find_type<'a>(node: &'a TypeTreeNode, ty: &str) -> Option<&'a TypeTreeNode> {
     }
     node.children.iter().find_map(|child| find_type(child, ty))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn node(ty: &str, name: &str, children: Vec<TypeTreeNode>) -> TypeTreeNode {
+        TypeTreeNode {
+            m_Type: ty.to_owned(),
+            m_Name: name.to_owned(),
+            m_MetaFlag: Some(0),
+            children,
+            ..Default::default()
+        }
+    }
+
+    fn leaf(ty: &str, name: &str) -> TypeTreeNode {
+        node(ty, name, vec![])
+    }
+
+    fn vector(name: &str, element: TypeTreeNode) -> TypeTreeNode {
+        node(
+            "vector",
+            name,
+            vec![node("Array", "Array", vec![leaf("int", "size"), element])],
+        )
+    }
+
+    /// An AnimationClip with a StreamedClip, in Unity 6's form and in 2020's.
+    fn clips() -> (TypeTreeNode, TypeTreeNode) {
+        let streamed = |counts: Vec<TypeTreeNode>| {
+            let mut fields = vec![vector("data", leaf("UInt32", "data"))];
+            fields.extend(counts);
+            node("StreamedClip", "m_StreamedClip", fields)
+        };
+        let clip = |streamed| {
+            node(
+                "AnimationClip",
+                "Base",
+                vec![leaf("int", "m_Before"), streamed],
+            )
+        };
+        let source = clip(streamed(vec![
+            leaf("UInt16", "curveCount"),
+            leaf("UInt16", "discreteCurveCount"),
+        ]));
+        let target = clip(streamed(vec![leaf("UInt32", "curveCount")]));
+        (source, target)
+    }
+
+    fn v2020() -> UnityVersion {
+        "2020.2.2f1".parse().unwrap()
+    }
+
+    #[test]
+    fn discrete_curves_fold_into_the_curve_count_in_place() -> Result<()> {
+        let (source, target) = clips();
+        let compat = Compat::plan(&source, &target)?.expect("the clip needs fixing");
+        assert!(compat.unfixable().is_empty());
+
+        #[rustfmt::skip]
+        let object = [
+            9, 0, 0, 0,             // m_Before
+            1, 0, 0, 0, 7, 0, 0, 0, // data: [7]
+            3, 0, 2, 0,             // curveCount 3, discreteCurveCount 2
+        ];
+        let mut patched = Cow::Borrowed(&object[..]);
+        compat.apply(&mut patched, &v2020())?;
+        #[rustfmt::skip]
+        assert_eq!(*patched, [
+            9, 0, 0, 0,
+            1, 0, 0, 0, 7, 0, 0, 0,
+            5, 0, 0, 0,
+        ]);
+        assert_eq!(
+            diff(&object, &patched).collect::<Vec<_>>(),
+            [(12, &[5][..]), (14, &[0][..])]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_value_too_wide_for_the_source_field_fails() -> Result<()> {
+        let (source, target) = clips();
+        let compat = Compat::plan(&source, &target)?.expect("the clip needs fixing");
+        let object = [0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 1, 0];
+        let error = compat
+            .apply(&mut Cow::Borrowed(&object[..]), &v2020())
+            .expect_err("65536 curves don't fit a UInt16");
+        assert_eq!(
+            format!("{error:#}"),
+            "curveCount: Int(65536) is out of range for a U16"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_renamed_field_is_unfixable() -> Result<()> {
+        let source = node(
+            "Rigidbody2D",
+            "Base",
+            vec![leaf("float", "m_LinearDamping")],
+        );
+        let target = node("Rigidbody2D", "Base", vec![leaf("float", "m_LinearDrag")]);
+        let compat = Compat::plan(&source, &target)?.expect("the rename is reported");
+        assert_eq!(
+            compat.unfixable(),
+            ["Rigidbody2D.m_LinearDrag: renamed from m_LinearDamping"]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn matching_trees_need_nothing() -> Result<()> {
+        let (_, target) = clips();
+        assert!(Compat::plan(&target, &target)?.is_none());
+        Ok(())
+    }
+}
