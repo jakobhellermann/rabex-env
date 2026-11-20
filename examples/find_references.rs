@@ -84,8 +84,8 @@ fn build_externals_index(env: &Environment) -> Result<FxHashMap<String, Vec<Stri
                 .context("bundle has no main serialized file")?;
             for entry in bundle.serialized_files() {
                 let archive_path = ArchivePath::new(&bundle_id, &entry.path).to_string();
-                let data = bundle.read_at_entry(entry)?;
-                let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+                let data = bundle.read_entry(entry)?;
+                let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
                 for external in file.externals_paths() {
                     acc.push((external.to_owned(), archive_path.clone()));
                 }

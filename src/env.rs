@@ -445,7 +445,7 @@ impl<R: EnvResolver, P: TypeTreeProvider + Sync> Environment<R, P> {
 
                 for entry in bundle.serialized_files() {
                     let archive_path = ArchivePath::new(bundle_identifier, &entry.path);
-                    let data = bundle.read_at_entry(entry)?;
+                    let data = bundle.read_entry(entry)?.into_owned();
                     let file = SerializedFile::from_reader_with_version(
                         &mut Cursor::new(data.as_slice()),
                         &unity_version,

@@ -7,11 +7,11 @@ description = "Decode Unity Texture2D pixel data into RGBA images and render Spr
 
 [dependencies]
 anyhow = "1.0"
-rabex = { version = "0.3", default-features = false }
+rabex = { version = "0.3.2", default-features = false }
 texture2ddecoder = { git = "https://github.com/jakobhellermann/texture2ddecoder-rs", branch = "dev" }
 image = { version = "0.25", default-features = false, features = ["png"] }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-rabex = { version = "0.3", default-features = false, features = ["compression-lz4"] }
+rabex = { version = "0.3.2", default-features = false, features = ["compression-lz4"] }
 serde_json = "1.0"

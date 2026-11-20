@@ -44,7 +44,7 @@ fn parse(c: &mut Criterion) {
                     .serialized_files()
                     .find(|x| !x.path.ends_with("sharedAssets"))
                     .unwrap();
-                bundle.read_at_entry(file).unwrap()
+                bundle.read_entry(file).unwrap().into_owned()
 
                 /*let file = File::open(path).unwrap();
                 let reader = BufReader::new(file);
@@ -76,16 +76,12 @@ fn parse(c: &mut Criterion) {
             .serialized_files()
             .find(|x| !x.path.ends_with("sharedAssets"))
             .unwrap();
-        let data = bundle.read_at_entry(file).unwrap();
+        let data = bundle.read_entry(file).unwrap();
         serialized_group.throughput(Throughput::Bytes(data.len() as u64));
 
-        serialized_group.bench_with_input(
-            BenchmarkId::from_parameter(name),
-            data.as_slice(),
-            |b, data| {
-                b.iter(|| SerializedFile::from_reader(&mut Cursor::new(data)).unwrap());
-            },
-        );
+        serialized_group.bench_with_input(BenchmarkId::from_parameter(name), &*data, |b, data| {
+            b.iter(|| SerializedFile::from_reader(&mut Cursor::new(data)).unwrap());
+        });
     }
     serialized_group.finish();
 
@@ -98,9 +94,9 @@ fn parse(c: &mut Criterion) {
             .serialized_files()
             .find(|x| !x.path.ends_with("sharedAssets"))
             .unwrap();
-        let data = bundle.read_at_entry(file).unwrap();
+        let data = bundle.read_entry(file).unwrap();
 
-        let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice())).unwrap();
+        let file = SerializedFile::from_reader(&mut Cursor::new(&*data)).unwrap();
 
         objects_group.throughput(Throughput::Elements(file.objects().len() as u64));
 
@@ -110,7 +106,7 @@ fn parse(c: &mut Criterion) {
             |b, file| {
                 b.iter(|| {
                     for obj in file.objects() {
-                        let mut reader = Cursor::new(data.as_slice());
+                        let mut reader = Cursor::new(&*data);
                         match file
                             .read::<serde_json::Value>(obj, &env.tpk, &mut reader)
                             .context(obj.m_PathID)

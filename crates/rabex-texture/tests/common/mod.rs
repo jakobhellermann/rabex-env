@@ -46,7 +46,7 @@ impl<M: DeserializeOwned> Group<M> {
         let entry = bundle
             .main_serializedfile()
             .context("bundle without serialized file")?;
-        let data = bundle.read_at_entry(entry)?;
+        let data = bundle.read_entry(entry)?.into_owned();
         let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
         Ok(Group {
             dir: dir.to_owned(),
