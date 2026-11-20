@@ -22,7 +22,7 @@ fn main() -> Result<()> {
     let files: Vec<Vec<u8>> = match reader {
         Ok(reader) => reader
             .serialized_files()
-            .map(|entry| reader.read_at_entry(entry).unwrap())
+            .map(|entry| reader.read_entry(entry).unwrap().into_owned())
             .collect(),
         // not a bundle: the file itself
         Err(_) => vec![data],

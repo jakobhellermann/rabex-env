@@ -21,17 +21,14 @@ fn main() -> Result<()> {
     let reader =
         BundleFileReader::from_reader(Cursor::new(data.as_slice()), &ExtractionConfig::default())?;
     for entry in reader.serialized_files() {
-        let file_data = reader.read_at_entry(entry)?;
-        let file = SerializedFile::from_reader(&mut Cursor::new(file_data.as_slice()))?;
+        let file_data = reader.read_entry(entry)?;
+        let file = SerializedFile::from_reader(&mut Cursor::new(&*file_data))?;
         for info in file
             .objects()
             .filter(|o| o.m_ClassID == ClassId::ComputeShader)
         {
-            let shader: ComputeShader = file.read(
-                info,
-                NullTypeTreeProvider,
-                &mut Cursor::new(file_data.as_slice()),
-            )?;
+            let shader: ComputeShader =
+                file.read(info, NullTypeTreeProvider, &mut Cursor::new(&*file_data))?;
             if shader.m_Name != name {
                 continue;
             }

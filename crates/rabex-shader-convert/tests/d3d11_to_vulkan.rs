@@ -22,17 +22,11 @@ fn windows_shaders(version_dir: &Path) -> Result<Vec<Shader>> {
     let entry = bundle
         .main_serializedfile()
         .context("bundle without serialized file")?;
-    let data = bundle.read_at_entry(entry)?;
-    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+    let data = bundle.read_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
     file.objects()
         .filter(|o| o.m_ClassID == ClassId::Shader)
-        .map(|info| {
-            Ok(file.read(
-                info,
-                NullTypeTreeProvider,
-                &mut Cursor::new(data.as_slice()),
-            )?)
-        })
+        .map(|info| Ok(file.read(info, NullTypeTreeProvider, &mut Cursor::new(&*data))?))
         .collect()
 }
 

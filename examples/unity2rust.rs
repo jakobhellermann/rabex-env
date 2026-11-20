@@ -70,8 +70,8 @@ fn bundle_typetrees(path: &str) -> Result<(String, HashMap<ClassId, TypeTreeNode
     let entry = reader
         .main_serializedfile()
         .with_context(|| format!("{path}: no serialized file"))?;
-    let file_data = reader.read_at_entry(entry)?;
-    let file = SerializedFile::from_reader(&mut std::io::Cursor::new(file_data.as_slice()))?;
+    let file_data = reader.read_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut std::io::Cursor::new(&*file_data))?;
     let version = file
         .m_UnityVersion
         .as_ref()

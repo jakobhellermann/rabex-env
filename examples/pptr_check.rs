@@ -57,11 +57,11 @@ fn pointers(path: &str, version: &UnityVersion) -> Result<BTreeMap<String, Vec<(
     let reader = BundleFileReader::from_reader(Cursor::new(std::fs::read(path)?), &config)?;
     let mut all = BTreeMap::new();
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         let file = SerializedFile::from_reader_with_version(&mut Cursor::new(&data), version)?;
         for info in file.objects() {
             let tree = file.get_typetree_for(info, &NullTypeTreeProvider)?;
-            let mut cursor = Cursor::new(data.as_slice());
+            let mut cursor = Cursor::new(&*data);
             cursor.set_position(info.m_Offset as u64);
             let Ok(value) = rabex::serde_typetree::from_reader_endianed::<Value>(
                 &mut cursor,

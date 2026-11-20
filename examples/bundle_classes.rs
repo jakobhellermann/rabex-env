@@ -15,8 +15,8 @@ fn main() -> Result<()> {
         )?;
         println!("== {path}");
         for entry in bundle.serialized_files() {
-            let data = bundle.read_at_entry(entry)?;
-            let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+            let data = bundle.read_entry(entry)?;
+            let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
             println!(
                 "  {}: unity version {}, format version {}, {} objects",
                 entry.path,

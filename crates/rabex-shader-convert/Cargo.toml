@@ -11,7 +11,7 @@ glslang = "0.9"
 hlslcc = { path = "../hlslcc" }
 md-5 = "0.10"
 regex = "1.11"
-rabex = { version = "0.3", default-features = false, features = ["compression-lz4"] }
+rabex = { version = "0.3.2", default-features = false, features = ["compression-lz4"] }
 rabex-shader = { path = "../rabex-shader" }
 smolv = { path = "../smolv" }
 spirv = "0.4"

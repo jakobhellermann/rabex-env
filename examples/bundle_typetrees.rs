@@ -19,7 +19,7 @@ fn main() -> Result<()> {
     };
     let reader = BundleFileReader::from_reader(Cursor::new(std::fs::read(&path)?), &config)?;
     for entry in reader.files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         println!(
             "  file {} flags {} {} bytes",
             entry.path,
@@ -28,7 +28,7 @@ fn main() -> Result<()> {
         );
     }
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         let file = SerializedFile::from_reader_with_version(&mut Cursor::new(&data), &source)?;
         let with_tree = file.m_Types.iter().filter(|t| t.m_Type.is_some()).count();
         println!(

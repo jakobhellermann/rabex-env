@@ -362,14 +362,10 @@ fn bundle_shaders(dir: &Path, manifest: &Manifest) -> Result<Vec<Shader>> {
         let entry = bundle
             .main_serializedfile()
             .context("bundle without serialized file")?;
-        let data = bundle.read_at_entry(entry)?;
-        let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+        let data = bundle.read_entry(entry)?;
+        let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
         for info in file.objects().filter(|o| o.m_ClassID == ClassId::Shader) {
-            shaders.push(file.read(
-                info,
-                NullTypeTreeProvider,
-                &mut Cursor::new(data.as_slice()),
-            )?);
+            shaders.push(file.read(info, NullTypeTreeProvider, &mut Cursor::new(&*data))?);
         }
     }
     Ok(shaders)

@@ -43,7 +43,7 @@ fn main() -> Result<()> {
                 &config,
             )?;
             let entry = reader.serialized_files().next().context("no file")?;
-            reader.read_at_entry(entry)?
+            reader.read_entry(entry)?.into_owned()
         } else {
             raw
         };

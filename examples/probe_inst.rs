@@ -95,13 +95,13 @@ fn main() -> Result<()> {
             &ExtractionConfig::default(),
         )?;
         let entry = bundle.main_serializedfile().context("no serialized file")?;
-        let data = bundle.read_at_entry(entry)?;
-        let file = SerializedFile::from_reader(&mut std::io::Cursor::new(data.as_slice()))?;
+        let data = bundle.read_entry(entry)?;
+        let file = SerializedFile::from_reader(&mut std::io::Cursor::new(&*data))?;
         for info in file.objects().filter(|o| o.m_ClassID == ClassId::Shader) {
             let shader: Shader = file.read(
                 info,
                 NullTypeTreeProvider,
-                &mut std::io::Cursor::new(data.as_slice()),
+                &mut std::io::Cursor::new(&*data),
             )?;
             inspect(&shader, &want)?;
         }

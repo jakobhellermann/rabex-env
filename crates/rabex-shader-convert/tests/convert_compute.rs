@@ -25,8 +25,8 @@ fn compute_shaders(path: &Path) -> Result<(Vec<ComputeShader>, TypeTreeNode)> {
     let entry = bundle
         .main_serializedfile()
         .context("bundle without serialized file")?;
-    let file_data = bundle.read_at_entry(entry)?;
-    let file = SerializedFile::from_reader(&mut Cursor::new(file_data.as_slice()))?;
+    let file_data = bundle.read_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut Cursor::new(&*file_data))?;
     let infos: Vec<_> = file
         .objects()
         .filter(|o| o.m_ClassID == ClassId::ComputeShader)
@@ -39,13 +39,7 @@ fn compute_shaders(path: &Path) -> Result<(Vec<ComputeShader>, TypeTreeNode)> {
         .into_owned();
     let shaders = infos
         .into_iter()
-        .map(|info| {
-            Ok(file.read(
-                info,
-                NullTypeTreeProvider,
-                &mut Cursor::new(file_data.as_slice()),
-            )?)
-        })
+        .map(|info| Ok(file.read(info, NullTypeTreeProvider, &mut Cursor::new(&*file_data))?))
         .collect::<Result<_>>()?;
     Ok((shaders, tree))
 }

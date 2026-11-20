@@ -20,8 +20,8 @@ use common::{fixture_dirs, shaders};
 fn objects(bundle: &[u8]) -> Result<BTreeMap<i64, (ClassId, Vec<u8>)>> {
     let reader = BundleFileReader::from_reader(Cursor::new(bundle), &ExtractionConfig::default())?;
     let entry = reader.main_serializedfile().context("no serialized file")?;
-    let data = reader.read_at_entry(entry)?;
-    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+    let data = reader.read_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
     Ok(file
         .objects()
         .map(|o| {

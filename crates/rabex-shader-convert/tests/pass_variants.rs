@@ -182,15 +182,15 @@ fn archive_shaders(
     let reader = BundleFileReader::from_reader(Cursor::new(std::fs::read(path)?), &config)?;
     let mut shaders = Vec::new();
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
-        let mut cursor = Cursor::new(data.as_slice());
+        let data = reader.read_entry(entry)?;
+        let mut cursor = Cursor::new(&*data);
         let file = match version {
             Some(version) => SerializedFile::from_reader_with_version(&mut cursor, version)?,
             None => SerializedFile::from_reader(&mut cursor)?,
         };
         for info in file.objects().filter(|o| o.m_ClassID == ClassId::Shader) {
             let shader: Shader = file
-                .read(info, tpk, &mut Cursor::new(data.as_slice()))
+                .read(info, tpk, &mut Cursor::new(&*data))
                 .with_context(|| format!("{} shader {}", path.display(), info.m_PathID))?;
             shaders.push(shader);
         }

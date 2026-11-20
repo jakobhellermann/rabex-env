@@ -27,7 +27,7 @@ fn main() -> Result<()> {
             let reader = BundleFileReader::from_reader(Cursor::new(&raw), &config)?;
             reader
                 .serialized_files()
-                .map(|entry| reader.read_at_entry(entry).map_err(Into::into))
+                .map(|entry| Ok(reader.read_entry(entry)?.into_owned()))
                 .collect::<Result<_>>()?
         } else {
             vec![raw]

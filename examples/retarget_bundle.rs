@@ -45,8 +45,8 @@ fn main() -> Result<()> {
     .context("the retargeted bundle doesn't parse")?;
     let (mut objects, mut shaders) = (0, 0);
     for entry in bundle.serialized_files() {
-        let bytes = bundle.read_at_entry(entry)?;
-        let file = SerializedFile::from_reader(&mut Cursor::new(bytes.as_slice()))
+        let bytes = bundle.read_entry(entry)?;
+        let file = SerializedFile::from_reader(&mut Cursor::new(&*bytes))
             .with_context(|| entry.path.clone())?;
         ensure!(
             file.m_UnityVersion.as_ref().is_some_and(|v| *v == to),

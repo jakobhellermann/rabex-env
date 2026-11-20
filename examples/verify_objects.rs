@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     let mut checked = 0;
     let mut bad = 0;
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         let file = SerializedFile::from_reader_with_version(&mut Cursor::new(&data), &version)?;
         for info in file.objects() {
             let tree = file.get_typetree_for(info, &NullTypeTreeProvider)?;
@@ -46,7 +46,7 @@ fn main() -> Result<()> {
                     rabex::tpk::TpkTypeTreeBlob::embedded(),
                 );
                 let reference = tpk.get_typetree_node(info.m_ClassID, &version).unwrap();
-                let mut c = Cursor::new(data.as_slice());
+                let mut c = Cursor::new(&*data);
                 c.set_position(info.m_Offset as u64);
                 let r: Result<Value, _> = rabex::serde_typetree::from_reader_endianed(
                     &mut c,
@@ -79,7 +79,7 @@ fn main() -> Result<()> {
             checked += 1;
             // the object offsets are already relative to the file's data
             let start = info.m_Offset as u64;
-            let mut cursor = Cursor::new(data.as_slice());
+            let mut cursor = Cursor::new(&*data);
             cursor.set_position(start);
             let read: Result<Value, _> = rabex::serde_typetree::from_reader_endianed(
                 &mut cursor,
@@ -105,7 +105,7 @@ fn main() -> Result<()> {
         }
     }
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         let file = SerializedFile::from_reader_with_version(&mut Cursor::new(&data), &version)?;
         let mut per_class: std::collections::BTreeMap<_, std::collections::BTreeSet<_>> =
             Default::default();

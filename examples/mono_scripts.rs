@@ -22,14 +22,14 @@ fn main() -> Result<()> {
         };
         let reader = BundleFileReader::from_reader(Cursor::new(std::fs::read(&path)?), &config)?;
         for entry in reader.serialized_files() {
-            let bytes = reader.read_at_entry(entry)?;
+            let bytes = reader.read_entry(entry)?;
             let file =
                 SerializedFile::from_reader_with_version(&mut Cursor::new(&bytes), &version)?;
             for info in file
                 .objects()
                 .filter(|o| o.m_ClassID == ClassId::MonoScript)
             {
-                let s: MonoScript = file.read(info, &tpk, &mut Cursor::new(bytes.as_slice()))?;
+                let s: MonoScript = file.read(info, &tpk, &mut Cursor::new(&*bytes))?;
                 println!(
                     "{} {} [{}]{}.{}",
                     entry.path, info.m_PathID, s.m_AssemblyName, s.m_Namespace, s.m_ClassName

@@ -5,6 +5,7 @@
 //! set pointing at different code — the player would pick the variant and get another
 //! one's program, which no amount of correct keywords repairs.
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::io::Cursor;
 
@@ -33,7 +34,7 @@ fn main() -> Result<()> {
         let reader = BundleFileReader::from_reader(Cursor::new(raw), &config)?;
         reader
             .serialized_files()
-            .map(|entry| reader.read_at_entry(entry))
+            .map(|entry| reader.read_entry(entry).map(Cow::into_owned))
             .collect::<Result<_, _>>()?
     } else {
         vec![raw]

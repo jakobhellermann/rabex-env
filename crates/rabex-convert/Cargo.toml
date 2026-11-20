@@ -10,7 +10,7 @@ anyhow = "1.0"
 rabex-env = { path = "../.." }
 serde = "1.0"
 byteorder = "1.5"
-rabex = { version = "0.3", default-features = false, features = ["compression-lz4"] }
+rabex = { version = "0.3.2", default-features = false, features = ["compression-lz4"] }
 rabex-shader = { path = "../rabex-shader", optional = true }
 # the shader downport rewrites Vulkan programs, which is where that lives
 rabex-shader-convert = { path = "../rabex-shader-convert", optional = true }
@@ -27,7 +27,7 @@ shaders = ["dep:rabex-shader", "dep:rabex-shader-convert", "dep:smolv"]
 
 [dev-dependencies]
 # the tests read the fixture bundles through the embedded type tree package
-rabex = { version = "0.3", features = ["embed-tpk"] }
+rabex = { version = "0.3.2", features = ["embed-tpk"] }
 memmap2 = "0.9"
 
 [[test]]

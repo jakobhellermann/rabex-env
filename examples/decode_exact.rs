@@ -75,7 +75,7 @@ fn main() -> Result<()> {
             };
             let reader = BundleFileReader::from_reader(Cursor::new(&data), &config)?;
             for entry in reader.serialized_files() {
-                let bytes = reader.read_at_entry(entry)?;
+                let bytes = reader.read_entry(entry)?;
                 let file =
                     SerializedFile::from_reader_with_version(&mut Cursor::new(&bytes), &fallback)?;
                 check(&entry.path, &bytes, &file, &tpk, &mut tally);

@@ -24,14 +24,10 @@ fn main() -> Result<()> {
     };
     let reader = BundleFileReader::from_reader(Cursor::new(std::fs::read(&path)?), &config)?;
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         let file = SerializedFile::from_reader_with_version(&mut Cursor::new(&data), &version)?;
         for info in file.objects().filter(|o| o.m_ClassID == ClassId::Shader) {
-            let shader: Shader = file.read(
-                info,
-                NullTypeTreeProvider,
-                &mut Cursor::new(data.as_slice()),
-            )?;
+            let shader: Shader = file.read(info, NullTypeTreeProvider, &mut Cursor::new(&*data))?;
             let name = &shader.m_ParsedForm.m_Name;
             if want.as_ref().is_some_and(|want| !name.contains(want)) {
                 continue;

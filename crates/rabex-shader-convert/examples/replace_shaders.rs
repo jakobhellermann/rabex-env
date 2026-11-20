@@ -16,17 +16,11 @@ use rabex_shader_convert::target::vulkan::shader::convert;
 fn shaders(bundle: &[u8]) -> Result<Vec<Shader>> {
     let reader = BundleFileReader::from_reader(Cursor::new(bundle), &ExtractionConfig::default())?;
     let entry = reader.main_serializedfile().context("no serialized file")?;
-    let data = reader.read_at_entry(entry)?;
-    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+    let data = reader.read_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
     file.objects()
         .filter(|o| o.m_ClassID == ClassId::Shader)
-        .map(|info| {
-            Ok(file.read(
-                info,
-                NullTypeTreeProvider,
-                &mut Cursor::new(data.as_slice()),
-            )?)
-        })
+        .map(|info| Ok(file.read(info, NullTypeTreeProvider, &mut Cursor::new(&*data))?))
         .collect()
 }
 

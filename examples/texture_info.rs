@@ -26,11 +26,11 @@ fn main() -> Result<()> {
         .files()
         .iter()
         .find(|entry| entry.path.ends_with(".resS"))
-        .map(|entry| reader.read_at_entry(entry))
+        .map(|entry| reader.read_entry(entry))
         .transpose()?;
 
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         let file = SerializedFile::from_reader_with_version(&mut Cursor::new(&data), &version)?;
         for info in file.objects().filter(|o| o.m_ClassID == ClassId::Texture2D) {
             let texture: Value = file.read(info, &NullTypeTreeProvider, &mut Cursor::new(&data))?;

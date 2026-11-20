@@ -20,7 +20,7 @@ fn main() -> Result<()> {
         if !wanted.is_empty() && !wanted.iter().any(|w| entry.path.contains(w.as_str())) {
             continue;
         }
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         std::fs::write(out.join(&entry.path), &data)?;
         println!("{} {}", entry.path, data.len());
     }

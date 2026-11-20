@@ -102,6 +102,6 @@ fn files(path: &Path, version: &UnityVersion) -> Result<Vec<Vec<u8>>> {
     let reader = BundleFileReader::from_reader(Cursor::new(raw), &config)?;
     Ok(reader
         .serialized_files()
-        .map(|entry| reader.read_at_entry(entry))
+        .map(|entry| reader.read_entry(entry).map(|data| data.into_owned()))
         .collect::<Result<_, _>>()?)
 }

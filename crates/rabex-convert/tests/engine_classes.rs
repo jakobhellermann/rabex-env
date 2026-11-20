@@ -38,16 +38,12 @@ fn tree_of(fields: &[&str]) -> rabex::typetree::TypeTreeNode {
 fn textures(bundle: &[u8]) -> Result<BTreeMap<String, Texture2D>> {
     let bundle = BundleFileReader::from_reader(Cursor::new(bundle), &ExtractionConfig::default())?;
     let entry = bundle.main_serializedfile().context("no serialized file")?;
-    let data = bundle.read_at_entry(entry)?;
-    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+    let data = bundle.read_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
     let mut textures = BTreeMap::new();
     for info in file.objects().filter(|o| o.m_ClassID == ClassId::Texture2D) {
         let texture: Texture2D = file
-            .read(
-                info,
-                NullTypeTreeProvider,
-                &mut Cursor::new(data.as_slice()),
-            )
+            .read(info, NullTypeTreeProvider, &mut Cursor::new(&*data))
             .with_context(|| format!("Texture2D {}", info.m_PathID))?;
         textures.insert(texture.m_Name.clone(), texture);
     }

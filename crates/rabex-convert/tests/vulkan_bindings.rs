@@ -63,10 +63,10 @@ fn a_converted_entry_announces_the_bindings_its_module_decorates() -> Result<()>
 
     let (mut entries, mut bindings) = (0, 0);
     for entry in reader.serialized_files() {
-        let data = reader.read_at_entry(entry)?;
+        let data = reader.read_entry(entry)?;
         let file = SerializedFile::from_reader_with_version(&mut Cursor::new(&data), &source)?;
         for info in file.objects().filter(|o| o.m_ClassID == ClassId::Shader) {
-            let shader: Shader = file.read(info, &tpk, &mut Cursor::new(data.as_slice()))?;
+            let shader: Shader = file.read(info, &tpk, &mut Cursor::new(&*data))?;
             let name = shader.m_ParsedForm.m_Name.clone();
             let converted = rabex_convert::shader::convert(&shader, &tree, 2 << 20)
                 .with_context(|| name.clone())?;

@@ -82,8 +82,8 @@ fn main() -> Result<()> {
         };
         let reader = BundleFileReader::from_reader(Cursor::new(std::fs::read(&path)?), &config)?;
         for entry in reader.serialized_files() {
-            let bytes = reader.read_at_entry(entry)?;
-            let file = SerializedFile::from_reader(&mut Cursor::new(bytes.as_slice()))?;
+            let bytes = reader.read_entry(entry)?;
+            let file = SerializedFile::from_reader(&mut Cursor::new(&*bytes))?;
             classes.extend(file.m_Types.iter().map(|t| t.m_ClassID));
         }
     }

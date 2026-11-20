@@ -37,8 +37,8 @@ fn for_each_object(
                 &ExtractionConfig::default(),
             )?;
             for entry in bundle.serialized_files() {
-                let data = bundle.read_at_entry(entry)?;
-                let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+                let data = bundle.read_entry(entry)?;
+                let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
                 for info in file.objects() {
                     let tree = file.get_typetree_for(info, &NullTypeTreeProvider)?;
                     if unreadable(&tree) {

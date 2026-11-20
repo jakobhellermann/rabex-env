@@ -44,15 +44,11 @@ fn bundle_shaders(dir: &str) -> Result<Vec<RabexShader>> {
         &ExtractionConfig::default(),
     )?;
     let entry = bundle.main_serializedfile().context("no serialized file")?;
-    let data = bundle.read_at_entry(entry)?;
-    let file = SerializedFile::from_reader(&mut Cursor::new(data.as_slice()))?;
+    let data = bundle.read_entry(entry)?;
+    let file = SerializedFile::from_reader(&mut Cursor::new(&*data))?;
     let mut shaders = Vec::new();
     for info in file.objects().filter(|o| o.m_ClassID == ClassId::Shader) {
-        shaders.push(file.read(
-            info,
-            NullTypeTreeProvider,
-            &mut Cursor::new(data.as_slice()),
-        )?);
+        shaders.push(file.read(info, NullTypeTreeProvider, &mut Cursor::new(&*data))?);
     }
     ensure!(!shaders.is_empty(), "{dir}: no shaders");
     Ok(shaders)
