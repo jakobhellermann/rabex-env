@@ -4,7 +4,7 @@ use anyhow::{Context, Result, bail};
 use rabex::typetree::{TypeTreeNode, TypetreeNodeKind as Kind};
 
 /// The element node of a `vector`, past its size node.
-fn element(node: &TypeTreeNode) -> Option<&TypeTreeNode> {
+pub fn element(node: &TypeTreeNode) -> Option<&TypeTreeNode> {
     match node.classify() {
         Kind::ArrayWrapper => node.children.first()?.children.get(1),
         _ => None,
@@ -171,7 +171,7 @@ impl<'a> Reader<'a> {
         Ok(bytes)
     }
 
-    fn count(&mut self) -> Result<usize> {
+    pub fn count(&mut self) -> Result<usize> {
         let len = i32::from_le_bytes(self.take(4)?.try_into()?);
         usize::try_from(len).with_context(|| format!("a length of {len}"))
     }
