@@ -9,13 +9,16 @@
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+#[cfg(feature = "shaders")]
 use crate::{material, shader, texture};
 use anyhow::{Context, Result, bail};
+use rabex::UnityVersion;
 use rabex::files::SerializedFile;
 use rabex::files::serializedfile::{CommonOffsetMap, ObjectInfo};
 use rabex::objects::{ClassId, PPtr};
+#[cfg(feature = "shaders")]
+use rabex::serde_typetree;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
-use rabex::{UnityVersion, serde_typetree};
 
 use crate::bundle::rewrite_bundle;
 use crate::layout::Layout;
@@ -164,6 +167,7 @@ fn object_rule(source: &TypeTreeNode, target: &TypeTreeNode) -> bool {
 }
 
 /// Read one object of `T` and encode what `convert` makes of it against `target`.
+#[cfg(feature = "shaders")]
 fn convert<P: TypeTreeProvider, T, F>(
     source: &Source<'_, P>,
     info: &ObjectInfo,
@@ -377,6 +381,7 @@ impl<P: TypeTreeProvider> Retarget<'_, P> {
         report: &mut Report,
     ) -> Result<()> {
         let context = || format!("{:?} {}", info.m_ClassID, info.m_PathID);
+        #[cfg(feature = "shaders")]
         let target = encoding.target;
         // classes whose objects Unity reworked as a whole carry their own typed rules,
         // for the forms across that rework; everything else runs through the plan its
@@ -389,15 +394,22 @@ impl<P: TypeTreeProvider> Retarget<'_, P> {
                     transcoder.run(object, &self.to, counts, &mut report.warnings)
                 })
             }
+            #[cfg(feature = "shaders")]
             ClassId::Shader => convert(source, info, target, |shader| {
                 shader::convert(&shader, target, self.shader_chunk_size)
             }),
+            #[cfg(feature = "shaders")]
             ClassId::Material => convert(source, info, target, |material| {
                 material::convert(material, target, &mut report.dropped)
             }),
+            #[cfg(feature = "shaders")]
             ClassId::Texture2D => convert(source, info, target, |texture| {
                 texture::convert(texture, target)
             }),
+            #[cfg(not(feature = "shaders"))]
+            ClassId::Shader | ClassId::Material | ClassId::Texture2D => {
+                Err(anyhow::anyhow!("retargeting needs the `shaders` feature"))
+            }
             _ => {
                 let object = source.object_bytes(info)?;
                 encoding.plan_for(object).and_then(|(transcoder, counts)| {

@@ -11,16 +11,33 @@ rabex-env = { path = "../.." }
 serde = "1.0"
 byteorder = "1.5"
 rabex = { version = "0.3", default-features = false, features = ["compression-lz4"] }
-rabex-shader = { path = "../rabex-shader" }
+rabex-shader = { path = "../rabex-shader", optional = true }
 # the shader downport rewrites Vulkan programs, which is where that lives
-rabex-shader-convert = { path = "../rabex-shader-convert" }
-smolv = { path = "../smolv" }
+rabex-shader-convert = { path = "../rabex-shader-convert", optional = true }
+smolv = { path = "../smolv", optional = true }
 indexmap = "2.11"
 serde-value = { git = "https://github.com/jakobhellermann/serde-value", branch = "preserve-order", features = [
   "preserve_order",
 ] }
 
+[features]
+default = ["shaders"]
+# retargeting shaders, materials and textures, which needs native shader compilers
+shaders = ["dep:rabex-shader", "dep:rabex-shader-convert", "dep:smolv"]
+
 [dev-dependencies]
 # the tests read the fixture bundles through the embedded type tree package
 rabex = { version = "0.3", features = ["embed-tpk"] }
 memmap2 = "0.9"
+
+[[test]]
+name = "engine_classes"
+required-features = ["shaders"]
+
+[[test]]
+name = "vulkan_bindings"
+required-features = ["shaders"]
+
+[[test]]
+name = "downport"
+required-features = ["shaders"]
