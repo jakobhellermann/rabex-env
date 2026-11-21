@@ -19,7 +19,6 @@ type AssemblyLocation = (String, String);
 pub struct AssemblyTypeTreeGenerator<'a, R, P> {
     env: &'a Environment<R, P>,
     generator: &'a unity_typetree_gen::AssemblyTypeTreeGenerator,
-    base_node: &'a TypeTreeNode,
     cache: &'a FrozenMap<AssemblyLocation, Box<TypeTreeNode>>,
     flights: &'a SingleFlight<AssemblyLocation>,
 }
@@ -71,19 +70,12 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P
         let assembly_name = key.0.as_str();
 
         let (namespace, type_name) = full_name.rsplit_once('.').unwrap_or(("", full_name));
-        let value = self
-            .generator
-            .generate(
-                &|name| self.load_managed_assembly(name),
-                assembly_name,
-                namespace,
-                type_name,
-            )?
-            .map(|mut node| {
-                // prepend MonoBehaviour header
-                node.children.splice(0..0, self.base_node.children.clone());
-                node
-            });
+        let value = self.generator.generate(
+            &|name| self.load_managed_assembly(name),
+            assembly_name,
+            namespace,
+            type_name,
+        )?;
         Ok(value.map(|value| self.cache.insert(key, Box::new(value))))
     }
 
@@ -113,7 +105,6 @@ impl<'a, R: EnvResolver, P: TypeTreeProvider> AssemblyTypeTreeGenerator<'a, R, P
 
 struct Backend {
     generator: unity_typetree_gen::AssemblyTypeTreeGenerator,
-    base_node: TypeTreeNode,
 }
 
 pub struct TypeTreeGeneratorCache {
@@ -125,8 +116,8 @@ impl TypeTreeGeneratorCache {
     pub fn new(unity_version: UnityVersion, base_node: TypeTreeNode) -> Self {
         let backend = OnceLock::new();
         let _ = backend.set(Backend {
-            generator: unity_typetree_gen::AssemblyTypeTreeGenerator::new(unity_version),
-            base_node,
+            generator: unity_typetree_gen::AssemblyTypeTreeGenerator::new(unity_version)
+                .with_object_header(base_node),
         });
         TypeTreeGeneratorCache {
             backend,
@@ -165,7 +156,6 @@ impl TypeTreeGeneratorCache {
         Ok(AssemblyTypeTreeGenerator {
             env,
             generator: &backend.generator,
-            base_node: &backend.base_node,
             cache: &self.cache,
             flights: &self.flights,
         })
@@ -189,12 +179,10 @@ impl TypeTreeGeneratorCache {
             return Ok(backend);
         }
         let (unity_version, base_node) = init()?;
-        let generator = unity_typetree_gen::AssemblyTypeTreeGenerator::new(unity_version);
+        let generator = unity_typetree_gen::AssemblyTypeTreeGenerator::new(unity_version)
+            .with_object_header(base_node);
         // A racing initializer may win; either backend is equivalent.
-        Ok(self.backend.get_or_init(|| Backend {
-            generator,
-            base_node,
-        }))
+        Ok(self.backend.get_or_init(|| Backend { generator }))
     }
 }
 
