@@ -60,5 +60,10 @@ pub fn reachable_one<R: EnvResolver, P: TypeTreeProvider>(
 
     // TODO: use serialized typetree
     reader.seek(std::io::SeekFrom::Start(info.m_Offset as u64))?;
-    trace_pptr::trace_pptrs_endianned(&tt, reader, file.m_Header.m_Endianess)
+    trace_pptr::trace_pptrs_endianned(
+        &tt,
+        reader,
+        file.m_Header.m_Endianess,
+        &trace_pptr::NoRefTypes,
+    )
 }

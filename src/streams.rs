@@ -10,7 +10,7 @@ use rabex::serde_typetree;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::trace_pptr;
+use crate::trace_pptr::{self, NoRefTypes};
 
 /// Target for a `StreamingInfo` or `StreamedResource`
 pub struct StreamLocation<'a> {
@@ -138,16 +138,21 @@ fn find_streams(
     tt: &TypeTreeNode,
 ) -> Result<Vec<(Range<usize>, TypeTreeNode, Stream)>> {
     let mut streams = Vec::new();
-    trace_pptr::visit::<_, LittleEndian>(&mut Cursor::new(data), tt, &mut |node, reader| {
-        let start = reader.position() as usize;
-        let stream = match node.m_Type.as_str() {
-            "StreamingInfo" => Stream::Info(read_typed(reader, node)?),
-            "StreamedResource" => Stream::Resource(read_typed(reader, node)?),
-            _ => return Ok(false),
-        };
-        streams.push((start..reader.position() as usize, node.clone(), stream));
-        Ok(true)
-    })?;
+    trace_pptr::visit::<_, LittleEndian>(
+        &mut Cursor::new(data),
+        tt,
+        &NoRefTypes,
+        &mut |node, reader| {
+            let start = reader.position() as usize;
+            let stream = match node.m_Type.as_str() {
+                "StreamingInfo" => Stream::Info(read_typed(reader, node)?),
+                "StreamedResource" => Stream::Resource(read_typed(reader, node)?),
+                _ => return Ok(false),
+            };
+            streams.push((start..reader.position() as usize, node.clone(), stream));
+            Ok(true)
+        },
+    )?;
 
     Ok(streams)
 }
