@@ -12,7 +12,9 @@ use indexmap::IndexSet;
 use rabex::UnityVersion;
 use rabex::files::SerializedFile;
 use rabex::files::bundlefile::{BundleFileReader, ExtractionConfig};
+use rabex::files::serializedfile::builder::SerializedFileBuilder;
 use rabex::objects::TypedPPtr;
+use rabex::objects::pptr::PPtr;
 use rabex::tpk::TpkTypeTreeBlob;
 use rabex::typetree::typetree_cache::sync::TypeTreeCache;
 use rabex::typetree::{TypeTreeNode, TypeTreeProvider};
@@ -647,5 +649,21 @@ impl<R: EnvResolver, P: TypeTreeProvider> Environment<R, P> {
                     script.assembly_name()
                 )
             })
+    }
+
+    /// Fill in the `m_Types` typetrees missing from `builder`, which was built from `file`: engine
+    /// classes from the tpk, scripts generated from the assemblies.
+    pub fn fill_typetrees<B: TypeTreeProvider>(
+        &self,
+        builder: &mut SerializedFileBuilder<'_, B>,
+        file: &SerializedFile,
+        data: &[u8],
+    ) -> Result<()> {
+        builder.fill_typetrees(self.unity_version()?, |script: PPtr| -> Result<_> {
+            let script =
+                self.deref_read(script.typed::<MonoScript>(), file, &mut Cursor::new(data))?;
+            Ok(self.generate_typetree_for_script(&script)?.clone())
+        })?;
+        Ok(())
     }
 }
