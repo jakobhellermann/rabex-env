@@ -2,6 +2,7 @@ pub mod addressables;
 pub mod component_path;
 pub mod env;
 pub mod handle;
+pub mod inline;
 mod layout;
 pub mod qualify;
 pub mod reachable;
